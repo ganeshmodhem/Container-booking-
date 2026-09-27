@@ -82,8 +82,8 @@ textarea{min-height:80px}.btn{border:0;border-radius:10px;padding:11px 15px;font
 <div><label>Commodity</label><input id="commodity"></div>
 <div><label>Total Quantity (MT)</label><input id="qty"></div>
 <div><label>Container Plan</label><input id="containers"></div>
-<div><label>Price (USD/MT)</label><input id="price"></div>
-<div><label>Price Term</label><input id="priceTerm"></div>
+<div><label>Price (USD/MT)</label><input id="price" inputmode="decimal" placeholder="e.g. 2015.00"></div>
+<div><label>Price Term</label><input id="priceTerm" placeholder="e.g. CIF Nhava Sheva, India"></div>
 <div><label>Port of Loading</label><input id="pol"></div>
 <div><label>Port of Discharge</label><input id="pod"></div>
 <div><label>Shipment Period</label><input id="shipment"></div>
@@ -174,36 +174,89 @@ async function readContract(){
 function clean(s){return String(s||"").replace(/\s+/g," ").trim()}
 function between(text,a,b){let i=text.toLowerCase().indexOf(a.toLowerCase());if(i<0)return"";let s=text.slice(i+a.length);let j=b?s.toLowerCase().indexOf(b.toLowerCase()):s.length;return clean(s.slice(0,j<0?s.length:j)).replace(/^[:\-]\s*/,"")}
 function extractFields(t){
- let x=t.replace(/\r/g,"\n");
- let sc=(x.match(/(?:our\s+sales\s+contract|sales\s+contract)\s*[:\-]?\s*([A-Z0-9\-\/]+)/i)||[])[1];
- let date=(x.match(/\bdate\s*[:\-]?\s*(\d{1,2}[.\/-]\d{1,2}[.\/-]\d{4})/i)||[])[1];
- let commodity=between(x,"Commodity","Price");
- let price=between(x,"Price","Quantity").replace(/[^\d.,]/g,"");
- let qtyText=between(x,"Quantity","Packing");
- let packing=between(x,"Packing","Shipment Period");
- let pol=between(x,"Port of Loading","Port of Discharge");
- let pod=between(x,"Port of Discharge","Transshipment");
- let trans=between(x,"Transshipment","Partial Shipment");
- let partial=between(x,"Partial Shipment","Payment Terms");
- let adv=(x.match(/USD\s*([\d,]+(?:\.\d{1,2})?)[^\n]*advance/i)||[])[1];
- let hs=(x.match(/HS\s*CODE\s*[:\-]?\s*([0-9]+)/i)||[])[1];
- let gst=(x.match(/GSTIN\s*[:\-]?\s*([A-Z0-9]+)/i)||[])[1];
- let iec=(x.match(/IEC\s*CODE\s*[:\-]?\s*([A-Z0-9]+)/i)||[])[1];
- let pan=(x.match(/PAN\s*[:\-]?\s*([A-Z0-9]+)/i)||[])[1];
- let seller=(x.match(/confirm that\s+M\/S\.\s*([A-Z0-9 .&,'\-]+?)\s+agrees/i)||[])[1];
- let buyer=(x.match(/sell\s+to\s+M\/S\.\s*([A-Z0-9 .&,'\-]+?)(?:\s+GSTIN|\s+IEC|\s+HS\s+CODE)/i)||[])[1];
- $("scNo").value=clean(sc); $("scDate").value=toDate(date);
- $("seller").value=clean(seller); $("buyer").value=clean(buyer);
- $("gstin").value=clean(gst); $("iec").value=clean(iec); $("hs").value=clean(hs); $("pan").value=clean(pan);
- $("commodity").value=clean(commodity); $("qty").value=(qtyText.match(/[\d.]+/)||[])[0]||"";
- $("containers").value=(qtyText.match(/\d+\s*[xX×]\s*\d+['’]?\s*CONTAINER/i)||[])[0]||"";
- $("price").value=clean(price); $("priceTerm").value=(clean(between(x,"CIF","Quantity")).match(/CIF\s+[^,\n]+/i)||[])[0]||"";
- $("pol").value=clean(pol);$("pod").value=clean(pod);$("transshipment").value=clean(trans);$("partial").value=clean(partial);
- $("advance").value=clean(adv);
- $("shipment").value=clean(between(x,"Shipment Period","Advance"));
- $("terms").value=clean(between(x,"PAYMENT TERMS","CONDITIONS"));
- if(!$("commodity").value) $("terms").value=x.slice(0,3000);
+  // OCR can break labels/lines, so use both label-based and line-based extraction.
+  let x=(t||'').replace(/\r/g,'\n').replace(/[“”]/g,'"').replace(/[’]/g,"'");
+  let lines=x.split(/\n+/).map(v=>v.replace(/\s+/g,' ').trim()).filter(Boolean);
+  const lineAfter=(label)=>{
+    const re=new RegExp(label+'\\s*[:\\-]?\\s*(.*)','i');
+    for(const line of lines){let m=line.match(re);if(m&&m[1])return clean(m[1]);}
+    return '';
+  };
+  const firstMatch=(re)=>{let m=x.match(re);return m?clean(m[1]||m[0]):''};
+  const normNum=s=>clean(s).replace(/[^0-9.,]/g,'').replace(/,{2,}/g,',').replace(/^,|,$/g,'');
+
+  // Contract number: specifically prefer "Our sales contract", not the introductory sentence.
+  let sc=firstMatch(/our\s+sales\s+contract\s*[:\-]?\s*([A-Z0-9]+(?:[-\/][A-Z0-9]+)+)/i);
+  if(!sc) sc=firstMatch(/sales\s+contract\s*[:\-]\s*([A-Z0-9]+(?:[-\/][A-Z0-9]+)+)/i);
+  if(!sc){for(const l of lines){let m=l.match(/\b([A-Z]{2,6}-\d{2,4}[A-Z]?[-]\d{3,8})\b/i);if(m){sc=m[1];break;}}}
+
+  let date=firstMatch(/\bdate\s*[:\-]?\s*(\d{1,2}[.\/-]\d{1,2}[.\/-]\d{4})/i);
+  let seller=firstMatch(/confirm\s+that\s+M\/S\.\s*([^\n]+?)\s+agrees\s+to\s+sell/i);
+  if(!seller) seller=firstMatch(/M\/S\.\s*([^\n]+?)\s+agrees\s+to\s+sell/i);
+  let buyer=firstMatch(/agrees\s+to\s+sell\s+to\s+M\/S\.\s*([^\n]+?)(?=\s+GSTIN|\s+IEC|\s+HS\s*CODE|\s+PAN|\s*$)/i);
+  if(!buyer){
+    const li=lines.findIndex(l=>/agrees\s+to\s+sell\s+to/i.test(l));
+    if(li>=0){let m=lines[li].match(/sell\s+to\s+M\/S\.\s*(.*?)(?:\s+GSTIN|\s+IEC|\s+HS\s*CODE|\s+PAN|$)/i);if(m)buyer=clean(m[1]);}
+  }
+
+  let gst=firstMatch(/GSTIN\s*[:\-]?\s*([A-Z0-9]+)/i);
+  let iec=firstMatch(/IEC\s*CODE\s*[:\-]?\s*([A-Z0-9]+)/i);
+  let hs=firstMatch(/HS\s*CODE\s*[:\-]?\s*([0-9]{6,10})/i);
+  let pan=firstMatch(/PAN\s*[:\-]?\s*([A-Z0-9]{10})/i);
+
+  let commodity=clean((lineAfter('Commodity')||between(x,'Commodity','Price')));
+  let qtyBlock=clean(lineAfter('Quantity')||between(x,'Quantity','Packing'));
+  let qty=firstMatchFrom(qtyBlock,/([0-9]+(?:\.[0-9]+)?)\s*MT/i) || firstMatchFrom(qtyBlock,/([0-9]+(?:\.[0-9]+)?)/);
+  let containers=firstMatchFrom(qtyBlock,/([0-9]+\s*[xX×]\s*20['’]?\s*CONTAINERS?)/i);
+  if(!containers) containers=firstMatchFrom(x,/([0-9]+\s*[xX×]\s*20['’]?\s*CONTAINERS?)/i);
+
+  // Price: prefer the amount immediately following USD / US$ and located after the Price label.
+  let price='';
+  let priceSection=between(x,'Price','Quantity');
+  let pm=priceSection.match(/(?:USD|US\s*\$|US\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i);
+  if(pm) price=normNum(pm[1]);
+  if(!price){let pm2=x.match(/\b(?:USD|US\s*\$|US\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)\s*\/\s*MT/i);if(pm2)price=normNum(pm2[1]);}
+
+  let priceTerm=firstMatch(/\b(CIF\s+[A-Z][^\n,;]+(?:,\s*[A-Z][^\n,;]+)?)/i);
+  if(!priceTerm && /CIF\s+NHAVA SHEVA/i.test(x)) priceTerm='CIF NHAVA SHEVA, INDIA';
+  let pol=clean(lineAfter('Port of Loading')||between(x,'Port of Loading','Port of Discharge'));
+  let pod=clean(lineAfter('Port of Discharge')||between(x,'Port of Discharge','Transshipment'));
+  let trans=clean(lineAfter('Transshipment')||between(x,'Transshipment','Partial Shipment'));
+  let partial=clean(lineAfter('Partial Shipment')||between(x,'Partial Shipment','Payment Terms'));
+  let shipment=clean(between(x,'Shipment Period','Advance Received')||lineAfter('Shipment Period'));
+
+  // Advance amount: search specifically for "advance", not any USD amount.
+  let advance='';
+  let am=x.match(/(?:USD|US\s*\$|US\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)\s*advance/i);
+  if(am) advance=normNum(am[1]);
+  if(!advance){am=x.match(/advance[^\n]{0,100}?(?:USD|US\s*\$|US\$)\s*([0-9,]+(?:\.[0-9]{1,2})?)/i);if(am)advance=normNum(am[1]);}
+
+  let terms=clean(between(x,'PAYMENT TERMS','CONDITIONS'));
+  if(!terms)terms=clean(lines.filter(l=>/advance|payment|documents through bank/i.test(l)).join(' '));
+
+  $('scNo').value=sc;
+  $('scDate').value=toDate(date);
+  $('seller').value=seller;
+  $('buyer').value=buyer;
+  $('gstin').value=gst;
+  $('iec').value=iec;
+  $('hs').value=hs;
+  $('pan').value=pan;
+  $('commodity').value=commodity;
+  $('qty').value=qty;
+  $('containers').value=containers;
+  $('price').value=price;
+  $('priceTerm').value=priceTerm;
+  $('pol').value=pol;
+  $('pod').value=pod;
+  $('shipment').value=shipment;
+  $('advance').value=advance;
+  $('transshipment').value=trans;
+  $('partial').value=partial;
+  $('terms').value=terms;
 }
+function firstMatchFrom(text,re){let m=String(text||'').match(re);return m?clean(m[1]||m[0]):''}
+
 function toDate(d){if(!d)return"";let m=d.match(/(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})/);return m?`${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`:""}
 
 function saveContract(){
