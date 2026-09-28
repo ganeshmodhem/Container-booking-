@@ -400,11 +400,9 @@ function booking(){
   ['Contract Qty (MT)',allocatedQty?String(allocatedQty):''],['Container Plan',perContainerPlan],['Price (USD/MT)',c.price],
   ['Contract Value (USD)',allocatedValue?allocatedValue.toFixed(2):''],['Port of Loading',c.pol],['Port of Discharge',c.pod]
  ];
- const bookingCols=[['Booking No.','no'],['Booking Container','container'],['Booking Qty (MT)','qty'],['Vessel','vessel'],['ETD','etd'],['ETA','eta']];
+ const bookingCols=[['Booking No.','no'],['Container No.','container'],['Booking Qty (MT)','qty'],['Vessel','vessel'],['ETD','etd'],['ETA','eta'],['B/L No.','bl'],['Seal No.','seal'],['Voyage','voyage'],['Loading Date','loadingDate'],['Loading Qty (KG)','loadingQty'],['Port of Loading','pol'],['Port of Discharge','pod']];
  const advanceCols=[['Advance USD','amount'],['Payment Date','date'],['Payment Bill / Ref No.','ref'],['Bank','bank'],['USD Rate','usdRate'],['Payment Amount INR','inr'],['Other Charges INR','otherChargesInr'],['Payment Copy','copyName']];
- const loadingCols=hasLoading?[
-  ['B/L No.','bl'],['Loading Vessel','vessel'],['Voyage','voyage'],['Loading Date','date'],['Loaded Qty (KG)','qty'],['Container / Seal No.','containers']
- ]:[];
+ const loadingCols=[];
  const allHeaders=[...contractCols.map(x=>x[0]),...bookingCols.map(x=>x[0]),...advanceCols.map(x=>x[0]),...loadingCols.map(x=>x[0]),'Release','Delete'];
  const rowFor=(b,i)=>{
   const av=b.advance||{};
@@ -413,7 +411,7 @@ function booking(){
     bookingInput(i,'qty',b.qty||allocatedQty,'number',95),bookingInput(i,'vessel',b.vessel,'text',135),
     bookingInput(i,'etd',b.etd,'date',125),bookingInput(i,'eta',b.eta,'date',125),
     ...advanceCols.map(x=>av[x[1]]||''),
-    ...(hasLoading?loadingCols.map(x=>c.loading?.[x[1]]||''):[])];
+    ...loadingCols.map(x=>c.loading?.[x[1]]||'')];
   const rowNo=b.slot||i+1;
   const action=b.released?'<span class="badge">RELEASED ✓</span>':`<button class="btn w" style="margin:0;padding:7px 10px" onclick="releaseB(${i})">🚢 RELEASE</button>`;
   return `<tr><td style="background:#f8fafc;font-weight:bold">${rowNo}/${n}</td>${vals.map(v=>`<td>${typeof v==='string'&&v.startsWith('<input')?v:esc(v)}</td>`).join('')}<td style="white-space:nowrap">${action}</td><td><button class="btn" style="margin:0;padding:7px 10px;background:#c62828;color:#fff" onclick="deleteBooking(${i})">🗑 DELETE</button></td></tr>`;
@@ -606,40 +604,84 @@ async function readLoadingCopy(){
  const f=$("lf")?.files?.[0]; if(!f)return;
  const st=$("loadingStatus"); if(st)st.textContent="⏳ Reading Loading/B/L PDF…";
  try{
-   await ensurePdfJS();
-   let text="";
-   if(f.type==="application/pdf"||/\.pdf$/i.test(f.name)){
-     const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
-     for(let i=1;i<=pdf.numPages;i++){
-       const pg=await pdf.getPage(i),tc=await pg.getTextContent();
-       text += "\n" + tc.items.map(x=>x.str).join(" ");
-     }
-   }
-   text=text.replace(/\s+/g," ").trim();
-   if(!text)throw new Error("No readable text");
-   const clean=text.replace(/\s+/g," ");
-   const bl=(clean.match(/(?:B\/L\s*(?:No\.?|:)?)\s*(?:Page\s*:?\s*\d+)?\s*([0-9]{6,15})/i)||[])[1] || (clean.match(/B\/L\s*:\s*([0-9]{6,15})/i)||[])[1] || "";
-   const vessel=(clean.match(/Vessel\s*(?:\(see[^)]*\))?\s*([A-Z][A-Z0-9 .'-]{4,60}?)(?=\s+Place of Receipt|\s+Port of Discharge|\s+Port of Loading)/i)||[])[1]||"";
-   const voyage=(clean.match(/Voyage\s*No\.?\s*([A-Z0-9-]+)/i)||[])[1]||"";
-   const dateRaw=(clean.match(/Shipped on Board Date[^0-9]*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/i)||[])[1] || (clean.match(/Date of Issue of B\/L[^0-9]*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/i)||[])[1] || "";
-   let date=""; if(dateRaw){ const m=dateRaw.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/); if(m)date=`${m[3].length===2?'20'+m[3]:m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`; }
-   const entries=[];
-   const re=/([A-Z]{4}\d{7})\s+20\s+DRY[^\n]{0,120}?(\d+(?:\.\d+)?)\s+KGS[^\n]{0,100}?Shipper Seal\s*:\s*([A-Z0-9-]+)/gi;
-   let m; while((m=re.exec(clean))){entries.push(`${m[1]} / Seal ${m[3]} / ${m[2]} KG`);}
-   // Fallback: container + weight + seal can be separated by PDF text extraction.
-   if(!entries.length){
-     const conts=[...clean.matchAll(/\b([A-Z]{4}\d{7})\b/g)].map(x=>x[1]);
-     const weights=[...clean.matchAll(/TOTAL NET WEIGHT\s*:\s*([\d,.]+)\s*KGS/gi)].map(x=>x[1].replace(/,/g,''));
-     const seals=[...clean.matchAll(/Shipper Seal\s*:\s*([A-Z0-9-]+)/gi)].map(x=>x[1]);
-     for(let i=0;i<Math.min(conts.length,Math.max(weights.length,seals.length));i++)entries.push(`${conts[i]||''}${seals[i]?' / Seal '+seals[i]:''}${weights[i]?' / '+weights[i]+' KG':''}`.trim());
-   }
-   const qty=entries.map(x=>{const m=x.match(/([\d,.]+)\s*KG\b/i);return m?parseFloat(m[1].replace(/,/g,'')):0;}).filter(Boolean).reduce((a,b)=>a+b,0);
-   setv("lb",bl);setv("lv",vessel);setv("lg",voyage);setv("ld",date);setv("lq",qty?qty.toFixed(2):"");setv("lc",entries.join("\n"));
-   if(st)st.innerHTML=`✅ Loading/B/L read successfully. Found ${entries.length||0} container(s). Verify before saving.`;
+  await ensurePdfJS(); let text="";
+  if(f.type==="application/pdf"||/\.pdf$/i.test(f.name)){
+   const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+   for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i),tc=await pg.getTextContent();text+="\n"+tc.items.map(x=>x.str).join(" ");}
+  }
+  const clean=text.replace(/\s+/g," ").trim(); if(!clean)throw new Error("No readable text");
+  const bl=(clean.match(/B\/L\s*:\s*([0-9]{6,15})/i)||[])[1] || (clean.match(/B\/L\s*(?:No\.?|Number)?\s*([0-9]{6,15})/i)||[])[1] || (clean.match(/\b(\d{9})\b(?=\s+Shipper)/i)||[])[1] || "";
+  const vessel=(clean.match(/Vessel\s*(?:\(see[^)]*\))?\s*([A-Z][A-Z0-9 .'-]{4,60}?)(?=\s+Place of Receipt|\s+Port of Discharge|\s+Port of Loading)/i)||[])[1]?.trim()||"";
+  const voyage=(clean.match(/Voyage\s*No\.?\s*([A-Z0-9-]+)/i)||[])[1]||"";
+  const pol=(clean.match(/Port of Loading\s+([A-Za-z][A-Za-z .'-]{2,50}?)(?=\s+Place of Delivery|\s+PARTICULARS|\s+Consignee)/i)||[])[1]?.trim()||"";
+  const pod=(clean.match(/Port of Discharge\s+([A-Za-z][A-Za-z .'-]{2,50}?)(?=\s+Port of Loading|\s+Place of Delivery|\s+PARTICULARS)/i)||[])[1]?.trim()||"";
+  const dateRaw=(clean.match(/Shipped on Board Date[^0-9]*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/i)||[])[1] || (clean.match(/Date of Issue of B\/L[^0-9]*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/i)||[])[1] || "";
+  let date=""; if(dateRaw){const m=dateRaw.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);if(m)date=`${m[3].length===2?'20'+m[3]:m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
+  const entries=[];
+  const re=/([A-Z]{4}\d{7})\s+20\s+DRY[^\n]{0,120}?(\d+(?:\.\d+)?)\s+KGS[^\n]{0,100}?Shipper Seal\s*:\s*([A-Z0-9-]+)/gi;
+  let m; while((m=re.exec(clean))) entries.push({container:m[1],qty:parseFloat(m[2].replace(/,/g,'')),seal:m[3]});
+  if(!entries.length){
+   const conts=[...clean.matchAll(/\b([A-Z]{4}\d{7})\b/g)].map(x=>x[1]);
+   const weights=[...clean.matchAll(/TOTAL NET WEIGHT\s*:\s*([\d,.]+)\s*KGS/gi)].map(x=>parseFloat(x[1].replace(/,/g,'')));
+   const seals=[...clean.matchAll(/Shipper Seal\s*:\s*([A-Z0-9-]+)/gi)].map(x=>x[1]);
+   for(let i=0;i<Math.min(conts.length,Math.max(weights.length,seals.length));i++) entries.push({container:conts[i]||'',qty:weights[i]||0,seal:seals[i]||''});
+  }
+  setv("lb",bl);setv("lv",vessel);setv("lg",voyage);setv("ld",date);setv("lpol",pol);setv("lpod",pod);
+  const c=get(cur); const advCount=Math.max(0,Math.min(c?.bookings?.length||0,parseInt(c?.advanceSummary?.containers||0,10)||0));
+  const limited=entries.slice(0,advCount);
+  window._loadingEntries=limited;
+  renderLoadingRows(limited);
+  if(entries.length>advCount && st) st.innerHTML=`⚠️ PDF contains ${entries.length} container(s), but Advance is completed for only ${advCount}. Only ${advCount} container(s) will be used.`;
+  if(st)st.innerHTML=`✅ Loading/B/L read successfully. Found ${entries.length} container(s). Verify before saving.`;
  }catch(e){console.error(e);if(st)st.textContent="⚠️ Could not read Loading/B/L. Please verify the PDF or enter details manually.";}
 }
-function loading(){let c=get(cur);shell("📦 Loading / Bill of Lading",head(c)+`<div class="ok">Advance completed — Loading/B/L unlocked.</div><div class="grid">${field("lb","B/L No.")}${field("lv","Vessel")}${field("lg","Voyage")}${field("ld","Loading Date","date")}${field("lq","Loaded Quantity (KG)")}${field("lc","Container / Seal No.","textarea",1)}${field("lf","Loading / B/L PDF","file",1)}<div class="full" id="loadingStatus" class="notice">Upload <b>3.LOADING.pdf</b> — details will be extracted automatically.</div></div><button class="btn s" onclick="saveLoading()">Save Loading/B/L</button>`); const f=$("lf"); if(f)f.addEventListener("change",readLoadingCopy);}
-function saveLoading(){let c=get(cur);c.loading={bl:$("lb").value,vessel:$("lv").value,voyage:$("lg").value,date:$("ld").value,qty:$("lq").value,containers:$("lc").value,file:file("lf")};save();openPage("invoice",cur)}
+function renderLoadingRows(entries){
+ const box=$("loadingRows"); if(!box)return;
+ const rows=(entries||[]).map((x,i)=>`<tr><td>${i+1}</td><td><input id="lc_${i}" value="${esc(x.container||'')}" style="min-width:170px"></td><td><input id="ls_${i}" value="${esc(x.seal||'')}" style="min-width:120px"></td><td><input id="lq_${i}" value="${x.qty||''}" type="number" step="0.01" style="min-width:110px"></td><td><input value="${esc($("lb")?.value||'')}" disabled style="min-width:120px"></td></tr>`).join('');
+ box.innerHTML=rows||'<tr><td colspan="5">Upload the Loading/B.L PDF to read container details.</td></tr>';
+}
+let loadingSearched=false;
+function searchLoadingContract(){
+ const no=(document.getElementById('loadingSearchNo')?.value||'').trim();
+ const c=get(no);
+ if(!c){alert('Sales Contract not found. Please enter the saved Sales Contract No.');return;}
+ ensureBookingRows(c);
+ const advCount=Math.max(0,Math.min(c.bookings.length,parseInt(c.advanceSummary?.containers||0,10)||0));
+ if(!advCount){alert('Advance payment is not completed for this Sales Contract. Please complete Advance first.');return;}
+ cur=c.no; loadingSearched=true; page='loading'; render();
+}
+function loading(){
+ let c=loadingSearched?get(cur):null;
+ if(!c){
+  shell("📦 Loading / Bill of Lading",`<div class="card"><h3>🔎 Step 1 — Search Sales Contract</h3><div class="search"><input id="loadingSearchNo" placeholder="Enter Sales Contract No."><button class="btn p" onclick="searchLoadingContract()">Search</button></div><div class="notice" style="margin-top:8px">पहिले Sales Contract Search करा. त्यानंतर त्या contract च्या <b>Advance payment मध्ये जितके containers paid आहेत तितकेच Loading containers</b> दाखवले जातील.</div></div>`);
+  return;
+ }
+ ensureBookingRows(c);
+ const contractCount=c.bookings.length;
+ const advCount=Math.max(0,Math.min(contractCount,parseInt(c.advanceSummary?.containers||0,10)||0));
+ const allowed=c.bookings.slice(0,advCount);
+ shell("📦 Loading / Bill of Lading",head(c)+`
+ <div class="ok"><b>Sales Contract Found:</b> ${esc(c.no)} &nbsp; | &nbsp; <b>Contract Containers:</b> ${contractCount} &nbsp; | &nbsp; <b>Advance Containers:</b> ${advCount} &nbsp; | &nbsp; <b>Loading Allowed:</b> ${advCount}</div>
+ <div class="card" style="border:2px solid #e5eaf0"><h3 style="margin:0 0 10px">📦 Step 2 — Loading / B.L Details</h3>
+ <div class="grid">
+ ${field("lb","B/L No.")}${field("lv","Vessel")}${field("lg","Voyage")}${field("ld","Loading Date","date")}${field("lpol","Port of Loading")}${field("lpod","Port of Discharge")}${field("lf","Loading / B/L PDF","file",1)}
+ <div class="full" id="loadingStatus" class="notice">Upload <b>3.LOADING.pdf</b>. Only the first <b>${advCount} container(s)</b>, according to Advance payment, will be loaded into the Booking register.</div>
+ </div></div>
+ <div class="card"><h3>Container-wise Loading — ${advCount} of ${contractCount}</h3><div class="registerWrap"><table style="min-width:900px"><thead><tr><th>Row</th><th>Container No.</th><th>Seal No.</th><th>Loading Qty (KG)</th><th>B/L No.</th></tr></thead><tbody id="loadingRows">${allowed.map((b,i)=>`<tr><td>${i+1}/${advCount}</td><td><input id="lc_${i}" value="${esc(b.container||'')}" style="min-width:170px"></td><td><input id="ls_${i}" value="${esc(b.seal||'')}" style="min-width:120px"></td><td><input id="lq_${i}" value="${esc(b.loadingQty||'')}" type="number" step="0.01" style="min-width:110px"></td><td><input id="lbl_${i}" value="${esc(b.bl||'')}" style="min-width:120px"></td></tr>`).join('')}</tbody></table></div></div>
+ <button class="btn s" onclick="saveLoading()">💾 Save Loading/B.L</button>`);
+ const f=$("lf"); if(f)f.addEventListener("change",readLoadingCopy);
+}
+function saveLoading(){
+ let c=get(cur); ensureBookingRows(c);
+ const advCount=Math.max(0,Math.min(c.bookings.length,parseInt(c.advanceSummary?.containers||0,10)||0));
+ if(!advCount)return alert('Advance payment is not completed.');
+ const rows=[];
+ for(let i=0;i<advCount;i++) rows.push({container:$("lc_"+i)?.value.trim()||'',seal:$("ls_"+i)?.value.trim()||'',qty:parseFloat($("lq_"+i)?.value||0)||0,bl:$("lbl_"+i)?.value.trim()||$("lb")?.value||''});
+ const bl=$("lb").value,vessel=$("lv").value,voyage=$("lg").value,date=$("ld").value,pol=$("lpol").value,pod=$("lpod").value;
+ c.loading={bl,vessel,voyage,date,pol,pod,entries:rows,file:file("lf"),qty:rows.reduce((a,x)=>a+x.qty,0),advanceContainers:advCount,contractContainers:c.bookings.length};
+ rows.forEach((r,i)=>{if(!c.bookings[i])return;c.bookings[i].container=r.container;c.bookings[i].vessel=vessel;c.bookings[i].loadingVessel=vessel;c.bookings[i].voyage=voyage;c.bookings[i].loadingDate=date;c.bookings[i].loadingQty=r.qty;c.bookings[i].bl=r.bl||bl;c.bookings[i].seal=r.seal;c.bookings[i].pol=pol;c.bookings[i].pod=pod;});
+ save(); alert(`Loading/B.L saved. ${rows.length} advance-paid container(s) updated in Booking.`); booking();
+}
 function invoice(){let c=get(cur);shell("🧾 Final Invoice",head(c)+`<div class="ok">Loading/B/L completed — Invoice unlocked.</div><div class="grid">${field("ino","Invoice No.")}${field("id","Invoice Date","date")}${field("iq","Invoice Quantity (MT)")}${field("ip","Unit Price USD/MT")}${field("iv","Invoice Amount USD")}${field("ia","Advance Deducted USD")}${field("ib","Balance USD")}${field("if","Invoice Copy","file",1)}</div><button class="btn s" onclick="saveInvoice()">Save Final Invoice</button>`)}
 function saveInvoice(){let c=get(cur),v=+($("iv").value||0),a=+($("ia").value||0);c.invoice={no:$("ino").value,date:$("id").value,qty:$("iq").value,price:$("ip").value,amount:$("iv").value,advance:$("ia").value,balance:(v-a).toFixed(2),file:file("if")};save();openPage("boe",cur)}
 function boe(){let c=get(cur);shell("🛃 Bill of Entry",head(c)+`<div class="ok">Invoice completed — Bill of Entry unlocked.</div><div class="grid">${field("ben","BE No.")}${field("bed","BE Date","date")}${field("bev","Invoice Value USD")}${field("bea","Assessable Value INR")}${field("bedu","Total Duty INR")}${field("ber","Exchange Rate")}${field("beo","OOC No.")}${field("beod","OOC Date","date")}${field("bef","BOE PDF","file",1)}</div><button class="btn s" onclick="saveBoe()">Save Bill of Entry</button>`)}
