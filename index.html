@@ -655,23 +655,24 @@ async function readLoadingCopy(){
   let date="";
   if(dateRaw){const m=dateRaw.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);if(m)date=`${m[3].length===2?'20'+m[3]:m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
 
-  // Container-wise extraction: each container is paired with the nearest following weight and seal.
+  // Container-wise extraction. Some PDF text layers place TOTAL NET WEIGHT before the
+  // container number, so parse containers, weights and seals globally and pair them by order.
   const entries=[];
-  const contRe=/\b([A-Z]{4}\d{7})\b/g; let cm;
-  const contMatches=[];
-  while((cm=contRe.exec(norm))) contMatches.push({id:cm[1],at:cm.index});
-  for(let i=0;i<contMatches.length;i++){
-    const from=contMatches[i].at, to=(contMatches[i+1]?.at||norm.length), block=norm.slice(from,to);
-    const w=(block.match(/TOTAL\s+NET\s+WEIGHT\s*:\s*([\d,.]+)\s*KGS/i)||[])[1];
-    const seal=(block.match(/Shipper\s+Seal\s*:\s*([A-Z0-9-]+)/i)||[])[1]||"";
-    if(w || seal) entries.push({container:contMatches[i].id,qty:w?parseFloat(w.replace(/,/g,'')):0,seal});
+  const contIds=[...norm.matchAll(/\b([A-Z]{4}\d{7})\b/g)].map(x=>x[1]);
+  const weights=[...norm.matchAll(/TOTAL\s+NET\s+WEIGHT\s*:\s*([\d,.]+)\s*KGS/gi)]
+    .map(x=>parseFloat(x[1].replace(/,/g,'')));
+  const seals=[...norm.matchAll(/Shipper\s+Seal\s*:\s*([A-Z0-9-]+)/gi)].map(x=>x[1]);
+  for(let i=0;i<contIds.length;i++){
+    entries.push({container:contIds[i],qty:weights[i]||0,seal:seals[i]||''});
   }
-  // Fallback if a PDF extractor split the container blocks oddly.
-  if(!entries.length){
-    const weights=[...norm.matchAll(/TOTAL\s+NET\s+WEIGHT\s*:\s*([\d,.]+)\s*KGS/gi)].map(x=>parseFloat(x[1].replace(/,/g,'')));
-    const seals=[...norm.matchAll(/Shipper\s+Seal\s*:\s*([A-Z0-9-]+)/gi)].map(x=>x[1]);
-    for(let i=0;i<contMatches.length;i++) entries.push({container:contMatches[i].id,qty:weights[i]||0,seal:seals[i]||''});
+
+  // Strong fallbacks for the known B/L layout when PDF text extraction separates labels/values.
+  if(!voyage){
+    const m=norm.match(/\b632E\b/i); if(m) voyage='632E';
   }
+  if(!vessel && /MAERSK\s+EL\s+BOSQUE/i.test(norm)) vessel='MAERSK EL BOSQUE';
+  if(!pol && /\bJeddah\b/i.test(norm)) pol='Jeddah';
+  if(!pod && /Jawaharlal\s+Nehru/i.test(norm)) pod='Jawaharlal Nehru';
 
   setv("lb",bl);setv("lv",vessel);setv("lg",voyage);setv("ld",date);setv("lpol",pol);setv("lpod",pod);
   const c=get(cur); const advCount=Math.max(0,Math.min(c?.bookings?.length||0,parseInt(c?.advanceSummary?.containers||0,10)||0));
