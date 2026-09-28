@@ -796,10 +796,14 @@ function invoice(){
  <div class="ok"><b>Sales Contract Found:</b> ${esc(c.no)} &nbsp; | &nbsp; <b>Loading Containers:</b> ${rows.length}</div>
  <div class="card"><h3 style="margin:0 0 10px">Step 2 — Select Invoice Container(s)</h3>
  <label>Loading Qty (MT) — Container No. (Select one or more)</label>
- <select id="invoiceContainers" multiple size="${Math.min(Math.max(rows.length,2),8)}" onchange="showSelectedInvoiceContainers()" style="min-height:120px">
- ${rows.map(x=>`<option value="${x.i}">${x.qty.toFixed(3)} MT - ${esc(x.container)}</option>`).join('')||'<option disabled>No loading container found</option>'}
- </select>
- <div class="muted" style="margin-top:6px">PC वर Ctrl/Command दाबून एकापेक्षा जास्त container select करू शकता.</div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px">
+   <button type="button" class="btn p" onclick="toggleAllInvoiceContainers(true)">Select All</button>
+   <button type="button" class="btn w" onclick="toggleAllInvoiceContainers(false)">Clear All</button>
+ </div>
+ <div id="invoiceContainerChoices" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px">
+ ${rows.map(x=>`<label style="display:flex;align-items:center;gap:10px;border:1px solid #ccd5de;border-radius:10px;padding:12px;background:#f8fafc;cursor:pointer;font-weight:normal"><input class="invoiceContainerCheck" type="checkbox" value="${x.i}" onchange="showSelectedInvoiceContainers()" style="width:20px;height:20px"><span><b>${x.qty.toFixed(3)} MT</b> — ${esc(x.container)}<br><span class="muted">Seal: ${esc(x.seal||'-')} | B/L: ${esc(x.bl||'-')}</span></span></label>`).join('')||'<div class="notice">No loading container found</div>'}
+ </div>
+ <div class="muted" style="margin-top:8px">प्रत्येक container समोरील checkbox tick करा. एकाच वेळी 1 किंवा अनेक containers select करता येतील.</div>
  <div id="selectedInvoiceRows" style="margin-top:12px"></div></div>
  <div id="invoiceDetails" class="card" style="display:none"><h3 style="margin:0 0 10px">Step 3 — Invoice Details & Upload</h3>
  <div class="grid">${field("ino","Invoice No.")}${field("id","Invoice Date","date")}${field("iq","Invoice Quantity (MT)")}${field("ip","Unit Price USD/MT")}${field("iv","Invoice Amount USD")}${field("ia","Advance Deducted USD")}${field("ib","Balance USD")}${field("if","Invoice Copy","file",1)}</div>
@@ -808,10 +812,15 @@ function invoice(){
  showSelectedInvoiceContainers();
 }
 function selectedInvoiceData(){
- const c=get(cur), sel=$("invoiceContainers");
- if(!c||!sel)return [];
- return Array.from(sel.selectedOptions).map(o=>{const i=+o.value,b=c.bookings[i]||{};return {i,container:b.container||'',qty:Number(b.loadingQty||0),seal:b.seal||'',bl:b.bl||c.loading?.bl||''};});
+ const c=get(cur);
+ if(!c)return [];
+ return Array.from(document.querySelectorAll('.invoiceContainerCheck:checked')).map(o=>{const i=+o.value,b=c.bookings[i]||{};return {i,container:b.container||'',qty:Number(b.loadingQty||0),seal:b.seal||'',bl:b.bl||c.loading?.bl||''};});
 }
+function toggleAllInvoiceContainers(checked){
+ document.querySelectorAll('.invoiceContainerCheck').forEach(x=>x.checked=checked);
+ showSelectedInvoiceContainers();
+}
+
 function showSelectedInvoiceContainers(){
  const box=$("selectedInvoiceRows"), details=$("invoiceDetails"); if(!box)return;
  const rows=selectedInvoiceData();
