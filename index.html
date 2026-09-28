@@ -602,7 +602,43 @@ function saveAdvance(){
  alert(`Advance payment saved for ${count} container(s). Total USD ${totalUsd.toFixed(2)} has been allocated equally.`);
  booking();
 }
-function loading(){let c=get(cur);shell("📦 Loading / Bill of Lading",head(c)+`<div class="ok">Advance completed — Loading/B/L unlocked.</div><div class="grid">${field("lb","B/L No.")}${field("lv","Vessel")}${field("lg","Voyage")}${field("ld","Loading Date","date")}${field("lq","Loaded Quantity (KG)")}${field("lc","Container / Seal No.","textarea",1)}${field("lf","Loading / B/L PDF","file",1)}</div><button class="btn s" onclick="saveLoading()">Save Loading/B/L</button>`)}
+async function readLoadingCopy(){
+ const f=$("lf")?.files?.[0]; if(!f)return;
+ const st=$("loadingStatus"); if(st)st.textContent="⏳ Reading Loading/B/L PDF…";
+ try{
+   await ensurePdfJS();
+   let text="";
+   if(f.type==="application/pdf"||/\.pdf$/i.test(f.name)){
+     const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+     for(let i=1;i<=pdf.numPages;i++){
+       const pg=await pdf.getPage(i),tc=await pg.getTextContent();
+       text += "\n" + tc.items.map(x=>x.str).join(" ");
+     }
+   }
+   text=text.replace(/\s+/g," ").trim();
+   if(!text)throw new Error("No readable text");
+   const clean=text.replace(/\s+/g," ");
+   const bl=(clean.match(/(?:B\/L\s*(?:No\.?|:)?)\s*(?:Page\s*:?\s*\d+)?\s*([0-9]{6,15})/i)||[])[1] || (clean.match(/B\/L\s*:\s*([0-9]{6,15})/i)||[])[1] || "";
+   const vessel=(clean.match(/Vessel\s*(?:\(see[^)]*\))?\s*([A-Z][A-Z0-9 .'-]{4,60}?)(?=\s+Place of Receipt|\s+Port of Discharge|\s+Port of Loading)/i)||[])[1]||"";
+   const voyage=(clean.match(/Voyage\s*No\.?\s*([A-Z0-9-]+)/i)||[])[1]||"";
+   const dateRaw=(clean.match(/Shipped on Board Date[^0-9]*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/i)||[])[1] || (clean.match(/Date of Issue of B\/L[^0-9]*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/i)||[])[1] || "";
+   let date=""; if(dateRaw){ const m=dateRaw.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/); if(m)date=`${m[3].length===2?'20'+m[3]:m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`; }
+   const entries=[];
+   const re=/([A-Z]{4}\d{7})\s+20\s+DRY[^\n]{0,120}?(\d+(?:\.\d+)?)\s+KGS[^\n]{0,100}?Shipper Seal\s*:\s*([A-Z0-9-]+)/gi;
+   let m; while((m=re.exec(clean))){entries.push(`${m[1]} / Seal ${m[3]} / ${m[2]} KG`);}
+   // Fallback: container + weight + seal can be separated by PDF text extraction.
+   if(!entries.length){
+     const conts=[...clean.matchAll(/\b([A-Z]{4}\d{7})\b/g)].map(x=>x[1]);
+     const weights=[...clean.matchAll(/TOTAL NET WEIGHT\s*:\s*([\d,.]+)\s*KGS/gi)].map(x=>x[1].replace(/,/g,''));
+     const seals=[...clean.matchAll(/Shipper Seal\s*:\s*([A-Z0-9-]+)/gi)].map(x=>x[1]);
+     for(let i=0;i<Math.min(conts.length,Math.max(weights.length,seals.length));i++)entries.push(`${conts[i]||''}${seals[i]?' / Seal '+seals[i]:''}${weights[i]?' / '+weights[i]+' KG':''}`.trim());
+   }
+   const qty=entries.map(x=>{const m=x.match(/([\d,.]+)\s*KG\b/i);return m?parseFloat(m[1].replace(/,/g,'')):0;}).filter(Boolean).reduce((a,b)=>a+b,0);
+   setv("lb",bl);setv("lv",vessel);setv("lg",voyage);setv("ld",date);setv("lq",qty?qty.toFixed(2):"");setv("lc",entries.join("\n"));
+   if(st)st.innerHTML=`✅ Loading/B/L read successfully. Found ${entries.length||0} container(s). Verify before saving.`;
+ }catch(e){console.error(e);if(st)st.textContent="⚠️ Could not read Loading/B/L. Please verify the PDF or enter details manually.";}
+}
+function loading(){let c=get(cur);shell("📦 Loading / Bill of Lading",head(c)+`<div class="ok">Advance completed — Loading/B/L unlocked.</div><div class="grid">${field("lb","B/L No.")}${field("lv","Vessel")}${field("lg","Voyage")}${field("ld","Loading Date","date")}${field("lq","Loaded Quantity (KG)")}${field("lc","Container / Seal No.","textarea",1)}${field("lf","Loading / B/L PDF","file",1)}<div class="full" id="loadingStatus" class="notice">Upload <b>3.LOADING.pdf</b> — details will be extracted automatically.</div></div><button class="btn s" onclick="saveLoading()">Save Loading/B/L</button>`); const f=$("lf"); if(f)f.addEventListener("change",readLoadingCopy);}
 function saveLoading(){let c=get(cur);c.loading={bl:$("lb").value,vessel:$("lv").value,voyage:$("lg").value,date:$("ld").value,qty:$("lq").value,containers:$("lc").value,file:file("lf")};save();openPage("invoice",cur)}
 function invoice(){let c=get(cur);shell("🧾 Final Invoice",head(c)+`<div class="ok">Loading/B/L completed — Invoice unlocked.</div><div class="grid">${field("ino","Invoice No.")}${field("id","Invoice Date","date")}${field("iq","Invoice Quantity (MT)")}${field("ip","Unit Price USD/MT")}${field("iv","Invoice Amount USD")}${field("ia","Advance Deducted USD")}${field("ib","Balance USD")}${field("if","Invoice Copy","file",1)}</div><button class="btn s" onclick="saveInvoice()">Save Final Invoice</button>`)}
 function saveInvoice(){let c=get(cur),v=+($("iv").value||0),a=+($("ia").value||0);c.invoice={no:$("ino").value,date:$("id").value,qty:$("iq").value,price:$("ip").value,amount:$("iv").value,advance:$("ia").value,balance:(v-a).toFixed(2),file:file("if")};save();openPage("boe",cur)}
