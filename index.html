@@ -1,345 +1,50 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Sales Contract Booking Manager v3</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Import Contract Tracker</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f3f6fa;color:#1c2833;font-family:Arial,sans-serif}
-header{background:#123f68;color:#fff;text-align:center;padding:18px 12px;position:sticky;top:0;z-index:20}
-header h1{margin:0;font-size:23px}header p{margin:7px 0 0;font-size:15px}
-nav{display:flex;gap:8px;overflow-x:auto;background:#fff;padding:9px;position:sticky;top:91px;z-index:19;border-bottom:1px solid #ddd}
-nav button{border:0;border-radius:11px;background:#e8eef4;padding:11px 16px;font-weight:700;white-space:nowrap;font-size:14px}
-nav button.active{background:#123f68;color:#fff}nav button.locked{opacity:.45}
-main{max-width:950px;margin:auto;padding:13px}.page{display:none}.page.active{display:block}
-.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:13px;box-shadow:0 2px 12px #0000000d}
-h2{margin:0 0 14px;font-size:21px}h3{margin:8px 0 12px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.full{grid-column:1/-1}
-label{display:block;font-size:12px;font-weight:700;color:#586775;margin-bottom:5px}
-input,select,textarea{width:100%;border:1px solid #ccd5de;border-radius:10px;padding:11px;font-size:14px;background:#fff}
-textarea{min-height:80px}.btn{border:0;border-radius:10px;padding:11px 15px;font-weight:700;margin:6px 5px 0 0;cursor:pointer}
-.primary{background:#123f68;color:#fff}.success{background:#16844d;color:#fff}.warning{background:#d88900;color:#fff}.light{background:#e8eef4}.danger{background:#bd3b2f;color:#fff}
-.filebox{border:1px dashed #9eabb8;padding:12px;border-radius:10px;background:#fafcfd}
-.item{border:1px solid #dde4eb;border-radius:11px;padding:12px;margin:9px 0;background:#fbfcfd}
-.search{display:flex;gap:7px}.search input{flex:1}.muted{font-size:12px;color:#6b7884}
-.badge{display:inline-block;padding:5px 9px;border-radius:15px;font-size:11px;font-weight:700;background:#fff0c9;color:#765500}
-.badge.done{background:#d9f4e5;color:#14613c}.empty{text-align:center;padding:26px;color:#7a8791}
-.stage{display:flex;gap:5px;overflow-x:auto;margin:10px 0}.stage span{white-space:nowrap;padding:6px 9px;border-radius:16px;background:#e9eef4;font-size:11px}.stage .done{background:#d9f4e5;color:#14613c;font-weight:700}
-.notice{padding:11px;border-radius:10px;background:#fff5d7;font-size:13px;margin:9px 0}
-.progress{height:9px;background:#e6ebef;border-radius:8px;overflow:hidden;margin:10px 0}.bar{height:100%;width:0;background:#16844d;transition:.2s}
-.preview{max-height:240px;max-width:100%;display:block;margin:10px auto;border-radius:8px}
-.hidden{display:none!important}
-@media(max-width:650px){.grid{grid-template-columns:1fr}.full{grid-column:auto}header h1{font-size:20px}nav{top:84px}}
-</style>
-</head>
+*{box-sizing:border-box}body{margin:0;background:#f3f6fa;font-family:Arial;color:#1d2a35}header{background:#123f68;color:white;text-align:center;padding:18px 10px;position:sticky;top:0;z-index:5}header h1{margin:0;font-size:22px}header p{margin:7px 0;font-size:14px}
+nav{display:flex;overflow:auto;gap:7px;background:white;padding:8px;position:sticky;top:86px;z-index:4}nav button{border:0;border-radius:10px;padding:10px 13px;font-weight:bold;white-space:nowrap}nav .on{background:#123f68;color:#fff}nav .lock{opacity:.4}
+main{max-width:950px;margin:auto;padding:12px}.page{display:none}.page.on{display:block}.card{background:#fff;padding:15px;border-radius:15px;margin-bottom:12px;box-shadow:0 2px 10px #0001}h2{margin:0 0 13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{display:block;font-size:12px;font-weight:bold;color:#5b6875;margin-bottom:5px}input,select,textarea{width:100%;padding:11px;border:1px solid #ccd5de;border-radius:10px;font-size:14px}textarea{min-height:80px}.btn{border:0;border-radius:10px;padding:11px 14px;font-weight:bold;margin:6px 4px 0 0}.p{background:#123f68;color:white}.s{background:#16844d;color:white}.w{background:#d88900;color:white}.file{border-style:dashed}.item{border:1px solid #dde4eb;border-radius:10px;padding:12px;margin:9px 0}.muted{font-size:12px;color:#6d7882}.ok{background:#e1f6ea;color:#155d39;padding:10px;border-radius:9px;margin:8px 0}.notice{background:#fff5d8;padding:10px;border-radius:9px;font-size:13px}.search{display:flex;gap:7px}.search input{flex:1}table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #ddd;text-align:left;font-size:13px}.badge{padding:5px 8px;border-radius:15px;background:#d9f4e5;color:#14613c;font-size:11px;font-weight:bold}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+</style></head>
 <body>
-<header>
-<h1>📦 Sales Contract Booking Manager</h1>
-<p>Contract → Booking → Release → USD Payment → Final Record</p>
-</header>
-
-<nav>
-<button class="active" data-page="home">🏠 Home</button>
-<button data-page="booking">🚢 Booking</button>
-<button data-page="payment">💵 Payment</button>
-<button data-page="final">📄 Final Record</button>
-</nav>
-
-<main>
-<section id="home" class="page active">
-<div class="card">
-<h2>🔎 Search Sales Contract</h2>
-<div class="search">
-<input id="homeSearch" placeholder="Sales Contract No.">
-<button class="btn primary" onclick="searchHome()">Search</button>
-</div>
-<div id="homeResult"></div>
-</div>
-
-<div class="card">
-<h2>📄 Upload Sales Contract</h2>
-<div class="notice">PDF/Image upload केल्यानंतर <b>Read Contract</b> दाबा. OCR उपलब्ध माहिती fields मध्ये भरेल. Save करण्यापूर्वी तुम्ही माहिती edit/confirm करू शकता.</div>
-<input id="contractFile" class="filebox" type="file" accept=".pdf,image/*" onchange="previewFile(this)">
-<div id="previewArea"></div>
-<div id="ocrStatus" class="muted"></div>
-<div class="progress"><div id="ocrBar" class="bar"></div></div>
-<button class="btn warning" onclick="readContract()">🔍 Read Contract</button>
-</div>
-
-<div class="card">
-<h2>📝 Contract Information — Confirm / Edit</h2>
-<div class="grid">
-<div><label>Sales Contract No.</label><input id="scNo"></div>
-<div><label>Contract Date</label><input id="scDate" type="date"></div>
-<div><label>Seller</label><input id="seller"></div>
-<div><label>Buyer</label><input id="buyer"></div>
-<div><label>Buyer GSTIN</label><input id="gstin"></div>
-<div><label>Buyer IEC Code</label><input id="iec"></div>
-<div><label>HS Code</label><input id="hs"></div>
-<div><label>PAN</label><input id="pan"></div>
-<div><label>Commodity</label><input id="commodity"></div>
-<div><label>Total Quantity (MT)</label><input id="qty"></div>
-<div><label>Container Plan</label><input id="containers"></div>
-<div><label>Price (USD/MT)</label><input id="price" inputmode="decimal" placeholder="e.g. 2015.00"></div>
-<div><label>Price Term</label><input id="priceTerm" placeholder="e.g. CIF Nhava Sheva, India"></div>
-<div><label>Port of Loading</label><input id="pol"></div>
-<div><label>Port of Discharge</label><input id="pod"></div>
-<div><label>Shipment Period</label><input id="shipment"></div>
-<div><label>Advance Payment (USD)</label><input id="advance"></div>
-<div><label>Transshipment</label><input id="transshipment"></div>
-<div><label>Partial Shipment</label><input id="partial"></div>
-<div class="full"><label>Payment Terms / Remarks</label><textarea id="terms"></textarea></div>
-<div class="full"><label>Original Contract File</label><input id="fileName" disabled></div>
-</div>
-<button class="btn primary" onclick="saveContract()">💾 Confirm & Save Contract</button>
-</div>
-
-<div class="card"><h2>📋 Saved Contracts</h2><div id="allContracts"></div></div>
-</section>
-
-<section id="booking" class="page">
-<div class="card">
-<h2>🚢 Booking</h2>
-<div class="search"><input id="bookingSearch" placeholder="Sales Contract No."><button class="btn primary" onclick="findStage('booking')">Search</button></div>
-<div id="bookingBox"></div>
-</div>
-</section>
-
-<section id="payment" class="page">
-<div class="card">
-<h2>💵 USD Payment</h2>
-<div class="search"><input id="paymentSearch" placeholder="Sales Contract No."><button class="btn primary" onclick="findStage('payment')">Search</button></div>
-<div id="paymentBox"></div>
-</div>
-</section>
-
-<section id="final" class="page">
-<div class="card">
-<h2>📄 Final Record</h2>
-<div class="search"><input id="finalSearch" placeholder="Sales Contract No."><button class="btn primary" onclick="findStage('final')">Search</button></div>
-<div id="finalBox"></div>
-</div>
-</section>
-</main>
-
+<header><h1>📦 Import Contract Tracker</h1><p>Contract → Booking → Advance → Loading/B/L → Invoice → BOE → Final Payment → Final Record</p></header>
+<nav id="nav"></nav><main id="main"></main>
 <script>
-pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-const KEY="SC_BOOKING_MANAGER_V3";
-let db=JSON.parse(localStorage.getItem(KEY)||'{"contracts":[]}');
-let currentSC="";
-
-const $=id=>document.getElementById(id);
-function esc(x){return String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-function save(){localStorage.setItem(KEY,JSON.stringify(db));renderContracts();updateNav()}
-function getSC(no){return db.contracts.find(c=>c.no.toLowerCase()===String(no||"").trim().toLowerCase())}
-function fileInfo(id){let f=$(id)?.files?.[0];return f?{name:f.name,type:f.type,size:f.size}:null}
-
-function previewFile(input){
- let f=input.files[0], area=$("previewArea");area.innerHTML="";
- if(!f)return;
- $("fileName").value=f.name;
- if(f.type.startsWith("image/")){let img=document.createElement("img");img.className="preview";img.src=URL.createObjectURL(f);area.appendChild(img)}
- else area.innerHTML='<div class="muted">PDF selected: '+esc(f.name)+'</div>';
+const K="IMPORT_TRACKER_V2";let db=JSON.parse(localStorage.getItem(K)||'{"contracts":[]}'),cur="";
+const stages=[["home","🏠 Contract"],["booking","🚢 Booking"],["advance","💵 Advance"],["loading","📦 Loading/B/L"],["invoice","🧾 Invoice"],["boe","🛃 Bill of Entry"],["finalpay","💰 Final Payment"],["final","📄 Final Record"]];
+const $=x=>document.getElementById(x), esc=x=>String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+function file(id){let f=$(id)?.files?.[0];return f?{name:f.name,type:f.type}:null}
+function get(n){return db.contracts.find(x=>x.no.toLowerCase()===String(n||"").trim().toLowerCase())}
+function save(){localStorage.setItem(K,JSON.stringify(db));render()}
+function nav(){let c=get(cur);$("nav").innerHTML=stages.map(([id,t])=>{let lock=({advance:!(c?.bookings?.some(x=>x.released)),loading:!c?.advance,invoice:!c?.loading,boe:!c?.invoice,finalpay:!c?.boe,final:!c?.finalpay}[id]||false);return `<button class="${id===page?'on ':''}${lock?'lock':''}" onclick="openPage('${id}')">${t}</button>`}).join("")}
+let page="home";
+function openPage(p,n=cur){let c=get(n);if(p!=="home"&&!c)return;let lock={advance:!(c?.bookings?.some(x=>x.released)),loading:!c?.advance,invoice:!c?.loading,boe:!c?.invoice,finalpay:!c?.boe,final:!c?.finalpay}[p];if(lock)return alert("Complete previous stage first.");page=p;cur=n;render()}
+function shell(title,body){$("main").innerHTML=`<section class="page on"><div class="card"><h2>${title}</h2>${body}</div></section>`;nav()}
+function render(){
+nav();if(page==="home")home();else if(page==="booking")booking();else if(page==="advance")advance();else if(page==="loading")loading();else if(page==="invoice")invoice();else if(page==="boe")boe();else if(page==="finalpay")finalpay();else finalRec()
 }
-
-async function readContract(){
- const f=$("contractFile").files[0];
- if(!f)return alert("First select Sales Contract PDF or Image.");
- $("ocrStatus").textContent="Preparing document...";
- $("ocrBar").style.width="10%";
- try{
-  let canvas=document.createElement("canvas"), ctx=canvas.getContext("2d");
-  if(f.type==="application/pdf" || f.name.toLowerCase().endsWith(".pdf")){
-   const buf=await f.arrayBuffer(), pdf=await pdfjsLib.getDocument({data:buf}).promise;
-   const page=await pdf.getPage(1), vp=page.getViewport({scale:2});
-   canvas.width=vp.width;canvas.height=vp.height;await page.render({canvasContext:ctx,viewport:vp}).promise;
-  }else{
-   const img=new Image();img.src=URL.createObjectURL(f);await new Promise((r,j)=>{img.onload=r;img.onerror=j});
-   canvas.width=img.naturalWidth;canvas.height=img.naturalHeight;ctx.drawImage(img,0,0);
-  }
-  $("ocrStatus").textContent="Reading contract with OCR...";
-  $("ocrBar").style.width="30%";
-  const result=await Tesseract.recognize(canvas,"eng",{logger:m=>{
-   if(m.status==="recognizing text"&&m.progress)$("ocrBar").style.width=(30+m.progress*65)+"%";
-  }});
-  const text=result.data.text;
-  $("ocrStatus").textContent="OCR complete. Please verify the fields.";
-  $("ocrBar").style.width="100%";
-  extractFields(text);
- }catch(e){console.error(e);$("ocrStatus").textContent="OCR failed: "+e.message;alert("Could not read this file. You can enter/edit the fields manually.")}
-}
-
-function clean(s){return String(s||"").replace(/\s+/g," ").trim()}
-function between(text,a,b){let i=text.toLowerCase().indexOf(a.toLowerCase());if(i<0)return"";let s=text.slice(i+a.length);let j=b?s.toLowerCase().indexOf(b.toLowerCase()):s.length;return clean(s.slice(0,j<0?s.length:j)).replace(/^[:\-]\s*/,"")}
-function extractFields(t){
-  // OCR can break labels/lines, so use both label-based and line-based extraction.
-  let x=(t||'').replace(/\r/g,'\n').replace(/[“”]/g,'"').replace(/[’]/g,"'");
-  let lines=x.split(/\n+/).map(v=>v.replace(/\s+/g,' ').trim()).filter(Boolean);
-  const lineAfter=(label)=>{
-    const re=new RegExp(label+'\\s*[:\\-]?\\s*(.*)','i');
-    for(const line of lines){let m=line.match(re);if(m&&m[1])return clean(m[1]);}
-    return '';
-  };
-  const firstMatch=(re)=>{let m=x.match(re);return m?clean(m[1]||m[0]):''};
-  const normNum=s=>clean(s).replace(/[^0-9.,]/g,'').replace(/,{2,}/g,',').replace(/^,|,$/g,'');
-
-  // Contract number: specifically prefer "Our sales contract", not the introductory sentence.
-  let sc=firstMatch(/our\s+sales\s+contract\s*[:\-]?\s*([A-Z0-9]+(?:[-\/][A-Z0-9]+)+)/i);
-  if(!sc) sc=firstMatch(/sales\s+contract\s*[:\-]\s*([A-Z0-9]+(?:[-\/][A-Z0-9]+)+)/i);
-  if(!sc){for(const l of lines){let m=l.match(/\b([A-Z]{2,6}-\d{2,4}[A-Z]?[-]\d{3,8})\b/i);if(m){sc=m[1];break;}}}
-
-  let date=firstMatch(/\bdate\s*[:\-]?\s*(\d{1,2}[.\/-]\d{1,2}[.\/-]\d{4})/i);
-  let seller=firstMatch(/confirm\s+that\s+M\/S\.\s*([^\n]+?)\s+agrees\s+to\s+sell/i);
-  if(!seller) seller=firstMatch(/M\/S\.\s*([^\n]+?)\s+agrees\s+to\s+sell/i);
-  let buyer=firstMatch(/agrees\s+to\s+sell\s+to\s+M\/S\.\s*([^\n]+?)(?=\s+GSTIN|\s+IEC|\s+HS\s*CODE|\s+PAN|\s*$)/i);
-  if(!buyer){
-    const li=lines.findIndex(l=>/agrees\s+to\s+sell\s+to/i.test(l));
-    if(li>=0){let m=lines[li].match(/sell\s+to\s+M\/S\.\s*(.*?)(?:\s+GSTIN|\s+IEC|\s+HS\s*CODE|\s+PAN|$)/i);if(m)buyer=clean(m[1]);}
-  }
-
-  let gst=firstMatch(/GSTIN\s*[:\-]?\s*([A-Z0-9]+)/i);
-  let iec=firstMatch(/IEC\s*CODE\s*[:\-]?\s*([A-Z0-9]+)/i);
-  let hs=firstMatch(/HS\s*CODE\s*[:\-]?\s*([0-9]{6,10})/i);
-  let pan=firstMatch(/PAN\s*[:\-]?\s*([A-Z0-9]{10})/i);
-
-  let commodity=clean((lineAfter('Commodity')||between(x,'Commodity','Price')));
-  let qtyBlock=clean(lineAfter('Quantity')||between(x,'Quantity','Packing'));
-  let qty=firstMatchFrom(qtyBlock,/([0-9]+(?:\.[0-9]+)?)\s*MT/i) || firstMatchFrom(qtyBlock,/([0-9]+(?:\.[0-9]+)?)/);
-  let containers=firstMatchFrom(qtyBlock,/([0-9]+\s*[xX×]\s*20['’]?\s*CONTAINERS?)/i);
-  if(!containers) containers=firstMatchFrom(x,/([0-9]+\s*[xX×]\s*20['’]?\s*CONTAINERS?)/i);
-
-  // Price: prefer the amount immediately following USD / US$ and located after the Price label.
-  let price='';
-  let priceSection=between(x,'Price','Quantity');
-  let pm=priceSection.match(/(?:USD|US\s*\$|US\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i);
-  if(pm) price=normNum(pm[1]);
-  if(!price){let pm2=x.match(/\b(?:USD|US\s*\$|US\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)\s*\/\s*MT/i);if(pm2)price=normNum(pm2[1]);}
-
-  let priceTerm=firstMatch(/\b(CIF\s+[A-Z][^\n,;]+(?:,\s*[A-Z][^\n,;]+)?)/i);
-  if(!priceTerm && /CIF\s+NHAVA SHEVA/i.test(x)) priceTerm='CIF NHAVA SHEVA, INDIA';
-  let pol=clean(lineAfter('Port of Loading')||between(x,'Port of Loading','Port of Discharge'));
-  let pod=clean(lineAfter('Port of Discharge')||between(x,'Port of Discharge','Transshipment'));
-  let trans=clean(lineAfter('Transshipment')||between(x,'Transshipment','Partial Shipment'));
-  let partial=clean(lineAfter('Partial Shipment')||between(x,'Partial Shipment','Payment Terms'));
-  let shipment=clean(between(x,'Shipment Period','Advance Received')||lineAfter('Shipment Period'));
-
-  // Advance amount: search specifically for "advance", not any USD amount.
-  let advance='';
-  let am=x.match(/(?:USD|US\s*\$|US\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)\s*advance/i);
-  if(am) advance=normNum(am[1]);
-  if(!advance){am=x.match(/advance[^\n]{0,100}?(?:USD|US\s*\$|US\$)\s*([0-9,]+(?:\.[0-9]{1,2})?)/i);if(am)advance=normNum(am[1]);}
-
-  let terms=clean(between(x,'PAYMENT TERMS','CONDITIONS'));
-  if(!terms)terms=clean(lines.filter(l=>/advance|payment|documents through bank/i.test(l)).join(' '));
-
-  $('scNo').value=sc;
-  $('scDate').value=toDate(date);
-  $('seller').value=seller;
-  $('buyer').value=buyer;
-  $('gstin').value=gst;
-  $('iec').value=iec;
-  $('hs').value=hs;
-  $('pan').value=pan;
-  $('commodity').value=commodity;
-  $('qty').value=qty;
-  $('containers').value=containers;
-  $('price').value=price;
-  $('priceTerm').value=priceTerm;
-  $('pol').value=pol;
-  $('pod').value=pod;
-  $('shipment').value=shipment;
-  $('advance').value=advance;
-  $('transshipment').value=trans;
-  $('partial').value=partial;
-  $('terms').value=terms;
-}
-function firstMatchFrom(text,re){let m=String(text||'').match(re);return m?clean(m[1]||m[0]):''}
-
-function toDate(d){if(!d)return"";let m=d.match(/(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})/);return m?`${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`:""}
-
-function saveContract(){
- let no=$("scNo").value.trim();if(!no)return alert("Sales Contract No. required.");
- if(getSC(no))return alert("This Contract already exists. Search it instead.");
- db.contracts.push({
-  no,date:$("scDate").value,seller:$("seller").value,buyer:$("buyer").value,gstin:$("gstin").value,iec:$("iec").value,hs:$("hs").value,pan:$("pan").value,
-  commodity:$("commodity").value,qty:$("qty").value,containers:$("containers").value,price:$("price").value,priceTerm:$("priceTerm").value,
-  pol:$("pol").value,pod:$("pod").value,shipment:$("shipment").value,advance:$("advance").value,transshipment:$("transshipment").value,partial:$("partial").value,terms:$("terms").value,
-  file:fileInfo("contractFile"),bookings:[],payment:null,final:null,created:new Date().toISOString()
- });
- save();currentSC=no;alert("Contract confirmed and saved.");openStage("booking",no);
-}
-
-function renderContracts(){
- let el=$("allContracts");if(!db.contracts.length){el.innerHTML='<div class="empty">No Sales Contracts yet.</div>';return}
- el.innerHTML=db.contracts.slice().reverse().map(c=>`
- <div class="item"><b>${esc(c.no)}</b> <span class="badge ${c.final?'done':''}">${c.final?'COMPLETED':'IN PROGRESS'}</span>
- <div class="muted">${esc(c.buyer||"-")} | ${esc(c.commodity||"-")} | ${esc(c.qty||"-")} MT</div>
- <div class="stage"><span class="done">Contract ✓</span><span class="${c.bookings.length?'done':''}">Booking ${c.bookings.length?'✓':''}</span><span class="${c.payment?'done':''}">Payment ${c.payment?'✓':''}</span><span class="${c.final?'done':''}">Final ${c.final?'✓':''}</span></div>
- <button class="btn primary" onclick="openStage('booking','${esc(c.no)}')">Open</button></div>`).join("");
-}
-function searchHome(){let c=getSC($("homeSearch").value);$("homeResult").innerHTML=c?`<div class="item"><b>${esc(c.no)}</b><br>${esc(c.buyer||"-")} | ${esc(c.commodity||"-")} | ${esc(c.qty||"-")} MT<br><button class="btn primary" onclick="openStage('booking','${esc(c.no)}')">Go to Booking</button></div>`:'<div class="empty">Sales Contract not found.</div>'}
-function nav(page){
- document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
- document.querySelector(`[data-page="${page}"]`).classList.add("active");
- document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));$(page).classList.add("active");
-}
-document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{if(!b.classList.contains("locked"))nav(b.dataset.page)});
-function updateNav(){
- let c=getSC(currentSC);
- document.querySelector('[data-page="payment"]').classList.toggle("locked",!(c&&c.bookings.some(b=>b.released)));
- document.querySelector('[data-page="final"]').classList.toggle("locked",!(c&&c.payment&&c.payment.status==="Paid"));
-}
-function openStage(page,no){
- let c=getSC(no);if(!c)return;
- currentSC=no;
- if(page==="payment"&&!c.bookings.some(b=>b.released))return alert("Release Booking first.");
- if(page==="final"&&!(c.payment&&c.payment.status==="Paid"))return alert("Complete Payment first.");
- nav(page);$(page+"Search").value=no;findStage(page);
-}
-function findStage(page){
- let c=getSC($(page+"Search").value),box=$(page+"Box");currentSC=c?.no||$(page+"Search").value;updateNav();
- if(!c){box.innerHTML='<div class="empty">Sales Contract not found.</div>';return}
- if(page==="booking")bookingUI(c,box);if(page==="payment")paymentUI(c,box);if(page==="final")finalUI(c,box);
-}
-function head(c){return `<div class="item"><b>${esc(c.no)}</b><div class="muted">${esc(c.buyer||"-")} | ${esc(c.commodity||"-")} | ${esc(c.qty||"-")} MT | USD ${esc(c.price||"-")}/MT</div></div>`}
-function bookingUI(c,box){
- box.innerHTML=head(c)+`
- <div class="card"><h3>➕ Add Booking</h3><div class="grid">
- <div><label>Booking No.</label><input id="bNo"></div><div><label>Container No.</label><input id="bCont"></div>
- <div><label>Quantity (MT)</label><input id="bQty" type="number" step="0.001"></div><div><label>Vessel</label><input id="bVessel"></div>
- <div><label>ETD</label><input id="bETD" type="date"></div><div><label>ETA</label><input id="bETA" type="date"></div>
- <div class="full"><label>Booking Document</label><input id="bFile" class="filebox" type="file" accept=".pdf,image/*"></div>
- </div><button class="btn primary" onclick="addBooking('${esc(c.no)}')">Save Booking</button></div>
- <h3>All Bookings</h3>${c.bookings.length?c.bookings.map((b,i)=>`
- <div class="item"><b>Booking ${i+1} — ${esc(b.no||"-")}</b><br>Container: ${esc(b.container||"-")} | Qty: ${esc(b.qty||"-")} MT<br>Vessel: ${esc(b.vessel||"-")} | ETA: ${esc(b.eta||"-")}<br>
- ${b.released?'<span class="badge done">RELEASED ✓</span><button class="btn success" onclick="openStage(\'payment\',\''+esc(c.no)+'\')">Payment →</button>':'<span class="badge">NOT RELEASED</span><button class="btn warning" onclick="releaseBooking(\''+esc(c.no)+'\','+i+')">🚢 RELEASE</button>'}</div>`).join(""):'<div class="empty">No Booking yet.</div>'}`;
-}
-function addBooking(no){if(!$("bNo").value.trim())return alert("Booking No. required.");let c=getSC(no);c.bookings.push({no:$("bNo").value,container:$("bCont").value,qty:$("bQty").value,vessel:$("bVessel").value,etd:$("bETD").value,eta:$("bETA").value,file:fileInfo("bFile"),released:false});save();bookingUI(c,$("bookingBox"));alert("Booking saved.")}
-function releaseBooking(no,i){let c=getSC(no);c.bookings[i].released=true;c.bookings[i].releaseDate=new Date().toISOString();save();alert("Booking Released.");openStage("payment",no)}
-
-function paymentUI(c,box){
- if(!c.bookings.some(b=>b.released)){box.innerHTML=head(c)+'<div class="notice">🔒 Release a Booking first.</div>';return}
- box.innerHTML=head(c)+`<div class="successbox">🚢 Booking Released — Payment unlocked</div>
- <div class="card"><h3>💵 USD Payment</h3><div class="grid">
- <div><label>Payment Amount (USD)</label><input id="pAmt" type="number" step="0.01"></div><div><label>Payment Date</label><input id="pDate" type="date"></div>
- <div><label>Payment Reference</label><input id="pRef"></div><div><label>Status</label><select id="pStatus"><option>Paid</option><option>Pending</option></select></div>
- <div class="full"><label>Payment Copy</label><input id="pFile" class="filebox" type="file" accept=".pdf,image/*"></div></div>
- <button class="btn success" onclick="completePayment('${esc(c.no)}')">💵 PAYMENT DONE</button></div>
- ${c.payment?`<div class="item"><b>Saved Payment</b><br>USD ${esc(c.payment.amount)} | ${esc(c.payment.date||"-")} | ${esc(c.payment.status)}<br>${esc(c.payment.ref||"-")} ${c.payment.status==="Paid"?`<br><button class="btn primary" onclick="openStage('final','${esc(c.no)}')">Final Record →</button>`:""}</div>`:""}`;
-}
-function completePayment(no){let c=getSC(no);if($("pStatus").value!=="Paid")return alert("Payment Status must be Paid.");if(!$("pAmt").value)return alert("Payment Amount required.");c.payment={amount:$("pAmt").value,date:$("pDate").value,ref:$("pRef").value,status:"Paid",file:fileInfo("pFile"),done:new Date().toISOString()};save();alert("Payment completed.");openStage("final",no)}
-
-function finalUI(c,box){
- if(!(c.payment&&c.payment.status==="Paid")){box.innerHTML=head(c)+'<div class="notice">🔒 Complete USD Payment first.</div>';return}
- box.innerHTML=head(c)+`<div class="successbox">💵 Payment Completed — Final Record unlocked</div>
- <div class="card"><h3>📄 Final Document</h3><label>Final Document PDF / Image</label><input id="fFile" class="filebox" type="file" accept=".pdf,image/*">
- <button class="btn success" onclick="completeFinal('${esc(c.no)}')">✅ SAVE FINAL RECORD</button></div>
- ${c.final?`<div class="item"><b>✅ COMPLETED</b><br>Final Document: ${esc(c.final.file?.name||"-")}<br>${new Date(c.final.date).toLocaleString()}</div>`:""}`;
-}
-function completeFinal(no){let c=getSC(no),f=fileInfo("fFile");if(!f)return alert("Upload Final Document first.");c.final={file:f,date:new Date().toISOString()};save();finalUI(c,$("finalBox"));alert("Final Record completed.");}
-renderContracts();updateNav();
-</script>
-</body>
-</html>
+function home(){shell("🔎 Sales Contract",`<div class="search"><input id="q" placeholder="Sales Contract No."><button class="btn p" onclick="search()">Search</button></div><hr><div class="notice">Upload your Sales Contract, then confirm/edit the master information.</div><input id="cf" class="file" type="file" accept=".pdf,image/*"><div class="grid" style="margin-top:10px">
+${field("sc","Sales Contract No.")}${field("date","Contract Date","date")}${field("seller","Seller")}${field("buyer","Buyer")}${field("gst","GSTIN")}${field("iec","IEC")}${field("pan","PAN")}${field("hs","HS Code")}${field("commodity","Commodity","",1)}${field("qty","Quantity (MT)")}${field("cp","Container Plan")}${field("price","Price (USD/MT)")}${field("term","Price Term")}${field("pol","Port of Loading")}${field("pod","Port of Discharge")}${field("ship","Shipment Period")}${field("adv","Advance (USD)")}${field("trans","Transshipment")}${field("partial","Partial Shipment")}${field("remarks","Payment Terms / Remarks","textarea",1)}</div><button class="btn p" onclick="create()">💾 Save Contract</button><h3>Saved Contracts</h3><div id="list"></div>`);list()}
+function field(id,l,type="",full=0){return `<div class="${full?'full':''}"><label>${l}</label>${type==="textarea"?`<textarea id="${id}"></textarea>`:`<input id="${id}" type="${type||'text'}">`}</div>`}
+function create(){let no=$("sc").value.trim();if(!no)return alert("Contract No. required.");if(get(no))return alert("Already exists.");db.contracts.push({no,date:$("date").value,seller:$("seller").value,buyer:$("buyer").value,gstin:$("gst").value,iec:$("iec").value,pan:$("pan").value,hs:$("hs").value,commodity:$("commodity").value,qty:$("qty").value,containerPlan:$("cp").value,price:$("price").value,term:$("term").value,pol:$("pol").value,pod:$("pod").value,ship:$("ship").value,advanceAmt:$("adv").value,trans:$("trans").value,partial:$("partial").value,remarks:$("remarks").value,contractFile:file("cf"),bookings:[]});save();cur=no;alert("Contract saved");openPage("booking")}
+function list(){$("list").innerHTML=db.contracts.map(c=>`<div class="item"><b>${esc(c.no)}</b><br>${esc(c.buyer)} | ${esc(c.commodity)} | ${esc(c.qty)} MT | USD ${esc(c.price)}/MT<br><button class="btn p" onclick="openPage('booking','${esc(c.no)}')">Open</button></div>`).join("")||"<p>No contracts.</p>"}
+function search(){let c=get($("q").value);if(c){cur=c.no;openPage("booking",c.no)}else alert("Contract not found")}
+function head(c){return `<div class="item"><b>${esc(c.no)}</b><br><span class="muted">${esc(c.buyer)} | ${esc(c.commodity)} | Contract ${esc(c.qty)} MT | USD ${esc(c.price)}/MT</span></div>`}
+function booking(){let c=get(cur);shell("🚢 Booking",head(c)+`<div class="card"><div class="grid">${field("bn","Booking No.")}${field("cn","Container No.")}${field("bq","Quantity (MT)")}${field("bv","Vessel")}${field("be","ETD","date")}${field("ba","ETA","date")}${field("bf","Booking PDF/Image","file",1)}</div><button class="btn p" onclick="addB()">Save Booking</button></div><h3>All Bookings</h3>${c.bookings.map((b,i)=>`<div class="item"><b>Booking ${i+1}: ${esc(b.no)}</b><br>Container ${esc(b.container)} | ${esc(b.qty)} MT | ${esc(b.vessel)} | ETA ${esc(b.eta)}<br>${b.released?'<span class="badge">RELEASED ✓</span>':'<button class="btn w" onclick="releaseB('+i+')">🚢 RELEASE</button>'}</div>`).join("")||"<p>No bookings.</p>"}`)}
+function addB(){let c=get(cur);c.bookings.push({no:$("bn").value,container:$("cn").value,qty:$("bq").value,vessel:$("bv").value,etd:$("be").value,eta:$("ba").value,file:file("bf"),released:false});save();booking()}
+function releaseB(i){get(cur).bookings[i].released=true;save();alert("Booking released. Advance unlocked.");openPage("advance",cur)}
+function advance(){let c=get(cur);shell("💵 Advance Payment",head(c)+`<div class="ok">Booking released — Advance Payment unlocked.</div><div class="grid">${field("aa","Advance USD")}${field("ad","Payment Date","date")}${field("ar","Exchange Rate")}${field("ai","INR Amount")}${field("ax","Reference")}${field("af","Payment Copy","file",1)}</div><button class="btn s" onclick="saveAdvance()">Save Advance Payment</button>`)}
+function saveAdvance(){let c=get(cur);c.advance={amount:$("aa").value,date:$("ad").value,rate:$("ar").value,inr:$("ai").value,ref:$("ax").value,file:file("af")};save();openPage("loading",cur)}
+function loading(){let c=get(cur);shell("📦 Loading / Bill of Lading",head(c)+`<div class="ok">Advance completed — Loading/B/L unlocked.</div><div class="grid">${field("lb","B/L No.")}${field("lv","Vessel")}${field("lg","Voyage")}${field("ld","Loading Date","date")}${field("lq","Loaded Quantity (KG)")}${field("lc","Container / Seal No.","textarea",1)}${field("lf","Loading / B/L PDF","file",1)}</div><button class="btn s" onclick="saveLoading()">Save Loading/B/L</button>`)}
+function saveLoading(){let c=get(cur);c.loading={bl:$("lb").value,vessel:$("lv").value,voyage:$("lg").value,date:$("ld").value,qty:$("lq").value,containers:$("lc").value,file:file("lf")};save();openPage("invoice",cur)}
+function invoice(){let c=get(cur);shell("🧾 Final Invoice",head(c)+`<div class="ok">Loading/B/L completed — Invoice unlocked.</div><div class="grid">${field("ino","Invoice No.")}${field("id","Invoice Date","date")}${field("iq","Invoice Quantity (MT)")}${field("ip","Unit Price USD/MT")}${field("iv","Invoice Amount USD")}${field("ia","Advance Deducted USD")}${field("ib","Balance USD")}${field("if","Invoice Copy","file",1)}</div><button class="btn s" onclick="saveInvoice()">Save Final Invoice</button>`)}
+function saveInvoice(){let c=get(cur),v=+($("iv").value||0),a=+($("ia").value||0);c.invoice={no:$("ino").value,date:$("id").value,qty:$("iq").value,price:$("ip").value,amount:$("iv").value,advance:$("ia").value,balance:(v-a).toFixed(2),file:file("if")};save();openPage("boe",cur)}
+function boe(){let c=get(cur);shell("🛃 Bill of Entry",head(c)+`<div class="ok">Invoice completed — Bill of Entry unlocked.</div><div class="grid">${field("ben","BE No.")}${field("bed","BE Date","date")}${field("bev","Invoice Value USD")}${field("bea","Assessable Value INR")}${field("bedu","Total Duty INR")}${field("ber","Exchange Rate")}${field("beo","OOC No.")}${field("beod","OOC Date","date")}${field("bef","BOE PDF","file",1)}</div><button class="btn s" onclick="saveBoe()">Save Bill of Entry</button>`)}
+function saveBoe(){let c=get(cur);c.boe={no:$("ben").value,date:$("bed").value,value:$("bev").value,assess:$("bea").value,duty:$("bedu").value,rate:$("ber").value,ooc:$("beo").value,oocDate:$("beod").value,file:file("bef")};save();openPage("finalpay",cur)}
+function finalpay(){let c=get(cur);shell("💰 Final Payment",head(c)+`<div class="ok">Bill of Entry completed — Final Payment unlocked.</div><div class="grid">${field("fa","Final Payment USD")}${field("fd","Payment Date","date")}${field("fr","Exchange Rate")}${field("fi","INR Amount")}${field("fx","Reference")}${field("ff","Payment Copy","file",1)}</div><button class="btn s" onclick="saveFinalPay()">Save Final Payment</button>`)}
+function saveFinalPay(){let c=get(cur);c.finalpay={amount:$("fa").value,date:$("fd").value,rate:$("fr").value,inr:$("fi").value,ref:$("fx").value,file:file("ff")};save();openPage("final",cur)}
+function finalRec(){let c=get(cur);shell("📄 Final Record",head(c)+`<div class="ok">Final Payment completed — Final Record unlocked.</div><table><tr><th>Stage</th><th>Record</th></tr><tr><td>Contract</td><td>USD ${esc(c.price)}/MT | ${esc(c.qty)} MT</td></tr><tr><td>Booking</td><td>${c.bookings.length} booking(s)</td></tr><tr><td>Advance</td><td>USD ${esc(c.advance?.amount)}</td></tr><tr><td>Loading/B/L</td><td>${esc(c.loading?.bl)} | ${esc(c.loading?.qty)} KG</td></tr><tr><td>Invoice</td><td>${esc(c.invoice?.no)} | USD ${esc(c.invoice?.amount)}</td></tr><tr><td>Bill of Entry</td><td>${esc(c.boe?.no)} | Duty INR ${esc(c.boe?.duty)}</td></tr><tr><td>Final Payment</td><td>USD ${esc(c.finalpay?.amount)} | INR ${esc(c.finalpay?.inr)}</td></tr></table><div class="card"><label>Final Document</label><input id="ffinal" class="file" type="file" accept=".pdf,image/*"><button class="btn s" onclick="complete()">✅ Complete Final Record</button></div>${c.final?'<div class="ok">✅ FINAL RECORD COMPLETED</div>':''}`)}
+function complete(){let c=get(cur),f=file("ffinal");if(!f)return alert("Upload final document.");c.final={file:f,date:new Date().toISOString()};save();finalRec()}
+render();
+</script></body></html>
