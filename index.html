@@ -809,7 +809,7 @@ function invoice(){
  <div id="invoiceContainerChoices" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px">
  ${rows.map(x=>`<label style="display:flex;align-items:center;gap:10px;border:1px solid #ccd5de;border-radius:10px;padding:12px;background:#f8fafc;cursor:pointer;font-weight:normal"><input class="invoiceContainerCheck" type="checkbox" value="${x.i}" onchange="showSelectedInvoiceContainers()" style="width:20px;height:20px"><span><b>${x.qty.toFixed(3)} MT</b> — ${esc(x.container)}<br><span class="muted">Seal: ${esc(x.seal||'-')} | B/L: ${esc(x.bl||'-')}</span></span></label>`).join('')||'<div class="notice">No loading container found</div>'}
  </div>
- <div class="muted" style="margin-top:8px">प्रत्येक container समोरील checkbox tick करा. एकाच वेळी 1 किंवा अनेक containers select करता येतील.</div>
+ <div class="muted" style="margin-top:8px">प्रत्येक container समोरील checkbox tick करा. एकाच वेळी 1 किंवा अनेक containers select करता येतील. Select केल्यानंतर खाली Bill of Entry Details उघडतील.</div>
  <div id="selectedInvoiceRows" style="margin-top:12px"></div></div>
  <div id="invoiceDetails" class="card" style="display:none"><h3 style="margin:0 0 10px">Step 3 — Invoice Details & Upload</h3>
  <div class="grid">${field("ino","Invoice No.")}${field("id","Invoice Date","date")}${field("iq","Invoice Quantity (MT)")}${field("ip","Unit Price USD/MT")}${field("iv","Invoice Amount USD")}${field("ia","Advance Deducted USD")}${field("ib","Balance USD")}</div>
@@ -1133,9 +1133,16 @@ function selectedBoeData(){
 function toggleAllBoeContainers(checked){document.querySelectorAll('.boeContainerCheck').forEach(x=>x.checked=checked);showSelectedBoeContainers();}
 function showSelectedBoeContainers(){
  const box=$("selectedBoeRows"); if(!box)return;
+ const details=$("boeDetails");
  const rows=selectedBoeData();
  box.innerHTML=rows.length?`<div class="card" style="margin-top:12px"><h4 style="margin:0 0 8px">Selected Container(s)</h4><div class="registerWrap"><table style="min-width:900px"><thead><tr><th>Row</th><th>Loading Qty (MT)</th><th>Container No.</th><th>Seal No.</th><th>B/L No.</th><th>Invoice No.</th></tr></thead><tbody>${rows.map((x,i)=>`<tr><td>${i+1}</td><td>${x.qty.toFixed(3)}</td><td>${esc(x.container)}</td><td>${esc(x.seal||'-')}</td><td>${esc(x.bl||'-')}</td><td>${esc(x.invoiceNo||'-')}</td></tr>`).join('')}</tbody></table></div></div>`:'<div class="notice" style="margin-top:10px">Select one or more containers above.</div>';
- const total=rows.reduce((a,x)=>a+x.qty,0); if($("beQty"))$("beQty").value=total?total.toFixed(3):'';
+ const total=rows.reduce((a,x)=>a+x.qty,0);
+ if($("beQty"))$("beQty").value=total?total.toFixed(3):'';
+ // Details must appear only AFTER at least one container is selected, exactly like Invoice.
+ if(details){
+   details.style.display=rows.length?'block':'none';
+   if(rows.length) setTimeout(()=>details.scrollIntoView({behavior:'smooth',block:'start'}),50);
+ }
 }
 function boe(){
  let c=boeSearched?get(cur):null;
@@ -1153,7 +1160,7 @@ function boe(){
  <div id="boeContainerChoices" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px">
  ${rows.map(x=>`<label style="display:flex;align-items:center;gap:10px;border:1px solid #ccd5de;border-radius:10px;padding:12px;background:#f8fafc;cursor:pointer;font-weight:normal"><input class="boeContainerCheck" type="checkbox" value="${x.i}" onchange="showSelectedBoeContainers()" style="width:20px;height:20px"><span><b>${x.qty.toFixed(3)} MT</b> — ${esc(x.container)}<br><span class="muted">Seal: ${esc(x.seal||'-')} | B/L: ${esc(x.bl||'-')}</span></span></label>`).join('')||'<div class="notice">No loading container found</div>'}
  </div>
- <div class="muted" style="margin-top:8px">प्रत्येक container समोरील checkbox tick करा. एकाच वेळी 1 किंवा अनेक containers select करता येतील.</div>
+ <div class="muted" style="margin-top:8px">प्रत्येक container समोरील checkbox tick करा. एकाच वेळी 1 किंवा अनेक containers select करता येतील. Select केल्यानंतर खाली Bill of Entry Details उघडतील.</div>
  <div id="selectedBoeRows" style="margin-top:12px"></div></div>
  <div id="boeDetails" class="card" style="display:none"><h3 style="margin:0 0 10px">Step 3 — Bill of Entry Details & Upload</h3>
  <div class="grid">${field("ben","BE No.")}${field("bed","BE Date","date")}${field("beQty","BE Quantity (MT)")}${field("bea","Assessable Value INR")}${field("bebcd","BCD INR")}${field("besws","SWS INR")}${field("beigst","IGST INR")}${field("ber","Exchange Rate")}${field("bech","Challan No.")}</div>
