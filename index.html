@@ -981,11 +981,31 @@ function parseInvoiceText(x){
      if(dm){ const d=invoiceDateFromText('Invoice Date: '+dm[1],[dm[1]]); if(d) invoiceDate=d; }
    }
  }
- // Fallback when OCR loses the Invoice Date label.
+ // Strong fallback when OCR/PDF text loses the Invoice Date label.
  if(!invoiceDate){
-   const ds=[...raw.matchAll(/\b(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}|\d{4}[\/.\-]\d{1,2}[\/.\-]\d{1,2}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4}|[A-Za-z]{3,9}\s+\d{1,2},?\s+\d{2,4})\b/g)];
-   for(const m of ds){const d=invoiceDateFromText('Invoice Date: '+m[1],[m[1]]);if(d){invoiceDate=d;break;}}
+   const dateCandidates=[];
+   const addCandidate=(rawDate, pos=0)=>{
+     let d=invoiceDateFromText('Invoice Date: '+String(rawDate).trim(),[String(rawDate).trim()]);
+     if(d) dateCandidates.push({d,pos});
+   };
+   // Normal dates, including OCR spaces around separators.
+   const compact=raw.replace(/(\d)\s*[\/.-]\s*(\d)\s*[\/.-]\s*(\d{2,4})/g,'$1/$2/$3');
+   for(const m of compact.matchAll(/(?:^|[^0-9])(\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4})(?![0-9])/g)) addCandidate(m[1],m.index||0);
+   for(const m of compact.matchAll(/(?:^|[^0-9])(\d{4}[\/.-]\d{1,2}[\/.-]\d{1,2})(?![0-9])/g)) addCandidate(m[1],m.index||0);
+   for(const m of raw.matchAll(/(?:^|\s)(\d{1,2}[-\/. ]+[A-Za-z]{3,12}[-\/. ]+\d{2,4}|[A-Za-z]{3,12}[-\/. ]+\d{1,2},?[-\/. ]+\d{2,4})(?=$|\s)/g)) addCandidate(m[1],m.index||0);
+   // If there are several dates, prefer one near invoice/date wording and the current year.
+   const scored=dateCandidates.map(x=>{
+     const ctx=raw.slice(Math.max(0,x.pos-140),Math.min(raw.length,x.pos+140));
+     let score=0;
+     if(/invoice|inv\.?|dated|date|issued/i.test(ctx)) score+=20;
+     if(/2026|26(?![0-9])/i.test(x.d)) score+=5;
+     if(/contract|shipment|loading|sailing|eta|etd|validity/i.test(ctx)) score-=12;
+     return {...x,score};
+   }).sort((a,b)=>b.score-a.score||a.pos-b.pos);
+   if(scored.length) invoiceDate=scored[0].d;
  }
+ // Final safety: write a valid HTML date only.
+ if(invoiceDate && !/^\d{4}-\d{2}-\d{2}$/.test(invoiceDate)) invoiceDate='';
 
  let qty=firstMatch(norm,[
   new RegExp('(?:invoice\\s+quantity|total\\s+quantity|quantity|qty|net\\s+weight|total\\s+net\\s+weight)\\s*(?:\\(\\s*M\\.?T\\.?\\s*\\)|M\\.?T\\.?|metric\\s+tons?)?\\s*[:=\\-]?\\s*'+numPat,'i'),
