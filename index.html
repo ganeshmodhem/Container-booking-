@@ -879,15 +879,15 @@ function invoiceNumberFromText(norm,lines){
 function invoiceDateFromText(norm,lines){
  const labels='(?:invoice\s+date|date\s+of\s+invoice|invoice\s+issued\s+date|date\s+issued|inv\.?\s+date|date\s+of\s+issue|issue\s+date)';
  const pats=[
-  new RegExp(labels+'\\s*[:\-]?\\s*(\\d{1,2}[\\/\\-.]\\d{1,2}[\\/\\-.]\\d{2,4})','i'),
+  new RegExp(labels+'\\s*[:\-]?\\s*(\\d{1,2}[-/.]\\d{1,2}[-/.]\\d{2,4})','i'),
   new RegExp(labels+'\\s*[:\-]?\\s*(\\d{1,2}\\s*[A-Za-z]{3,9}\\s*\\d{2,4}|[A-Za-z]{3,9}\\s+\\d{1,2},?\\s+\\d{2,4})','i'),
-  new RegExp(labels+'\\s*[:\-]?\\s*(\\d{4}[\\/\\-.]\\d{1,2}[\\/\\-.]\\d{1,2})','i')
+  new RegExp(labels+'\\s*[:\-]?\\s*(\\d{4}[-/.]\\d{1,2}[-/.]\\d{1,2})','i')
  ];
  const convert=d=>{
    d=String(d||'').replace(/,/g,' ').replace(/\\s+/g,' ').trim();
-   let a=d.match(/^(\\d{4})[\\/\\-.](\\d{1,2})[\\/\\-.](\\d{1,2})$/);
+   let a=d.match(/^(\\d{4})[-/.](\\d{1,2})[-/.](\\d{1,2})$/);
    if(a)return `${a[1]}-${String(a[2]).padStart(2,'0')}-${String(a[3]).padStart(2,'0')}`;
-   a=d.match(/^(\\d{1,2})[\\/\\-.](\\d{1,2})[\\/\\-.](\\d{2,4})$/);
+   a=d.match(/^(\\d{1,2})[-/.](\\d{1,2})[-/.](\\d{2,4})$/);
    if(a){let y=a[3];if(y.length===2)y='20'+y;return `${y}-${String(a[2]).padStart(2,'0')}-${String(a[1]).padStart(2,'0')}`;}
    const t=Date.parse(d);if(!isNaN(t))return new Date(t).toISOString().slice(0,10);
    return '';
