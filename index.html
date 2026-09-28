@@ -25,7 +25,9 @@ function render(){
 nav();if(page==="home")home();else if(page==="booking")booking();else if(page==="advance")advance();else if(page==="loading")loading();else if(page==="invoice")invoice();else if(page==="boe")boe();else if(page==="finalpay")finalpay();else finalRec()
 }
 function home(){shell("🔎 Sales Contract",`<div class="search"><input id="q" placeholder="Sales Contract No."><button class="btn p" onclick="search()">Search</button></div><hr><div class="notice">Upload your Sales Contract, then confirm/edit the master information.</div><input id="cf" class="file" type="file" accept=".pdf,image/*"><button class="btn w" onclick="readContract()">🔍 Read Contract</button><div id="ocrStatus" class="notice">Select a PDF/Image and tap Read Contract.</div><div class="grid" style="margin-top:10px">
-${field("sc","Sales Contract No.")}${field("date","Contract Date","date")}${field("seller","Seller")}${field("buyer","Buyer")}${field("gst","GSTIN")}${field("iec","IEC")}${field("pan","PAN")}${field("hs","HS Code")}${field("commodity","Commodity","",1)}${field("qty","Quantity (MT)")}${field("cp","Container Plan")}${field("price","Price (USD/MT)")}${field("term","Price Term")}<div><label>Contract Value (USD)</label><input id="contractValue" readonly></div>${field("pol","Port of Loading")}${field("pod","Port of Discharge")}${field("ship","Shipment Period")}${field("adv","Advance (USD)")}${field("trans","Transshipment")}${field("partial","Partial Shipment")}${field("remarks","Payment Terms / Remarks","textarea",1)}</div><button class="btn p" onclick="create()">💾 Save Contract</button><h3>Saved Contracts</h3><div id="list"></div>`);list()}
+${field("sc","Sales Contract No.")}${field("date","Contract Date","date")}${field("seller","Seller")}${field("buyer","Buyer Name")}${field("gst","Buyer GSTIN")}${field("iec","Buyer IEC No.")}${field("pan","PAN")}${field("hs","HS Code")}${field("commodity","Commodity","",1)}${field("qty","Quantity (MT)")}${field("cp","Container Plan")}${field("price","Price (USD/MT)")}${field("term","Price Term")}<div><label>Contract Value (USD)</label><input id="contractValue" readonly></div>${field("pol","Port of Loading")}${field("pod","Port of Discharge")}${field("ship","Shipment Period")}${field("adv","Advance (USD)")}${field("trans","Transshipment")}${field("partial","Partial Shipment")}${field("remarks","Payment Terms / Remarks","textarea",1)}</div><div class="notice" style="margin-top:10px">
+⚠️ <b>Verify Buyer details:</b> Buyer Name, Buyer GSTIN and Buyer IEC are taken only when found in the uploaded document. If the PDF does not contain them, the fields remain blank — no guessed value is inserted.
+</div><button class="btn p" onclick="create()">💾 Save Contract</button><h3>Saved Contracts</h3><div id="list"></div>`);list()}
 function field(id,l,type="",full=0){return `<div class="${full?'full':''}"><label>${l}</label>${type==="textarea"?`<textarea id="${id}"></textarea>`:`<input id="${id}" type="${type||'text'}">`}</div>`}
 
 async function readContract(){
@@ -167,40 +169,83 @@ function parseContractText(t){
  }
 
  // --- Seller / Buyer ---
- // First use explicit label. Reject OCR fragments containing another field label.
- function validParty(v){
+ // OCR often captures a paragraph after "Buyer" instead of the actual company name.
+ // Keep only company-like candidates and explicitly reject confirmation sentences.
+ function cleanParty(v){
    v=cleanLine(v);
-   if(v.length<5)return "";
-   if(/\b(buyer|seller|payment|account|bank|charges|within|days|date|quantity|price|remarks)\b/i.test(v))return "";
+   if(v.length<5 || v.length>140)return "";
+   if(/^(this|the|we|we hereby|this is to confirm|to confirm)\b/i.test(v))return "";
+   if(/\b(payment|account|bank|charges|within\s+\d+\s+days|shipment|quantity|price|remarks)\b/i.test(v))return "";
+   // If a paragraph contains M/S. COMPANY ..., extract the company portion.
+   const ms=v.match(/\bM\/S\.?\s*([A-Z][A-Z0-9 .,&'()\/-]{4,110}?)(?=\s+(?:P\.?\s*O\.?\s*BOX|GSTIN|IEC|PAN|TEL|PHONE|EMAIL|DATE)\b|$)/i);
+   if(ms) v=cleanLine(ms[1]);
    return v;
  }
- let seller=validParty(extractCompany(lines,["seller","exporter","supplier"]));
- let buyer=validParty(extractCompany(lines,["buyer","importer","consignee"]));
+ function companyCandidates(lines){
+   const out=[];
+   for(const ln of lines){
+     let v=cleanParty(ln);
+     if(!v)continue;
+     // Require strong business-name signals for fallback candidates.
+     if(/\b(L\.?L\.?C\.?|LTD\.?|LIMITED|PVT\.?\s*LTD\.?|PRIVATE\s+LIMITED|TRADING|INDUSTRIES|CORPORATION|CO\.?)\b/i.test(v)){
+       if(!out.some(z=>z.toLowerCase()===v.toLowerCase()))out.push(v);
+     }
+   }
+   return out;
+ }
+ function labeledParty(labels){
+   for(let i=0;i<lines.length;i++){
+     for(const lab of labels){
+       const same=lines[i].match(new RegExp("^\\s*"+lab+"\\s*(?:NAME)?\\s*[:\\-]\\s*(.+)$","i"));
+       if(same){
+         const v=cleanParty(same[1]);
+         if(v)return v;
+       }
+       if(new RegExp("^\\s*"+lab+"\\s*(?:NAME)?\\s*$","i").test(lines[i])){
+         for(let j=i+1;j<Math.min(i+5,lines.length);j++){
+           const v=cleanParty(lines[j]);
+           if(v)return v;
+         }
+       }
+     }
+   }
+   return "";
+ }
+ let seller=labeledParty(["seller","exporter","supplier"]);
+ let buyer=labeledParty(["buyer","importer","consignee","customer","importer name"]);
 
- // Table/header fallback: company-style names (LLC/L.L.C./LTD/PVT LTD) are much safer than
- // arbitrary OCR fragments. If exactly one company is found, use it as Seller.
- const companies=[];
- for(const ln of lines){
-   const v=cleanLine(ln);
-   if(/\b(L\.?L\.?C\.?|LTD\.?|LIMITED|PVT\.?\s*LTD\.?|PRIVATE\s+LIMITED|TRADING)\b/i.test(v)
-      && v.length>=8 && v.length<=120 && !/\b(payment|charges|account)\b/i.test(v)){
-     if(!companies.includes(v))companies.push(v);
+ const companies=companyCandidates(lines);
+ if(!seller && companies.length)seller=companies[0];
+
+ // Do not reuse the seller as buyer. Prefer a different company candidate.
+ if(!buyer){
+   buyer=companies.find(v=>!seller || v.toLowerCase()!==seller.toLowerCase())||"";
+ }
+ // Some contracts put the buyer in a "To:" / "Messrs:" line.
+ if(!buyer){
+   for(const ln of lines){
+     const m=ln.match(/^(?:to|messrs?\.?|m\/s\.?)\s*[:\-]?\s*(.+)$/i);
+     if(m){
+       const v=cleanParty(m[1]);
+       if(v && (!seller || v.toLowerCase()!==seller.toLowerCase())){buyer=v;break;}
+     }
    }
  }
- if(!seller && companies.length>=1)seller=companies[0];
- if(!buyer && companies.length>=2)buyer=companies[1];
-
- // Never put a line like "2,7 Buyer" into Seller.
- if(/\bbuyer\b/i.test(seller))seller="";
- if(/\bseller\b/i.test(buyer))buyer="";
+ if(seller && /\bbuyer\b/i.test(seller))seller="";
+ if(buyer && /\bseller\b/i.test(buyer))buyer="";
  setv("seller",seller);
  setv("buyer",buyer);
 
  // --- IDs ---
- let gst=(x.match(/(?:GSTIN|GST\s*NO\.?)\s*[:\-]?\s*([A-Z0-9]{15})/i)||[])[1]||"";
- let iec=(x.match(/(?:IEC|I\.E\.C\.)\s*(?:CODE|NO\.?)?\s*[:\-]?\s*([A-Z0-9]{10})/i)||[])[1]||"";
- let pan=(x.match(/(?:PAN|P\.A\.N\.)\s*[:\-]?\s*([A-Z]{5}\d{4}[A-Z])/i)||[])[1]||"";
- let hs=(x.match(/(?:HS\s*CODE|HSN)\s*[:\-]?\s*(\d{8})/i)||[])[1]||"";
+ // Handle OCR variations such as "G S T I N", "IEC CODE", "I.E.C.", etc.
+ const norm=x.replace(/G\s+S\s+T\s+I\s+N/gi,"GSTIN")
+              .replace(/I\s*\.?\s*E\s*\.?\s*C/gi,"IEC")
+              .replace(/P\s*\.?\s*A\s*\.?\s*N/gi,"PAN")
+              .replace(/H\s*S\s*(?:N|CODE)/gi,"HS CODE");
+ let gst=(norm.match(/\bGSTIN\b\s*(?:NO\.?|NUMBER|CODE)?\s*[:#\-]?\s*([0-9A-Z]{15})/i)||[])[1]||"";
+ let iec=(norm.match(/\bIEC\b\s*(?:CODE|NO\.?|NUMBER)?\s*[:#\-]?\s*([0-9A-Z]{10})/i)||[])[1]||"";
+ let pan=(norm.match(/\bPAN\b\s*(?:NO\.?|NUMBER)?\s*[:#\-]?\s*([A-Z]{5}\d{4}[A-Z])/i)||[])[1]||"";
+ let hs=(norm.match(/\bHS\s*CODE\b\s*[:#\-]?\s*(\d{8})/i)||[])[1]||"";
  setv("gst",gst);setv("iec",iec);setv("pan",pan);setv("hs",hs);
 
  // --- Commodity ---
