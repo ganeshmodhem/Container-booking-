@@ -827,16 +827,18 @@ async function readInvoiceCopy(){
      // First try the native PDF text layer. If important invoice fields are still
      // missing, run OCR as a second pass even when the PDF has some text.
      parseInvoiceText(text);
-     const critical=["ino","id","ip","iv"];
+     const critical=["ino","id","ip","iv","ia","ib"];
      const missing=critical.some(id=>!$(id)?.value?.trim());
      if(missing || text.replace(/\s/g,"").length<30){
        await ensureTesseract();
        if(st)st.textContent="⏳ Invoice PDF has incomplete text — OCR is running…";
        for(let i=1;i<=pdf.numPages;i++){
-         const pg=await pdf.getPage(i),vp=pg.getViewport({scale:2.2});
+         const pg=await pdf.getPage(i),vp=pg.getViewport({scale:3.0});
          const cv=document.createElement("canvas"),ctx=cv.getContext("2d");
          cv.width=vp.width;cv.height=vp.height;
          await pg.render({canvasContext:ctx,viewport:vp}).promise;
+         // OCR-friendly preprocessing: grayscale + contrast.
+         try{const im=ctx.getImageData(0,0,cv.width,cv.height),d=im.data;for(let k=0;k<d.length;k+=4){const g=0.299*d[k]+0.587*d[k+1]+0.114*d[k+2];const v=Math.max(0,Math.min(255,(g-128)*1.55+128));d[k]=d[k+1]=d[k+2]=v;}ctx.putImageData(im,0,0);}catch(_){}
          const r=await Tesseract.recognize(cv,"eng",{logger:m=>{
            if(m.status)st.textContent="⏳ Invoice OCR "+Math.round((m.progress||0)*100)+"%";
          }});
@@ -875,19 +877,25 @@ function invoiceNumberFromText(norm,lines){
  return "";
 }
 function invoiceDateFromText(norm,lines){
+ const labels='(?:invoice\s+date|date\s+of\s+invoice|invoice\s+issued\s+date|date\s+issued|inv\.?\s+date|date\s+of\s+issue|issue\s+date)';
  const pats=[
-  /(?:invoice\s+date|date\s+of\s+invoice|invoice\s+issued\s+date|date\s+issued|inv\.?\s+date)\s*[:\-]?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/i,
-  /(?:invoice\s+date|date\s+of\s+invoice|invoice\s+issued\s+date|date\s+issued|inv\.?\s+date)\s*[:\-]?\s*([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})/i,
-  /(?:invoice\s+date|date\s+of\s+invoice|inv\.?\s+date)\s*[:\-]?\s*(\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2})/i
+  new RegExp(labels+'\\s*[:\-]?\\s*(\\d{1,2}[\\/\\-.]\\d{1,2}[\\/\\-.]\\d{2,4})','i'),
+  new RegExp(labels+'\\s*[:\-]?\\s*(\\d{1,2}\\s*[A-Za-z]{3,9}\\s*\\d{2,4}|[A-Za-z]{3,9}\\s+\\d{1,2},?\\s+\\d{2,4})','i'),
+  new RegExp(labels+'\\s*[:\-]?\\s*(\\d{4}[\\/\\-.]\\d{1,2}[\\/\\-.]\\d{1,2})','i')
  ];
- for(const re of pats){const m=norm.match(re);if(m){const d=m[1].trim();if(/^[A-Za-z]/.test(d)){const t=Date.parse(d);if(!isNaN(t))return new Date(t).toISOString().slice(0,10);}const a=d.split(/[\/\-.]/);if(a.length===3){if(a[0].length===4)return `${a[0]}-${String(a[1]).padStart(2,'0')}-${String(a[2]).padStart(2,'0')}`;let y=a[2];if(y.length===2)y='20'+y;return `${y}-${String(a[1]).padStart(2,'0')}-${String(a[0]).padStart(2,'0')}`;}}}
+ const convert=d=>{
+   d=String(d||'').replace(/,/g,' ').replace(/\\s+/g,' ').trim();
+   let a=d.match(/^(\\d{4})[\\/\\-.](\\d{1,2})[\\/\\-.](\\d{1,2})$/);
+   if(a)return `${a[1]}-${String(a[2]).padStart(2,'0')}-${String(a[3]).padStart(2,'0')}`;
+   a=d.match(/^(\\d{1,2})[\\/\\-.](\\d{1,2})[\\/\\-.](\\d{2,4})$/);
+   if(a){let y=a[3];if(y.length===2)y='20'+y;return `${y}-${String(a[2]).padStart(2,'0')}-${String(a[1]).padStart(2,'0')}`;}
+   const t=Date.parse(d);if(!isNaN(t))return new Date(t).toISOString().slice(0,10);
+   return '';
+ };
+ for(const re of pats){const m=norm.match(re);if(m){const d=convert(m[1]);if(d)return d;}}
  const ls=lines||[];
  for(let i=0;i<ls.length;i++){
-   if(/^(invoice\s+date|date\s+of\s+invoice|inv\.?\s+date)$/i.test(ls[i]) && ls[i+1]){
-     const d=ls[i+1].trim();
-     const m=d.match(/(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}|\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2})/);
-     if(m){const a=m[1].split(/[\/\-.]/);if(a[0].length===4)return `${a[0]}-${String(a[1]).padStart(2,'0')}-${String(a[2]).padStart(2,'0')}`;let y=a[2];if(y.length===2)y='20'+y;return `${y}-${String(a[1]).padStart(2,'0')}-${String(a[0]).padStart(2,'0')}`;}
-   }
+   if(new RegExp('^'+labels+'$','i').test(ls[i]) && ls[i+1]){const d=convert(ls[i+1]);if(d)return d;}
  }
  return "";
 }
@@ -916,6 +924,20 @@ function parseInvoiceText(x){
    const d=nextValue(['invoice\\s+date','date\\s+of\\s+invoice','inv\\.?\\s+date']);
    if(d){const m=d.match(/\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}|\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}/);if(m){const a=m[0].split(/[\/\-.]/);if(a[0].length===4)invoiceDate=`${a[0]}-${String(a[1]).padStart(2,'0')}-${String(a[2]).padStart(2,'0')}`;else{let y=a[2];if(y.length===2)y='20'+y;invoiceDate=`${y}-${String(a[1]).padStart(2,'0')}-${String(a[0]).padStart(2,'0')}`;}}}
  }
+ // Normalize OCR/PDF text and recover common commercial-invoice labels.
+ const labelValue=(labels, maxLook=2)=>{
+   const re=new RegExp('(?:'+labels+')\\s*(?:[:#=\-]|\\|)?\\s*([^\\n]{1,90})','i');
+   const m=raw.match(re); if(m&&m[1]) return m[1].trim();
+   for(let i=0;i<lines.length;i++){
+     if(new RegExp('^(?:'+labels+')\\s*[:#=\\-]?\\s*$','i').test(lines[i])){
+       for(let j=i+1;j<=Math.min(lines.length-1,i+maxLook);j++) if(lines[j].trim()) return lines[j].trim();
+     }
+   }
+   return '';
+ };
+ if(!invoiceNo){const v=labelValue('invoice\\s*(?:no\\.?|number)|inv\\.?\\s*(?:no\\.?|number)|invoice\\s*#'); if(v) invoiceNo=v.replace(/[^A-Za-z0-9\\/_.-]/g,'').trim();}
+ if(!invoiceDate){const v=labelValue('invoice\\s+date|date\\s+of\\s+invoice|date\\s+of\\s+issue|issue\\s+date'); if(v){const d=invoiceDateFromText('Invoice Date: '+v, [v]); if(d) invoiceDate=d;}}
+
  let qty=firstMatch(norm,[
   new RegExp('(?:invoice\\s+quantity|total\\s+quantity|quantity|qty|net\\s+weight|total\\s+net\\s+weight)\\s*(?:\\(\\s*M\\.?T\\.?\\s*\\)|M\\.?T\\.?|metric\\s+tons?)?\\s*[:=\\-]?\\s*'+numPat,'i'),
   new RegExp(numPat+'\\s*(?:MT|M\\.?T\\.?)\\b','i')
@@ -930,10 +952,12 @@ function parseInvoiceText(x){
  ]); if(unit)unit=cleanNum(unit);
  if(!unit){const u=nextValue(['unit\\s+price','price\\s+per\\s+MT','rate\\s+per\\s+MT','unit\\s+rate','price\\s*\\/\\s*MT','rate\\s*\\/\\s*MT']);if(u){const m=u.match(/[0-9][0-9,]*(?:\.[0-9]{1,4})?/);if(m)unit=cleanNum(m[0]);}}
  let amount=firstMatch(norm,[
-  new RegExp('(?:invoice\\s+amount|total\\s+invoice\\s+amount|invoice\\s+value|total\\s+invoice\\s+value|grand\\s+total|total\\s+amount|amount\\s+payable|total\\s+value|total\\s+price)\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*'+numPat,'i'),
+  new RegExp('(?:invoice\\s+amount|total\\s+invoice\\s+amount|invoice\\s+value|total\\s+invoice\\s+value|invoice\\s+total|grand\\s+total|total\\s+amount|amount\\s+payable|total\\s+value|total\\s+price|amount\\s*\\(\\s*USD\\s*\\))\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*'+numPat,'i'),
   new RegExp('(?:USD|US\\$|\\$)\\s*'+numPat+'\\s*(?:total|invoice\\s+amount|invoice\\s+value)','i')
  ]); if(amount)amount=cleanNum(amount);
  if(!amount){const a=nextValue(['invoice\\s+amount','total\\s+invoice\\s+amount','invoice\\s+value','total\\s+invoice\\s+value','grand\\s+total','total\\s+amount','amount\\s+payable','total\\s+value']);if(a){const m=a.match(/[0-9][0-9,]*(?:\.[0-9]{1,2})?/);if(m)amount=cleanNum(m[0]);}}
+ if(!unit){const u=labelValue('unit\\s+price|unit\\s+rate|price\\s+per\\s+MT|rate\\s+per\\s+MT|price\\s*\\/\\s*MT|rate\\s*\\/\\s*MT');const m=u&&u.match(/[0-9][0-9,]*(?:\\.[0-9]{1,4})?/);if(m)unit=cleanNum(m[0]);}
+ if(!amount){const a=labelValue('invoice\\s+amount|invoice\\s+value|invoice\\s+total|total\\s+invoice\\s+amount|grand\\s+total|total\\s+amount|amount\\s+payable|total\\s+value');const m=a&&a.match(/[0-9][0-9,]*(?:\\.[0-9]{1,2})?/);if(m)amount=cleanNum(m[0]);}
  if(!amount && unit && qty){const calc=parseFloat(unit)*parseFloat(qty);if(calc>0)amount=calc.toFixed(2);}
  if(!unit && amount && qty && parseFloat(qty)>0)unit=(parseFloat(amount)/parseFloat(qty)).toFixed(2);
  let advance=firstMatch(norm,[
