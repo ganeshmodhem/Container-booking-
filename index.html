@@ -1145,8 +1145,14 @@ function showSelectedBoeContainers(){
  }
 }
 function boe(){
- let c=boeSearched?get(cur):null;
- if(!c){shell("🛃 Bill of Entry",`<div class="card"><h3>🔎 Step 1 — Search Sales Contract</h3><div class="search"><input id="boeSearchNo" placeholder="Enter Sales Contract No."><button class="btn p" onclick="searchBoeContract()">Search</button></div><div class="notice">पहिले Sales Contract Search करा. त्यानंतर Loading झालेले सर्व container Loading Qty (MT) आणि Container No. सह Invoice सारखे दिसतील.</div></div>`);return;}
+ // BOE opens directly for the currently active Sales Contract. No separate search box.
+ let c=get(cur);
+ if(!c){
+   const candidates=(db.contracts||[]).filter(x=>x && x.invoice && x.loading);
+   c=candidates.length?candidates[candidates.length-1]:null;
+   if(c) cur=c.no;
+ }
+ if(!c){shell("🛃 Bill of Entry",`<div class="card"><div class="notice">First complete Invoice for the Sales Contract. Then open Bill of Entry.</div></div>`);return;}
  ensureBookingRows(c);
  const rows=(c.bookings||[]).map((b,i)=>({i,container:b.container||'',qty:Number(b.loadingQty||0),seal:b.seal||'',bl:b.bl||c.loading?.bl||''})).filter(x=>x.container && x.qty>0);
  shell("🛃 Bill of Entry",head(c)+`
