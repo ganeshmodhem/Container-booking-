@@ -1106,10 +1106,23 @@ function searchBoeContract(){
  const no=(document.getElementById('boeSearchNo')?.value||'').trim();
  const c=get(no);
  if(!c){alert('Sales Contract not found. Please enter the saved Sales Contract No.');return;}
- if(!c.invoice){alert('Invoice is not completed for this Sales Contract. Complete Invoice first.');return;}
  ensureBookingRows(c);
- const loadingRows=c.bookings.filter(b=>b && b.loadingQty!==undefined && b.loadingQty!=='' && b.container);
- if(!loadingRows.length){alert('No loaded containers found for this Sales Contract.');return;}
+ // BOE must use the actual LOADING container register. Do not block the screen
+ // just because an invoice record is missing or was saved in an older version.
+ let loadingRows=(c.bookings||[]).filter(b=>b && b.container && b.loadingQty!==undefined && b.loadingQty!=='' && Number(b.loadingQty)>0);
+ // Backward compatibility: recover loading rows from the saved Loading/B/L record.
+ if(!loadingRows.length && c.loading && Array.isArray(c.loading.entries)){
+   c.loading.entries.forEach((e,i)=>{
+     const b=c.bookings[i]||{};
+     if(e && e.container){
+       b.container=e.container||b.container; b.seal=e.seal||b.seal||''; b.bl=e.bl||b.bl||c.loading.bl||'';
+       b.loadingQty=Number(e.qty||e.loadingQty||0);
+     }
+   });
+   loadingRows=(c.bookings||[]).filter(b=>b && b.container && Number(b.loadingQty)>0);
+   if(loadingRows.length) saveSilently();
+ }
+ if(!loadingRows.length){alert('No loaded containers found for this Sales Contract. First save Loading/B.L. container-wise quantity.');return;}
  cur=c.no; boeSearched=true; page='boe'; render();
 }
 function selectedBoeData(){
