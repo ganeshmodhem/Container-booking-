@@ -341,45 +341,95 @@ function create(){let no=$("sc").value.trim();if(!no)return alert("Contract No. 
 function list(){$("list").innerHTML=db.contracts.map(c=>`<div class="item"><b>${esc(c.no)}</b><br>${esc(c.buyer)} | ${esc(c.commodity)} | ${esc(c.qty)} MT | USD ${esc(c.price)}/MT<br><button class="btn p" onclick="openPage('booking','${esc(c.no)}')">Open</button></div>`).join("")||"<p>No contracts.</p>"}
 function search(){let c=get($("q").value);if(c){cur=c.no;openPage("booking",c.no)}else alert("Contract not found")}
 function head(c){return `<div class="item"><b>${esc(c.no)}</b><br><span class="muted">${esc(c.buyer)} | ${esc(c.commodity)} | Contract ${esc(c.qty)} MT | USD ${esc(c.price)}/MT</span></div>`}
+function containerCount(c){
+ const m=String(c?.containerPlan||'').match(/(\d+)\s*[xX×]/);
+ return m?Math.max(1,parseInt(m[1],10)):1;
+}
+function ensureBookingRows(c){
+ const n=containerCount(c);
+ if(!Array.isArray(c.bookings)) c.bookings=[];
+ // For a new contract, create one register row per planned container.
+ // Existing real booking rows are preserved.
+ const real=c.bookings.filter(b=>b && !b._slot);
+ const totalQty=parseFloat(String(c.qty||0).replace(/,/g,''))||0;
+ const totalAdv=parseFloat(String(c.advanceAmt||0).replace(/,/g,''))||0;
+ const totalValue=(parseFloat(c.price||0)||0)*totalQty;
+ const q=totalQty/n, adv=totalAdv/n, val=totalValue/n;
+ // Always maintain at least one register row per planned container.
+ // Existing booking details are preserved; missing rows become blank booking slots with allocated values.
+ while(c.bookings.length<n){
+   const slot=c.bookings.length+1;
+   c.bookings.push({
+     _slot:true, slot, no:'', container:'', qty:q?String(q):'', vessel:'', etd:'', eta:'', file:null,
+     released:false, allocatedQty:q, allocatedAdvance:adv, allocatedValue:val
+   });
+ }
+ // Refresh allocation values for all rows after a contract edit.
+ c.bookings.forEach((b,i)=>{
+   b.slot=b.slot||i+1;
+   b.allocatedQty=q; b.allocatedAdvance=adv; b.allocatedValue=val;
+   if(b._slot && !b.qty) b.qty=q?String(q):'';
+ });
+}
 function booking(){
- let c=get(cur);
+ let c=get(cur); ensureBookingRows(c);
  const hasLoading=!!c.loading;
+ const n=containerCount(c);
+ const totalQty=parseFloat(String(c.qty||0).replace(/,/g,''))||0;
+ const totalAdv=parseFloat(String(c.advanceAmt||0).replace(/,/g,''))||0;
+ const totalValue=(parseFloat(c.price||0)||0)*totalQty;
+ const allocatedQty=totalQty/n, allocatedAdv=totalAdv/n, allocatedValue=totalValue/n;
+ const perContainerPlan=`1 x 20' Container`;
  const contractCols=[
   ['Contract No.',c.no],['Contract Date',c.date],['Seller',c.seller],['Buyer',c.buyer],
   ['GSTIN',c.gstin],['IEC',c.iec],['HS Code',c.hs],['Commodity',c.commodity],
-  ['Contract Qty (MT)',c.qty],['Container Plan',c.containerPlan],['Price (USD/MT)',c.price],
-  ['Contract Value (USD)',(parseFloat(c.price||0)&&parseFloat(c.qty||0))?(parseFloat(c.price)*parseFloat(c.qty)).toFixed(2):''],
-  ['Port of Loading',c.pol],['Port of Discharge',c.pod],
-  ['Advance (USD)',c.advanceAmt]
+  ['Contract Qty (MT)',allocatedQty?String(allocatedQty):''],['Container Plan',perContainerPlan],['Price (USD/MT)',c.price],
+  ['Contract Value (USD)',allocatedValue?allocatedValue.toFixed(2):''],
+  ['Port of Loading',c.pol],['Port of Discharge',c.pod],['Advance (USD)',allocatedAdv?allocatedAdv.toFixed(2):'']
  ];
  const bookingCols=[['Booking No.','no'],['Booking Container','container'],['Booking Qty (MT)','qty'],['Vessel','vessel'],['ETD','etd'],['ETA','eta']];
  const loadingCols=hasLoading?[
   ['B/L No.','bl'],['Loading Vessel','vessel'],['Voyage','voyage'],['Loading Date','date'],
   ['Loaded Qty (KG)','qty'],['Container / Seal No.','containers']
  ]:[];
- const allHeaders=[...contractCols.map(x=>x[0]),...bookingCols.map(x=>x[0]),...loadingCols.map(x=>x[0]),'Release'];
+ const allHeaders=[...contractCols.map(x=>x[0]),...bookingCols.map(x=>x[0]),...loadingCols.map(x=>x[0]),'Release','Delete'];
  const rowFor=(b,i)=>{
   const vals=[...contractCols.map(x=>x[1]),...bookingCols.map(x=>b[x[1]]||''),
     ...(hasLoading?loadingCols.map(x=>c.loading?.[x[1]]||''):[])];
-  return `<tr>${vals.map(v=>`<td>${esc(v)}</td>`).join('')}<td style="white-space:nowrap">${b.released?'<span class="badge">RELEASED ✓</span>':'<button class="btn w" style="margin:0;padding:7px 10px" onclick="releaseB(${i})">🚢 RELEASE</button>'} <button class="btn" style="margin:0;padding:7px 10px;background:#c62828;color:#fff" onclick="deleteBooking(${i})">🗑 DELETE</button></td></tr>`;
+  const rowNo=b.slot||i+1;
+  const action=b.released?'<span class="badge">RELEASED ✓</span>':`<button class="btn w" style="margin:0;padding:7px 10px" onclick="releaseB(${i})">🚢 RELEASE</button>`;
+  return `<tr><td style="background:#f8fafc;font-weight:bold">${rowNo}/${n}</td>${vals.map(v=>`<td>${esc(v)}</td>`).join('')}<td style="white-space:nowrap">${action}</td><td><button class="btn" style="margin:0;padding:7px 10px;background:#c62828;color:#fff" onclick="deleteBooking(${i})">🗑 DELETE</button></td></tr>`;
  };
- const empty=`<tr><td colspan="${allHeaders.length}" style="text-align:center;padding:18px">No bookings.</td></tr>`;
+ // Add a leading row-number header so the four container allocation is obvious.
+ allHeaders.unshift('Container Row');
+ const empty=`<tr><td colspan="${allHeaders.length}" style="text-align:center;padding:18px">No booking rows.</td></tr>`;
  shell("🚢 Booking",head(c)+`<div class="card"><div class="grid">${field("bn","Booking No.")}${field("cn","Container No.")}${field("bq","Quantity (MT)")}${field("bv","Vessel")}${field("be","ETD","date")}${field("ba","ETA","date")}${field("bf","Booking PDF/Image","file",1)}</div><button class="btn p" onclick="addB()">Save Booking</button></div>
  <h3 style="margin-top:16px">📊 Contract + Booking Register${hasLoading?' + Loading/B/L':''}</h3>
- <div class="notice">Sales Contract columns are kept first. New stage columns are added to the right when that stage is completed. Scroll horizontally to see all columns.</div>
+ <div class="notice">4-container contract is split automatically: 80 MT → 20 MT each, USD 64,800 contract value each, USD 16,200 advance each, and 1 × 20' container per row.</div>
  <div style="overflow-x:auto;border:1px solid #d6dde5;border-radius:10px;background:#fff">
- <table style="min-width:${allHeaders.length*120}px;width:100%;border-collapse:collapse">
- <thead><tr>${allHeaders.map((h,i)=>`<th style="position:sticky;top:0;background:#f3f6fa;white-space:nowrap">${esc(h)}</th>`).join('')}</tr></thead>
+ <table style="min-width:${allHeaders.length*125}px;width:100%;border-collapse:collapse">
+ <thead><tr>${allHeaders.map(h=>`<th style="position:sticky;top:0;background:#f3f6fa;white-space:nowrap">${esc(h)}</th>`).join('')}</tr></thead>
  <tbody>${c.bookings.map(rowFor).join('')||empty}</tbody>
  </table></div>`);
 }
-function addB(){let c=get(cur);c.bookings.push({no:$("bn").value,container:$("cn").value,qty:$("bq").value,vessel:$("bv").value,etd:$("be").value,eta:$("ba").value,file:file("bf"),released:false});save();booking()}
+function addB(){
+ let c=get(cur); ensureBookingRows(c);
+ // Fill the first empty allocation row rather than creating an extra row.
+ let idx=c.bookings.findIndex(b=>b._slot && !b.no && !b.container);
+ if(idx<0) return alert('All planned container rows are already used.');
+ const b=c.bookings[idx];
+ b.no=$("bn").value; b.container=$("cn").value; b.qty=$("bq").value||b.qty; b.vessel=$("bv").value; b.etd=$("be").value; b.eta=$("ba").value; b.file=file("bf");
+ save(); booking();
+}
 function releaseB(i){get(cur).bookings[i].released=true;save();alert("Booking released. Advance unlocked.");openPage("advance",cur)}
 function deleteBooking(i){
  const c=get(cur); const b=c?.bookings?.[i]; if(!b)return;
- const label=b.no||b.container||`Booking ${i+1}`;
- if(!confirm(`Delete ${label}? This booking row will be permanently removed.`))return;
- c.bookings.splice(i,1); save(); booking();
+ const label=b.no||b.container||`Container Row ${i+1}`;
+ if(!confirm(`Delete ${label}? The booking details will be cleared and the container allocation row will remain.`))return;
+ const totalQty=parseFloat(String(c.qty||0).replace(/,/g,''))||0;
+ const n=containerCount(c); const q=totalQty/n;
+ b.no=''; b.container=''; b.qty=q?String(q):''; b.vessel=''; b.etd=''; b.eta=''; b.file=null; b.released=false; b._slot=true;
+ save(); booking();
 }
 function advance(){let c=get(cur);shell("💵 Advance Payment",head(c)+`<div class="ok">Booking released — Advance Payment unlocked.</div><div class="grid">${field("aa","Advance USD")}${field("ad","Payment Date","date")}${field("ar","Exchange Rate")}${field("ai","INR Amount")}${field("ax","Reference")}${field("af","Payment Copy","file",1)}</div><button class="btn s" onclick="saveAdvance()">Save Advance Payment</button>`)}
 function saveAdvance(){let c=get(cur);c.advance={amount:$("aa").value,date:$("ad").value,rate:$("ar").value,inr:$("ai").value,ref:$("ax").value,file:file("af")};save();openPage("loading",cur)}
