@@ -450,7 +450,13 @@ function deleteBooking(i){
 }
 async function readPaymentCopy(){
  const f=$("apf")?.files?.[0]; if(!f)return alert('Please select the Advance Payment Copy first.');
- $("apStatus").textContent='⏳ Reading payment copy…';
+ // Prevent accidentally reading the Sales Contract or another document.
+ if(!/advance|payment|remittance|bank|advice/i.test(f.name)){
+   $("apStatus").textContent='⚠️ Please upload the Advance Payment PDF/Image (for example: 2.ADVANCE PAYMENT.pdf), not the Sales Contract.';
+   $("apf").value='';
+   return alert('Wrong document selected. Please upload 2.ADVANCE PAYMENT.pdf.');
+ }
+ $("apStatus").textContent='⏳ Reading Advance Payment copy…';
  try{
    let text='';
    if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
@@ -489,8 +495,8 @@ function parsePaymentText(x){
  const tol=(norm.match(/TOL\s+Ref\s+No\.?\s*([A-Z0-9\/-]+)/i)||[])[1]||'';
  const ref=[ourBill,tol].filter(Boolean).join(' / ');
  const bank=(norm.match(/(?:To|From)\s*:\s*(?:ICICI\s+BANK\s+LIMITED|[^:]+?)?\s*From\s*:\s*ICICI\s+BANK\s+LIMITED/i)||[])[0]?'ICICI BANK LIMITED':((norm.match(/(?:bank\s+name|bank)\s*[:\-]?\s*([A-Z][A-Z &.\-]{3,60})(?=\s+(?:branch|account|a\/c|date|amount|utr|transaction|reference|value)|$)/i)||[])[1]||'');
- const rateMatch1=norm.match(/Conversion\s+Rate[^@]{0,180}?@\s*([0-9]+(?:\.\d{1,6})?)/i);
- const rateMatch2=norm.match(/(?:Principal\s+Amount|Bill\s+Amount)[^@]{0,180}?@\s*([0-9]+(?:\.\d{1,6})?)/i);
+ const rateMatch1=norm.match(/Conversion\s*Rate[^@]{0,220}?@\s*([0-9]+(?:\.\d{1,6})?)/i);
+ const rateMatch2=norm.match(/(?:Principal\s+Amount|Bill\s+Amount)[^@]{0,220}?@\s*([0-9]+(?:\.\d{1,6})?)/i);
  const rateMatch3=norm.match(/(?:exchange\s*rate|usd\s*rate|rate)\s*[:=\-]?\s*(?:USD\s*\/\s*INR\s*)?([0-9]+(?:\.\d{1,6})?)/i);
  const rate=(rateMatch1&&rateMatch1[1])||(rateMatch2&&rateMatch2[1])||(rateMatch3&&rateMatch3[1])||'';
  const inr=(norm.match(/Principal\s+Amount\s+USD[\s\S]{0,120}?@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||((norm.match(/(?:payment\s+amount\s+inr|total\s+inr|INR\s+amount)\s*[:\-]?\s*(?:INR|RS\.?|₹)?\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||'');
@@ -569,7 +575,7 @@ function advance(){
    ${field("apRef","Payment Bill / Ref No.")}
    ${field("apBank","Bank Name")}
    ${field("apRate","USD Rate")}<div class="full"><div class="muted">Payment advice format such as <b>@95.855</b> will be captured as the USD/INR rate.</div></div>
-   <div class="full"><label>Advance Payment Copy (PDF/Image)</label><input id="apf" class="file" type="file" accept=".pdf,image/*" onchange="readPaymentCopy()"><div id="apStatus" class="notice" style="margin-top:7px">Upload the payment copy. The system will extract the payment fields and then divide the total according to the selected number of containers.</div></div>
+   <div class="full"><label>Advance Payment Copy (PDF/Image)</label><div class="muted" style="margin-bottom:4px">Upload <b>2.ADVANCE PAYMENT.pdf</b> — do not upload the Sales Contract here.</div><input id="apf" class="file" type="file" accept=".pdf,image/*" onchange="readPaymentCopy()"><div id="apStatus" class="notice" style="margin-top:7px">Upload the payment copy. The system will extract the payment fields and then divide the total according to the selected number of containers.</div></div>
  </div>
  <div class="notice">तुम्ही या payment मध्ये जितक्या containers चा advance आहे तितकी संख्या निवडा. PDF upload केल्यावर <b>Total USD, Payment Date, Bank, Bill/Ref No., USD Rate, Total INR आणि Other Charges</b> भरले जातील. त्यानंतर रक्कम selected containers मध्ये समान divide होईल.</div>
  <button class="btn s" onclick="saveAdvance()">💾 Save Advance Payment</button></div>
