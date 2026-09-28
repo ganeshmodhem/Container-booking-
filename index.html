@@ -1126,22 +1126,28 @@ function showSelectedBoeContainers(){
 }
 function boe(){
  let c=boeSearched?get(cur):null;
- if(!c){shell("🛃 Bill of Entry",`<div class="card"><h3>🔎 Step 1 — Search Sales Contract</h3><div class="search"><input id="boeSearchNo" placeholder="Enter Sales Contract No."><button class="btn p" onclick="searchBoeContract()">Search</button></div><div class="notice">पहिले Sales Contract Search करा. त्यानंतर Loading झालेले container, Loading Qty (MT) आणि Container No. दिसतील.</div></div>`);return;}
+ if(!c){shell("🛃 Bill of Entry",`<div class="card"><h3>🔎 Step 1 — Search Sales Contract</h3><div class="search"><input id="boeSearchNo" placeholder="Enter Sales Contract No."><button class="btn p" onclick="searchBoeContract()">Search</button></div><div class="notice">पहिले Sales Contract Search करा. त्यानंतर Loading झालेले सर्व container Loading Qty (MT) आणि Container No. सह Invoice सारखे दिसतील.</div></div>`);return;}
  ensureBookingRows(c);
- const rows=c.bookings.map((b,i)=>({b,i})).filter(x=>x.b && x.b.loadingQty!==undefined && x.b.loadingQty!=='' && x.b.container);
+ const rows=(c.bookings||[]).map((b,i)=>({i,container:b.container||'',qty:Number(b.loadingQty||0),seal:b.seal||'',bl:b.bl||c.loading?.bl||''})).filter(x=>x.container && x.qty>0);
  shell("🛃 Bill of Entry",head(c)+`
  <div class="ok"><b>Sales Contract Found:</b> ${esc(c.no)} &nbsp; | &nbsp; <b>Loading Containers:</b> ${rows.length}</div>
  <div class="card"><h3 style="margin:0 0 10px">Step 2 — Select Bill of Entry Container(s)</h3>
- <div style="display:flex;gap:8px;margin-bottom:10px"><button type="button" class="btn p" onclick="toggleAllBoeContainers(true)">Select All</button><button type="button" class="btn w" onclick="toggleAllBoeContainers(false)">Clear All</button></div>
- <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:8px">
- ${rows.map(x=>`<label style="display:flex;align-items:center;gap:10px;border:1px solid #ccd5de;border-radius:10px;padding:12px;background:#f8fafc;cursor:pointer;font-weight:normal"><input class="boeContainerCheck" type="checkbox" value="${x.i}" onchange="showSelectedBoeContainers()" style="width:20px;height:20px"><span><b>${Number(x.b.loadingQty||0).toFixed(3)} MT</b> — ${esc(x.b.container)}<br><span class="muted">Seal: ${esc(x.b.seal||'-')} | B/L: ${esc(x.b.bl||'-')}</span></span></label>`).join('')||'<div class="notice">No loading containers found.</div>'}
- </div><div id="selectedBoeRows"></div></div>
- <div class="card" id="boeDetails" style="display:none"><h3 style="margin:0 0 10px">Step 3 — Bill of Entry Details</h3><div class="grid">${field("ben","BE No.")}${field("bed","BE Date","date")}${field("beQty","BOE Quantity (MT)")}${field("bea","Assessable Value INR")}${field("bebcd","BCD INR")}${field("besws","SWS INR")}${field("beigst","IGST INR")}${field("ber","Exchange Rate")}${field("bech","Challan No.")}${field("bef","BOE PDF","file",1)}</div><div id="boeStatus" class="notice" style="margin-top:8px">Select container(s), then enter/verify Bill of Entry details.</div><button class="btn s" onclick="saveBoe()">💾 Save Bill of Entry</button></div>`);
- document.querySelectorAll('.boeContainerCheck').forEach(x=>x.addEventListener('change',()=>{const d=$("boeDetails");if(d)d.style.display=selectedBoeData().length?'block':'none';}));
+ <label>Loading Qty (MT) — Container No. (Select one or more)</label>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px">
+   <button type="button" class="btn p" onclick="toggleAllBoeContainers(true)">Select All</button>
+   <button type="button" class="btn w" onclick="toggleAllBoeContainers(false)">Clear All</button>
+ </div>
+ <div id="boeContainerChoices" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px">
+ ${rows.map(x=>`<label style="display:flex;align-items:center;gap:10px;border:1px solid #ccd5de;border-radius:10px;padding:12px;background:#f8fafc;cursor:pointer;font-weight:normal"><input class="boeContainerCheck" type="checkbox" value="${x.i}" onchange="showSelectedBoeContainers()" style="width:20px;height:20px"><span><b>${x.qty.toFixed(3)} MT</b> — ${esc(x.container)}<br><span class="muted">Seal: ${esc(x.seal||'-')} | B/L: ${esc(x.bl||'-')}</span></span></label>`).join('')||'<div class="notice">No loading container found</div>'}
+ </div>
+ <div class="muted" style="margin-top:8px">प्रत्येक container समोरील checkbox tick करा. एकाच वेळी 1 किंवा अनेक containers select करता येतील.</div>
+ <div id="selectedBoeRows" style="margin-top:12px"></div></div>
+ <div id="boeDetails" class="card" style="display:none"><h3 style="margin:0 0 10px">Step 3 — Bill of Entry Details & Upload</h3>
+ <div class="grid">${field("ben","BE No.")}${field("bed","BE Date","date")}${field("beQty","BE Quantity (MT)")}${field("bea","Assessable Value INR")}${field("bebcd","BCD INR")}${field("besws","SWS INR")}${field("beigst","IGST INR")}${field("ber","Exchange Rate")}${field("bech","Challan No.")}</div>
+ <div class="full" style="margin-top:10px"><label>Bill of Entry Copy (PDF/Image)</label><input id="bef" class="file" type="file" accept=".pdf,image/*"><div id="boeStatus" class="notice" style="margin-top:7px">Select the Bill of Entry PDF/Image and enter/verify the details before saving.</div></div>
+ <div class="notice">BE Quantity (MT) is automatically calculated from the selected loading containers. Save केल्यानंतर selected प्रत्येक container च्या Booking row मध्ये Bill of Entry details save होतील.</div>
+ <button class="btn s" onclick="saveBoe()">💾 Save Bill of Entry</button></div>`);
  showSelectedBoeContainers();
- const originalShow=window.showSelectedBoeContainers;
- // Keep details visible whenever at least one checkbox is selected.
- const d=$("boeDetails"); if(d)d.style.display=selectedBoeData().length?'block':'none';
 }
 function saveBoe(){
  let c=get(cur),selected=selectedBoeData();
@@ -1149,7 +1155,7 @@ function saveBoe(){
  const no=$("ben").value.trim(),date=$("bed").value,qty=Number($("beQty").value||selected.reduce((a,x)=>a+x.qty,0)),assess=$("bea").value,bcd=$("bebcd").value,sws=$("besws").value,igst=$("beigst").value,rate=$("ber").value,challan=$("bech").value;
  c.boe={no,date,qty:qty.toFixed(3),assess,bcd,sws,igst,rate,challan,selectedContainers:selected.map(x=>x.container),selectedRows:selected.map(x=>x.i),file:file("bef")};
  selected.forEach(x=>{const b=c.bookings[x.i];if(!b)return;b.boe={beNo:no,beDate:date,boeQty:Number(x.qty).toFixed(3),assessableValue:assess,bcd,sws,igst,exchangeRate:rate,challanNo:challan,boeFile:file("bef")};});
- save();alert(`Bill of Entry saved. ${selected.length} container(s) updated in Booking.`);openPage("finalpay",cur);
+ save();alert(`Bill of Entry saved successfully. ${selected.length} selected container(s) updated in Booking. Now open Booking and scroll right to see BE No., BE Date, BE Qty, Assessable Value, BCD, SWS, IGST, Exchange Rate and Challan No.`);openPage("finalpay",cur);
 }
 function finalpay(){let c=get(cur);shell("💰 Final Payment",head(c)+`<div class="ok">Bill of Entry completed — Final Payment unlocked.</div><div class="grid">${field("fa","Final Payment USD")}${field("fd","Payment Date","date")}${field("fr","Exchange Rate")}${field("fi","INR Amount")}${field("fx","Reference")}${field("ff","Payment Copy","file",1)}</div><button class="btn s" onclick="saveFinalPay()">Save Final Payment</button>`)}
 function saveFinalPay(){let c=get(cur);c.finalpay={amount:$("fa").value,date:$("fd").value,rate:$("fr").value,inr:$("fi").value,ref:$("fx").value,file:file("ff")};save();openPage("final",cur)}
