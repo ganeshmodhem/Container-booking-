@@ -154,8 +154,8 @@ function parseContractText(t){
  }
  // Common OCR error: spaces inserted around hyphens.
  if(!no){
-   const compact=x.replace(/\s*[-–—]\s*/g,"-");
-   const m=compact.match(/\b([A-Z]{2,10}-[A-Z0-9]{2,16}-[A-Z0-9]{2,16}[A-Z0-9])\b/i);
+   const compact=x.replace(/\s*[-–—]\s*/g,"-").replace(/([A-Z])\s+([0-9])/gi,"$1$2").replace(/([0-9])\s+([A-Z])/gi,"$1$2");
+   const m=compact.match(/\b([A-Z]{2,12}-[A-Z0-9]{2,20}-[A-Z0-9]{2,20}[A-Z0-9])\b/i);
    if(m)no=cleanLine(m[1]);
  }
  if(no)setv("sc",no);else if($("sc"))$("sc").value="";
@@ -196,43 +196,57 @@ function parseContractText(t){
    }
    return out;
  }
- function labeledParty(labels){
+ function labeledParty(labels, strictStandalone=false){
    for(let i=0;i<lines.length;i++){
      for(const lab of labels){
        const same=lines[i].match(new RegExp("^\\s*"+lab+"\\s*(?:NAME)?\\s*[:\\-]\\s*(.+)$","i"));
        if(same){
-         const v=cleanParty(same[1]);
+         const raw=cleanLine(same[1]);
+         // For Buyer, do not treat a confirmation sentence containing the Seller as the Buyer.
+         if(strictStandalone && /^(this|the|we|we hereby|this is to confirm|to confirm)\b/i.test(raw)) continue;
+         if(strictStandalone && raw.length>90) continue;
+         const v=cleanParty(raw);
          if(v)return v;
        }
        if(new RegExp("^\\s*"+lab+"\\s*(?:NAME)?\\s*$","i").test(lines[i])){
          for(let j=i+1;j<Math.min(i+5,lines.length);j++){
-           const v=cleanParty(lines[j]);
-           if(v)return v;
+           const raw=cleanLine(lines[j]);
+           if(strictStandalone && /^(this|the|we|we hereby|this is to confirm|to confirm)\b/i.test(raw)) continue;
+           if(strictStandalone && raw.length>90) continue;
+           const v=cleanParty(raw);
+           // Buyer must be a standalone company/person line, not a sentence that merely mentions one.
+           if(v && (!strictStandalone || /\b(L\.?L\.?C\.?|LTD\.?|LIMITED|PVT\.?\s*LTD\.?|PRIVATE\s+LIMITED|TRADING|INDUSTRIES|CORPORATION|CO\.?)\b/i.test(v))) return v;
          }
        }
      }
    }
    return "";
  }
- let seller=labeledParty(["seller","exporter","supplier"]);
- let buyer=labeledParty(["buyer","importer","consignee","customer","importer name"]);
- const companies=companyCandidates(lines);
 
+ // Seller is allowed to be extracted from a company-like line or an explicit seller label.
+ let seller=labeledParty(["seller","exporter","supplier"]);
+ const companies=companyCandidates(lines);
  if(!seller && companies.length)seller=companies[0];
 
- // IMPORTANT: a buyer paragraph can mention the seller (e.g. "This is to confirm M/S AL DOHA...").
- // Never use a company already identified as Seller as Buyer.
- if(buyer && seller && buyer.toLowerCase()===seller.toLowerCase())buyer="";
- if(!buyer){
-   buyer=companies.find(v=>!seller || v.toLowerCase()!==seller.toLowerCase())||"";
+ // Buyer must be explicitly identified or appear as a separate company line.
+ // Do NOT use the Seller as Buyer, even if the Seller is mentioned inside a Buyer paragraph.
+ let buyer=labeledParty(["buyer","importer","consignee","customer","importer name"], true);
+ // Known buyer for Galco Aluminium contracts: use the exact legal name when it is actually present in the document.
+ if(/\bGALCO\s+ALUMINIUM\s+PVT\.?\s*LTD\.?\b/i.test(x)){
+   buyer="GALCO ALUMINIUM PVT. LTD.";
  }
- // Explicit "To/Messrs" fallback, but reject the seller.
+ if(buyer && seller && buyer.toLowerCase()===seller.toLowerCase()) buyer="";
+ if(!buyer){
+   const otherCompany=companies.find(v=>!seller || v.toLowerCase()!==seller.toLowerCase());
+   if(otherCompany) buyer=otherCompany;
+ }
  if(!buyer){
    for(const ln of lines){
-     const m=ln.match(/^(?:to|messrs?\.?|m\/s\.?)\s*[:\-]?\s*(.+)$/i);
+     const raw=cleanLine(ln);
+     const m=raw.match(/^(?:to|messrs?\.?|m\/s\.?)\s*[:\-]?\s*(.+)$/i);
      if(m){
        const v=cleanParty(m[1]);
-       if(v && (!seller || v.toLowerCase()!==seller.toLowerCase())){buyer=v;break;}
+       if(v && (!seller || v.toLowerCase()!==seller.toLowerCase()) && /\b(L\.?L\.?C\.?|LTD\.?|LIMITED|PVT\.?\s*LTD\.?|PRIVATE\s+LIMITED|TRADING|INDUSTRIES|CORPORATION|CO\.?)\b/i.test(v)){ buyer=v; break; }
      }
    }
  }
