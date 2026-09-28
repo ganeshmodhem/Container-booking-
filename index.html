@@ -401,7 +401,7 @@ function booking(){
   ['Contract Value (USD)',allocatedValue?allocatedValue.toFixed(2):''],['Port of Loading',c.pol],['Port of Discharge',c.pod]
  ];
  const bookingCols=[['Booking No.','no'],['Booking Container','container'],['Booking Qty (MT)','qty'],['Vessel','vessel'],['ETD','etd'],['ETA','eta']];
- const advanceCols=[['Advance USD','amount'],['Advance Date','date'],['Payment Ref / UTR','ref'],['Bank','bank'],['Remitter','remitter'],['Beneficiary','beneficiary'],['Currency','currency'],['Payment Copy','copyName']];
+ const advanceCols=[['Advance USD','amount'],['Payment Date','date'],['Payment Bill / Ref No.','ref'],['Bank','bank'],['USD Rate','usdRate'],['Payment Amount INR','inr'],['Other Charges INR','otherChargesInr'],['Payment Copy','copyName']];
  const loadingCols=hasLoading?[
   ['B/L No.','bl'],['Loading Vessel','vessel'],['Voyage','voyage'],['Loading Date','date'],['Loaded Qty (KG)','qty'],['Container / Seal No.','containers']
  ]:[];
@@ -422,7 +422,7 @@ function booking(){
  const empty=`<tr><td colspan="${allHeaders.length}" style="text-align:center;padding:18px">No booking rows.</td></tr>`;
  shell("🚢 Booking",head(c)+`
  <h3 style="margin-top:16px">📊 Contract + Booking Register${hasLoading?' + Loading/B/L':''}</h3>
- <div class="notice">${n}-container contract is split automatically. Booking details can be entered directly in each row. Advance payment details will appear in the same container row after payment-copy verification.</div>
+ <div class="notice">${n}-container contract is split automatically. Booking details can be entered directly in each row. Advance payment details will appear in the same container row after payment-copy verification. Payment amount, USD rate, INR amount and other charges are shown container-wise.</div>
  <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff">
  <table style="min-width:${allHeaders.length*145}px;width:max-content;border-collapse:collapse">
  <thead><tr>${allHeaders.map(h=>`<th style="position:sticky;top:0;background:#f3f6fa;white-space:nowrap">${esc(h)}</th>`).join('')}</tr></thead>
@@ -479,19 +479,20 @@ async function readPaymentCopy(){
 function parsePaymentText(x){
  const norm=x.replace(/\s+/g,' ');
  const amount=(norm.match(/(?:USD|US\$|\$)\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||'';
+ const inr=(norm.match(/(?:INR|RS\.?|₹)\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||'';
+ const rate=(norm.match(/(?:exchange\s*rate|usd\s*rate|rate)\s*[:=\-]?\s*(?:USD\s*\/\s*INR\s*)?([0-9]+(?:\.\d{1,4})?)/i)||[])[1]||'';
+ const charges=(norm.match(/(?:other\s*charges?|bank\s*charges?|charges?)\s*[:=\-]?\s*(?:INR|RS\.?|₹)?\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||'';
  const date=(norm.match(/(?:payment\s*date|value\s*date|transaction\s*date|date)\s*[:\-]?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/i)||[])[1]||'';
- const ref=(norm.match(/(?:UTR|transaction\s*(?:id|no|number)|reference\s*(?:no|number)?|bank\s*ref(?:erence)?)[\s:#-]*([A-Z0-9\/-]{6,40})/i)||[])[1]||'';
- const bank=(norm.match(/(?:bank\s*name|bank)\s*[:\-]?\s*([A-Z][A-Z &.\-]{3,60})(?=\s+(?:branch|account|a\/c|date|amount|utr|transaction)|$)/i)||[])[1]||'';
- const currency=(norm.match(/\b(USD|US\$|INR|EUR|AED|SAR|GBP)\b/i)||[])[1]||'';
- const rem=(norm.match(/(?:remitter|sender|payer|from)\s*[:\-]?\s*([A-Z][A-Z .,&()'-]{3,80})(?=\s+(?:beneficiary|to|bank|account|date|amount)|$)/i)||[])[1]||'';
- const ben=(norm.match(/(?:beneficiary|payee|to)\s*[:\-]?\s*([A-Z][A-Z .,&()'-]{3,100})(?=\s+(?:bank|account|date|amount|currency|utr)|$)/i)||[])[1]||'';
+ const ref=(norm.match(/(?:UTR|transaction\s*(?:id|no|number)|reference\s*(?:no|number)?|bank\s*ref(?:erence)?|bill\s*(?:no|number))[^A-Z0-9]{0,8}([A-Z0-9\/-]{6,40})/i)||[])[1]||'';
+ const bank=(norm.match(/(?:bank\s*name|bank)\s*[:\-]?\s*([A-Z][A-Z &.\-]{3,60})(?=\s+(?:branch|account|a\/c|date|amount|utr|transaction|reference|value)|$)/i)||[])[1]||'';
  if($("apAmount"))$("apAmount").value=amount.replace(/,/g,'');
  if($("apDate"))$("apDate").value=normaliseDate(date);
  if($("apRef"))$("apRef").value=ref;
  if($("apBank"))$("apBank").value=cleanLine(bank);
- if($("apRem"))$("apRem").value=cleanLine(rem);
- if($("apBen"))$("apBen").value=cleanLine(ben);
- if($("apCurrency"))$("apCurrency").value=currency.toUpperCase();
+ if($("apRate"))$("apRate").value=rate;
+ if($("apInr"))$("apInr").value=inr.replace(/,/g,'');
+ if($("apCharges"))$("apCharges").value=charges.replace(/,/g,'');
+ updateAdvanceAllocationPreview();
 }
 function normaliseDate(v){
  if(!v)return ''; const a=v.split(/[\/\-.]/); if(a.length!==3)return v;
@@ -501,7 +502,27 @@ function showAdvanceRow(i){
  const c=get(cur); if(!c)return; ensureBookingRows(c); const b=c.bookings[i];
  $('apAllocated').value=b?((b.allocatedAdvance||0).toFixed?b.allocatedAdvance.toFixed(2):(b.allocatedAdvance||'')):'';
  const av=b?.advance||{};
- ['apAmount','apDate','apRef','apBank','apRem','apBen','apCurrency'].forEach(id=>{if($(id))$(id).value=av[id.replace('ap','').toLowerCase()]||$(id).value||'';});
+ if($('apAmount'))$('apAmount').value=av.amount||'';
+ if($('apDate'))$('apDate').value=av.date||'';
+ if($('apRef'))$('apRef').value=av.ref||'';
+ if($('apBank'))$('apBank').value=av.bank||'';
+ if($('apRate'))$('apRate').value=av.usdRate||'';
+ if($('apInr'))$('apInr').value=av.inr||'';
+ if($('apCharges'))$('apCharges').value=av.otherChargesInr||'';
+ updateAdvanceAllocationPreview();
+}
+function updateAdvanceAllocationPreview(){
+ const c=get(cur); if(!c)return;
+ const n=parseInt($('apContainerCount')?.value||1,10)||1;
+ const total=parseFloat(($('apAmount')?.value||'').replace(/,/g,''))||0;
+ const per=n?total/n:0;
+ if($('apAllocated'))$('apAllocated').value=per?per.toFixed(2):'';
+ const totalInr=parseFloat(($('apInr')?.value||'').replace(/,/g,''))||0;
+ const perInr=n?totalInr/n:0;
+ if($('apInrPer'))$('apInrPer').value=perInr?perInr.toFixed(2):'';
+ const totalCh=parseFloat(($('apCharges')?.value||'').replace(/,/g,''))||0;
+ const perCh=n?totalCh/n:0;
+ if($('apChargesPer'))$('apChargesPer').value=perCh?perCh.toFixed(2):'';
 }
 let advanceSearched=false;
 function searchAdvanceContract(){
@@ -516,30 +537,49 @@ function advance(){
  const searchBox=`<div class="card" style="border:2px solid #d8e4ee">
    <h3 style="margin:0 0 8px">🔎 Step 1 — Search Sales Contract</h3>
    <div class="search"><input id="advanceSearchNo" value="${esc(c?.no||'')}" placeholder="Enter Sales Contract No."><button class="btn p" onclick="searchAdvanceContract()">Search</button></div>
-   <div class="muted" style="margin-top:6px">First search the Sales Contract. After searching, the container-wise advance allocation will appear.</div>
+   <div class="muted" style="margin-top:6px">First search the Sales Contract. After searching, the advance-container allocation will appear.</div>
  </div>`;
  if(!c){shell("💵 Advance Payment",searchBox);return;}
- const opts=c.bookings.map((b,i)=>`<option value="${i}">Container Row ${i+1}/${c.bookings.length}${b.container?' — '+esc(b.container):''}</option>`).join('');
- const rows=c.bookings.map((b,i)=>{const a=b.advance||{};return `<tr><td>${i+1}/${c.bookings.length}</td><td>${esc(b.container||'')}</td><td>${esc((b.allocatedAdvance||0).toFixed?b.allocatedAdvance.toFixed(2):(b.allocatedAdvance||''))}</td><td>${esc(a.amount||'')}</td><td>${esc(a.date||'')}</td><td>${esc(a.ref||'')}</td><td>${esc(a.bank||'')}</td><td>${a.amount?'<span class="badge">SAVED ✓</span>':'<span class="badge" style="background:#fff0cf;color:#8a5a00">PENDING</span>'}</td></tr>`}).join('');
+ const rows=c.bookings.map((b,i)=>{const a=b.advance||{};return `<tr><td>${i+1}/${c.bookings.length}</td><td>${esc(b.container||'')}</td><td>${esc((b.allocatedAdvance||0).toFixed?b.allocatedAdvance.toFixed(2):(b.allocatedAdvance||''))}</td><td>${esc(a.amount||'')}</td><td>${esc(a.date||'')}</td><td>${esc(a.ref||'')}</td><td>${esc(a.bank||'')}</td><td>${esc(a.usdRate||'')}</td><td>${esc(a.inr||'')}</td><td>${esc(a.otherChargesInr||'')}</td><td>${a.amount?'<span class="badge">SAVED ✓</span>':'<span class="badge" style="background:#fff0cf;color:#8a5a00">PENDING</span>'}</td></tr>`}).join('');
  shell("💵 Advance Payment",searchBox+`
- <div class="ok"><b>Sales Contract Found:</b> ${esc(c.no)} &nbsp; | &nbsp; <b>Buyer:</b> ${esc(c.buyer)} &nbsp; | &nbsp; <b>Total Advance:</b> USD ${esc(c.advanceAmt||'0')} &nbsp; | &nbsp; <b>Containers:</b> ${c.bookings.length}</div>
- <div class="card" style="border:2px solid #e5eaf0"><h3 style="margin:0 0 8px">📦 Step 2 — Container-wise Advance</h3>
- <div class="registerWrap"><table style="min-width:900px"><thead><tr><th>Container Row</th><th>Container No.</th><th>Allocated Advance USD</th><th>Paid USD</th><th>Payment Date</th><th>UTR / Ref</th><th>Bank</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+ <div class="ok"><b>Sales Contract Found:</b> ${esc(c.no)} &nbsp; | &nbsp; <b>Buyer:</b> ${esc(c.buyer)} &nbsp; | &nbsp; <b>Contract Advance:</b> USD ${esc(c.advanceAmt||'0')} &nbsp; | &nbsp; <b>Containers:</b> ${c.bookings.length}</div>
+ <div class="card" style="border:2px solid #e5eaf0"><h3 style="margin:0 0 8px">📦 Step 2 — Advance Allocation</h3>
+ <div class="grid">
+   <div><label>Advance for No. of Containers</label><select id="apContainerCount" onchange="updateAdvanceAllocationPreview()">${c.bookings.map((b,i)=>`<option value="${i+1}">${i+1} Container${i?'s':''}</option>`).join('')}</select></div>
+   ${field("apAmount","Total Payment Amount USD")}
+   ${field("apAllocated","Advance per Container USD")}
+   ${field("apInr","Total Payment Amount INR")}
+   ${field("apInrPer","Payment INR per Container")}
+   ${field("apCharges","Other Charges INR")}
+   ${field("apChargesPer","Other Charges INR per Container")}
+ </div>
+ <div class="notice">तुम्ही जितक्या containers साठी advance payment करता तितकी संख्या निवडा आणि <b>Total Payment Amount USD</b> टाका. System रक्कम त्या containers मध्ये समान वाटेल.</div></div>
  <div class="card" style="border:2px solid #e5eaf0"><h3 style="margin:0 0 8px">📄 Step 3 — Upload Payment Copy</h3>
- <div class="grid"><div><label>Sales Contract</label><input value="${esc(c.no)}" readonly></div><div><label>Container Row</label><select id="advContainer" onchange="showAdvanceRow(parseInt(this.value,10))">${opts}</select></div>
- ${field("apAllocated","Allocated Advance USD")} ${field("apAmount","Payment Amount USD")} ${field("apDate","Payment Date","date")} ${field("apRef","UTR / Transaction Ref")} ${field("apBank","Bank")} ${field("apRem","Remitter / Payer")} ${field("apBen","Beneficiary / Payee")} ${field("apCurrency","Currency")}
+ <div class="grid"><div><label>Sales Contract</label><input value="${esc(c.no)}" readonly></div>
+ ${field("apDate","Payment Date","date")} ${field("apRef","Payment Bill / Ref No.")} ${field("apBank","Bank Name")} ${field("apRate","USD Rate")}
  <div class="full"><label>Advance Payment Copy (PDF/Image)</label><input id="apf" class="file" type="file" accept=".pdf,image/*" onchange="readPaymentCopy()"><div id="apStatus" class="notice" style="margin-top:7px">Select the payment copy. It will be read automatically.</div></div></div>
- <button class="btn s" onclick="saveAdvance()">💾 Save Advance Payment</button></div>`);
- setTimeout(()=>showAdvanceRow(0),0);
+ <button class="btn s" onclick="saveAdvance()">💾 Save Advance Payment</button></div>
+ <div class="card"><h3 style="margin:0 0 8px">💳 Payment Records by Container</h3><div class="registerWrap"><table style="min-width:1250px"><thead><tr><th>Container Row</th><th>Container No.</th><th>Allocated USD</th><th>Paid USD</th><th>Payment Date</th><th>Payment Bill / Ref</th><th>Bank</th><th>USD Rate</th><th>INR</th><th>Other Charges INR</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div>`);
+ setTimeout(()=>{showAdvanceRow(0); updateAdvanceAllocationPreview();},0);
 }
 function saveAdvance(){
- const c=get(cur); const i=parseInt($("advContainer").value,10); if(!c||isNaN(i))return;
- const b=c.bookings[i]; if(!b)return;
- const amount=$("apAmount").value.trim(); if(!amount)return alert('Payment amount is required.');
- b.advance={amount,date:$("apDate").value,ref:$("apRef").value,bank:$("apBank").value,remitter:$("apRem").value,beneficiary:$("apBen").value,currency:$("apCurrency").value,copyName:file("apf")?.name||b.advance?.copyName||''};
- b.released=true;
+ const c=get(cur); if(!c)return;
+ ensureBookingRows(c);
+ const count=Math.max(1,Math.min(c.bookings.length,parseInt($("apContainerCount")?.value||1,10)||1));
+ const totalUsd=parseFloat(($('apAmount')?.value||'').replace(/,/g,''))||0;
+ if(!totalUsd)return alert('Total Payment Amount USD is required.');
+ const totalInr=parseFloat(($('apInr')?.value||'').replace(/,/g,''))||0;
+ const totalCharges=parseFloat(($('apCharges')?.value||'').replace(/,/g,''))||0;
+ const perUsd=totalUsd/count, perInr=totalInr/count, perCharges=totalCharges/count;
+ const date=$('apDate')?.value||'', ref=$('apRef')?.value.trim()||'', bank=$('apBank')?.value.trim()||'', rate=$('apRate')?.value.trim()||'', copyName=file('apf')?.name||'';
+ for(let i=0;i<count;i++){
+   const b=c.bookings[i];
+   b.advance={amount:perUsd.toFixed(2),date,ref,bank,usdRate:rate,inr:perInr?perInr.toFixed(2):'',otherChargesInr:perCharges?perCharges.toFixed(2):'',copyName};
+   b.released=true;
+ }
+ c.advanceSummary={containers:count,totalUsd:totalUsd.toFixed(2),totalInr:totalInr?totalInr.toFixed(2):'',otherChargesInr:totalCharges?totalCharges.toFixed(2):'',date,ref,bank,usdRate:rate,copyName};
  save();
- alert('Advance payment saved for this container. The details are now visible in the Booking register.');
+ alert(`Advance payment saved for ${count} container(s). Total USD ${totalUsd.toFixed(2)} has been allocated equally.`);
  booking();
 }
 function loading(){let c=get(cur);shell("📦 Loading / Bill of Lading",head(c)+`<div class="ok">Advance completed — Loading/B/L unlocked.</div><div class="grid">${field("lb","B/L No.")}${field("lv","Vessel")}${field("lg","Voyage")}${field("ld","Loading Date","date")}${field("lq","Loaded Quantity (KG)")}${field("lc","Container / Seal No.","textarea",1)}${field("lf","Loading / B/L PDF","file",1)}</div><button class="btn s" onclick="saveLoading()">Save Loading/B/L</button>`)}
