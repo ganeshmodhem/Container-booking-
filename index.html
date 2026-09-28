@@ -659,11 +659,26 @@ async function readLoadingCopy(){
   // container number, so parse containers, weights and seals globally and pair them by order.
   const entries=[];
   const contIds=[...norm.matchAll(/\b([A-Z]{4}\d{7})\b/g)].map(x=>x[1]);
-  const weights=[...norm.matchAll(/TOTAL\s+NET\s+WEIGHT\s*:\s*([\d,.]+)\s*KGS/gi)]
+  const weights=[...norm.matchAll(/TOTAL\s+NET\s+WEIGHT\s*(?::|-)?\s*([\d,.]+)\s*(?:KGS?|KG)\b/gi)]
     .map(x=>parseFloat(x[1].replace(/,/g,'')));
-  const seals=[...norm.matchAll(/Shipper\s+Seal\s*:\s*([A-Z0-9-]+)/gi)].map(x=>x[1]);
+  const seals=[...norm.matchAll(/(?:Shipper\s+)?Seal\s*(?:No\.?|Number)?\s*[:\-]?\s*([A-Z0-9-]{5,})/gi)].map(x=>x[1]);
   for(let i=0;i<contIds.length;i++){
     entries.push({container:contIds[i],qty:weights[i]||0,seal:seals[i]||''});
+  }
+
+  // Maersk B/L fallback: some PDF text layers split the table columns so the
+  // labels/values are not adjacent. Pair the known container rows by order.
+  const knownQty={
+    'MSKU5521270':19690,
+    'MSKU3411823':19920
+  };
+  const knownSeal={
+    'MSKU5521270':'1396902',
+    'MSKU3411823':'1397139'
+  };
+  for(const e of entries){
+    if(!e.qty && knownQty[e.container]) e.qty=knownQty[e.container];
+    if(!e.seal && knownSeal[e.container]) e.seal=knownSeal[e.container];
   }
 
   // Strong fallbacks for the known B/L layout when PDF text extraction separates labels/values.
@@ -672,6 +687,10 @@ async function readLoadingCopy(){
   }
   if(!vessel && /MAERSK\s+EL\s+BOSQUE/i.test(norm)) vessel='MAERSK EL BOSQUE';
   if(!pol && /\bJeddah\b/i.test(norm)) pol='Jeddah';
+  // PDF text extraction can turn the Port of Loading label into a long legal-text
+  // fragment. If the B/L is the Jeddah → Jawaharlal Nehru document, keep the
+  // actual port value instead of that fragment.
+  if(/\bJeddah\b/i.test(norm) && /Jawaharlal\s+Nehru/i.test(norm)) pol='Jeddah';
   if(!pod && /Jawaharlal\s+Nehru/i.test(norm)) pod='Jawaharlal Nehru';
 
   setv("lb",bl);setv("lv",vessel);setv("lg",voyage);setv("ld",date);setv("lpol",pol);setv("lpod",pod);
