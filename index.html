@@ -371,6 +371,20 @@ function ensureBookingRows(c){
    if(b._slot && !b.qty) b.qty=q?String(q):'';
  });
 }
+function updateBookingField(i,key,value){
+ const c=get(cur); if(!c)return; ensureBookingRows(c);
+ const b=c.bookings[i]; if(!b)return;
+ b[key]=value;
+ // Booking quantity stays tied to the contract allocation unless user explicitly changes it.
+ if(key==='qty' && value===''){
+   const n=containerCount(c), tq=parseFloat(String(c.qty||0).replace(/,/g,''))||0;
+   b.qty=n?(tq/n).toString():'';
+ }
+ localStorage.setItem(K,JSON.stringify(db));
+}
+function bookingInput(i,key,value,type='text',width=120){
+ return `<input type="${type}" value="${esc(value||'')}" onchange="updateBookingField(${i},'${key}',this.value)" style="min-width:${width}px;padding:7px;border:1px solid #ccd5de;border-radius:7px">`;
+}
 function booking(){
  let c=get(cur); ensureBookingRows(c);
  const hasLoading=!!c.loading;
@@ -384,55 +398,132 @@ function booking(){
   ['Contract No.',c.no],['Contract Date',c.date],['Seller',c.seller],['Buyer',c.buyer],
   ['GSTIN',c.gstin],['IEC',c.iec],['HS Code',c.hs],['Commodity',c.commodity],
   ['Contract Qty (MT)',allocatedQty?String(allocatedQty):''],['Container Plan',perContainerPlan],['Price (USD/MT)',c.price],
-  ['Contract Value (USD)',allocatedValue?allocatedValue.toFixed(2):''],
-  ['Port of Loading',c.pol],['Port of Discharge',c.pod],['Advance (USD)',allocatedAdv?allocatedAdv.toFixed(2):'']
+  ['Contract Value (USD)',allocatedValue?allocatedValue.toFixed(2):''],['Port of Loading',c.pol],['Port of Discharge',c.pod]
  ];
  const bookingCols=[['Booking No.','no'],['Booking Container','container'],['Booking Qty (MT)','qty'],['Vessel','vessel'],['ETD','etd'],['ETA','eta']];
+ const advanceCols=[['Advance USD','amount'],['Advance Date','date'],['Payment Ref / UTR','ref'],['Bank','bank'],['Remitter','remitter'],['Beneficiary','beneficiary'],['Currency','currency'],['Payment Copy','copyName']];
  const loadingCols=hasLoading?[
-  ['B/L No.','bl'],['Loading Vessel','vessel'],['Voyage','voyage'],['Loading Date','date'],
-  ['Loaded Qty (KG)','qty'],['Container / Seal No.','containers']
+  ['B/L No.','bl'],['Loading Vessel','vessel'],['Voyage','voyage'],['Loading Date','date'],['Loaded Qty (KG)','qty'],['Container / Seal No.','containers']
  ]:[];
- const allHeaders=[...contractCols.map(x=>x[0]),...bookingCols.map(x=>x[0]),...loadingCols.map(x=>x[0]),'Release','Delete'];
+ const allHeaders=[...contractCols.map(x=>x[0]),...bookingCols.map(x=>x[0]),...advanceCols.map(x=>x[0]),...loadingCols.map(x=>x[0]),'Release','Delete'];
  const rowFor=(b,i)=>{
-  const vals=[...contractCols.map(x=>x[1]),...bookingCols.map(x=>b[x[1]]||''),
+  const av=b.advance||{};
+  const vals=[...contractCols.map(x=>x[1]),
+    bookingInput(i,'no',b.no,'text',135),bookingInput(i,'container',b.container,'text',155),
+    bookingInput(i,'qty',b.qty||allocatedQty,'number',95),bookingInput(i,'vessel',b.vessel,'text',135),
+    bookingInput(i,'etd',b.etd,'date',125),bookingInput(i,'eta',b.eta,'date',125),
+    ...advanceCols.map(x=>av[x[1]]||''),
     ...(hasLoading?loadingCols.map(x=>c.loading?.[x[1]]||''):[])];
   const rowNo=b.slot||i+1;
   const action=b.released?'<span class="badge">RELEASED ✓</span>':`<button class="btn w" style="margin:0;padding:7px 10px" onclick="releaseB(${i})">🚢 RELEASE</button>`;
-  return `<tr><td style="background:#f8fafc;font-weight:bold">${rowNo}/${n}</td>${vals.map(v=>`<td>${esc(v)}</td>`).join('')}<td style="white-space:nowrap">${action}</td><td><button class="btn" style="margin:0;padding:7px 10px;background:#c62828;color:#fff" onclick="deleteBooking(${i})">🗑 DELETE</button></td></tr>`;
+  return `<tr><td style="background:#f8fafc;font-weight:bold">${rowNo}/${n}</td>${vals.map(v=>`<td>${typeof v==='string'&&v.startsWith('<input')?v:esc(v)}</td>`).join('')}<td style="white-space:nowrap">${action}</td><td><button class="btn" style="margin:0;padding:7px 10px;background:#c62828;color:#fff" onclick="deleteBooking(${i})">🗑 DELETE</button></td></tr>`;
  };
- // Add a leading row-number header so the four container allocation is obvious.
  allHeaders.unshift('Container Row');
  const empty=`<tr><td colspan="${allHeaders.length}" style="text-align:center;padding:18px">No booking rows.</td></tr>`;
- shell("🚢 Booking",head(c)+`<div class="card"><div class="grid">${field("bn","Booking No.")}${field("cn","Container No.")}${field("bq","Quantity (MT)")}${field("bv","Vessel")}${field("be","ETD","date")}${field("ba","ETA","date")}${field("bf","Booking PDF/Image","file",1)}</div><button class="btn p" onclick="addB()">Save Booking</button></div>
+ shell("🚢 Booking",head(c)+`
  <h3 style="margin-top:16px">📊 Contract + Booking Register${hasLoading?' + Loading/B/L':''}</h3>
- <div class="notice">4-container contract is split automatically: 80 MT → 20 MT each, USD 64,800 contract value each, USD 16,200 advance each, and 1 × 20' container per row.</div>
- <div style="overflow-x:auto;border:1px solid #d6dde5;border-radius:10px;background:#fff">
- <table style="min-width:${allHeaders.length*125}px;width:100%;border-collapse:collapse">
+ <div class="notice">${n}-container contract is split automatically. Booking details can be entered directly in each row. Advance payment details will appear in the same container row after payment-copy verification.</div>
+ <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff">
+ <table style="min-width:${allHeaders.length*145}px;width:max-content;border-collapse:collapse">
  <thead><tr>${allHeaders.map(h=>`<th style="position:sticky;top:0;background:#f3f6fa;white-space:nowrap">${esc(h)}</th>`).join('')}</tr></thead>
  <tbody>${c.bookings.map(rowFor).join('')||empty}</tbody>
  </table></div>`);
 }
 function addB(){
- let c=get(cur); ensureBookingRows(c);
- // Fill the first empty allocation row rather than creating an extra row.
- let idx=c.bookings.findIndex(b=>b._slot && !b.no && !b.container);
- if(idx<0) return alert('All planned container rows are already used.');
- const b=c.bookings[idx];
- b.no=$("bn").value; b.container=$("cn").value; b.qty=$("bq").value||b.qty; b.vessel=$("bv").value; b.etd=$("be").value; b.eta=$("ba").value; b.file=file("bf");
- save(); booking();
+ // Top booking entry form intentionally removed. Booking is entered directly in the container row.
+ alert('Booking details are now entered directly in the container row.');
 }
-function releaseB(i){get(cur).bookings[i].released=true;save();alert("Booking released. Advance unlocked.");openPage("advance",cur)}
+function releaseB(i){
+ const c=get(cur); const b=c?.bookings?.[i]; if(!b)return;
+ b.released=true; localStorage.setItem(K,JSON.stringify(db)); cur=c.no;
+ alert('Booking released. Now upload the advance payment copy for this container.');
+ openPage('advance',cur); setTimeout(()=>{const sel=$('advContainer'); if(sel){sel.value=String(i); showAdvanceRow(i);}},50);
+}
 function deleteBooking(i){
  const c=get(cur); const b=c?.bookings?.[i]; if(!b)return;
  const label=b.no||b.container||`Container Row ${i+1}`;
- if(!confirm(`Delete ${label}? The booking details will be cleared and the container allocation row will remain.`))return;
+ if(!confirm(`Delete ${label}? The booking details and its advance-payment record will be cleared; the container allocation row will remain.`))return;
  const totalQty=parseFloat(String(c.qty||0).replace(/,/g,''))||0;
  const n=containerCount(c); const q=totalQty/n;
- b.no=''; b.container=''; b.qty=q?String(q):''; b.vessel=''; b.etd=''; b.eta=''; b.file=null; b.released=false; b._slot=true;
+ b.no=''; b.container=''; b.qty=q?String(q):''; b.vessel=''; b.etd=''; b.eta=''; b.file=null; b.released=false; b._slot=true; b.advance=null;
  save(); booking();
 }
-function advance(){let c=get(cur);shell("💵 Advance Payment",head(c)+`<div class="ok">Booking released — Advance Payment unlocked.</div><div class="grid">${field("aa","Advance USD")}${field("ad","Payment Date","date")}${field("ar","Exchange Rate")}${field("ai","INR Amount")}${field("ax","Reference")}${field("af","Payment Copy","file",1)}</div><button class="btn s" onclick="saveAdvance()">Save Advance Payment</button>`)}
-function saveAdvance(){let c=get(cur);c.advance={amount:$("aa").value,date:$("ad").value,rate:$("ar").value,inr:$("ai").value,ref:$("ax").value,file:file("af")};save();openPage("loading",cur)}
+async function readPaymentCopy(){
+ const f=$("apf")?.files?.[0]; if(!f)return alert('Please select the Advance Payment Copy first.');
+ $("apStatus").textContent='⏳ Reading payment copy…';
+ try{
+   let text='';
+   if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
+     await ensurePdfJS();
+     const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+     for(let i=1;i<=pdf.numPages;i++){
+       const pg=await pdf.getPage(i),tc=await pg.getTextContent();
+       text+=tc.items.map(x=>x.str).join(' ')+'\n';
+     }
+     if(text.replace(/\s/g,'').length<30){
+       await ensureTesseract();
+       for(let i=1;i<=pdf.numPages;i++){
+         const pg=await pdf.getPage(i),vp=pg.getViewport({scale:1.8});
+         const cv=document.createElement('canvas'),ctx=cv.getContext('2d');cv.width=vp.width;cv.height=vp.height;
+         await pg.render({canvasContext:ctx,viewport:vp}).promise;
+         const r=await Tesseract.recognize(cv,'eng'); text+='\n'+(r.data.text||'');
+       }
+     }
+   }else{
+     await ensureTesseract(); const r=await Tesseract.recognize(f,'eng'); text=r.data.text||'';
+   }
+   parsePaymentText(text);
+   $("apStatus").textContent='✅ Payment copy read. Verify the extracted information before saving.';
+ }catch(e){console.error(e);$("apStatus").textContent='⚠️ Could not read payment copy. Enter the fields manually.';}
+}
+function parsePaymentText(x){
+ const norm=x.replace(/\s+/g,' ');
+ const amount=(norm.match(/(?:USD|US\$|\$)\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||'';
+ const date=(norm.match(/(?:payment\s*date|value\s*date|transaction\s*date|date)\s*[:\-]?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/i)||[])[1]||'';
+ const ref=(norm.match(/(?:UTR|transaction\s*(?:id|no|number)|reference\s*(?:no|number)?|bank\s*ref(?:erence)?)[\s:#-]*([A-Z0-9\/-]{6,40})/i)||[])[1]||'';
+ const bank=(norm.match(/(?:bank\s*name|bank)\s*[:\-]?\s*([A-Z][A-Z &.\-]{3,60})(?=\s+(?:branch|account|a\/c|date|amount|utr|transaction)|$)/i)||[])[1]||'';
+ const currency=(norm.match(/\b(USD|US\$|INR|EUR|AED|SAR|GBP)\b/i)||[])[1]||'';
+ const rem=(norm.match(/(?:remitter|sender|payer|from)\s*[:\-]?\s*([A-Z][A-Z .,&()'-]{3,80})(?=\s+(?:beneficiary|to|bank|account|date|amount)|$)/i)||[])[1]||'';
+ const ben=(norm.match(/(?:beneficiary|payee|to)\s*[:\-]?\s*([A-Z][A-Z .,&()'-]{3,100})(?=\s+(?:bank|account|date|amount|currency|utr)|$)/i)||[])[1]||'';
+ if($("apAmount"))$("apAmount").value=amount.replace(/,/g,'');
+ if($("apDate"))$("apDate").value=normaliseDate(date);
+ if($("apRef"))$("apRef").value=ref;
+ if($("apBank"))$("apBank").value=cleanLine(bank);
+ if($("apRem"))$("apRem").value=cleanLine(rem);
+ if($("apBen"))$("apBen").value=cleanLine(ben);
+ if($("apCurrency"))$("apCurrency").value=currency.toUpperCase();
+}
+function normaliseDate(v){
+ if(!v)return ''; const a=v.split(/[\/\-.]/); if(a.length!==3)return v;
+ let y=a[2]; if(y.length===2)y='20'+y; return `${y}-${a[1].padStart(2,'0')}-${a[0].padStart(2,'0')}`;
+}
+function showAdvanceRow(i){
+ const c=get(cur); if(!c)return; ensureBookingRows(c); const b=c.bookings[i];
+ $('apAllocated').value=b?((b.allocatedAdvance||0).toFixed?b.allocatedAdvance.toFixed(2):(b.allocatedAdvance||'')):'';
+ const av=b?.advance||{};
+ ['apAmount','apDate','apRef','apBank','apRem','apBen','apCurrency'].forEach(id=>{if($(id))$(id).value=av[id.replace('ap','').toLowerCase()]||$(id).value||'';});
+}
+function advance(){
+ let c=get(cur); ensureBookingRows(c);
+ const opts=c.bookings.map((b,i)=>`<option value="${i}">Container Row ${i+1}/${c.bookings.length}${b.container?' — '+esc(b.container):''}</option>`).join('');
+ shell("💵 Advance Payment",head(c)+`<div class="notice">Upload the payment copy for one container. The reader can extract payment amount, date, UTR/transaction reference, bank, remitter, beneficiary and currency when those fields are present in the document. Always verify before saving.</div>
+ <div class="grid"><div><label>Sales Contract</label><input value="${esc(c.no)}" readonly></div><div><label>Container Row</label><select id="advContainer" onchange="showAdvanceRow(parseInt(this.value,10))">${opts}</select></div>
+ ${field("apAllocated","Allocated Advance USD")} ${field("apAmount","Payment Amount USD")} ${field("apDate","Payment Date","date")} ${field("apRef","UTR / Transaction Ref")} ${field("apBank","Bank")} ${field("apRem","Remitter / Payer")} ${field("apBen","Beneficiary / Payee")} ${field("apCurrency","Currency")} 
+ <div class="full"><label>Advance Payment Copy</label><input id="apf" class="file" type="file" accept=".pdf,image/*" onchange="readPaymentCopy()"><div id="apStatus" class="notice" style="margin-top:7px">Select the payment copy to read it automatically.</div></div></div>
+ <button class="btn s" onclick="saveAdvance()">💾 Save Advance Payment</button>
+ <h3 style="margin-top:16px">Payment Records by Container</h3><div class="registerWrap"><table style="min-width:900px"><thead><tr><th>Container Row</th><th>Container</th><th>Allocated USD</th><th>Paid USD</th><th>Date</th><th>UTR / Ref</th><th>Bank</th><th>Status</th></tr></thead><tbody>${c.bookings.map((b,i)=>{const a=b.advance||{};return `<tr><td>${i+1}/${c.bookings.length}</td><td>${esc(b.container)}</td><td>${esc((b.allocatedAdvance||0).toFixed?b.allocatedAdvance.toFixed(2):b.allocatedAdvance||'')}</td><td>${esc(a.amount||'')}</td><td>${esc(a.date||'')}</td><td>${esc(a.ref||'')}</td><td>${esc(a.bank||'')}</td><td>${a.amount?'<span class="badge">SAVED ✓</span>':'Pending'}</td></tr>`}).join('')}</tbody></table></div>`);
+ setTimeout(()=>showAdvanceRow(0),0);
+}
+function saveAdvance(){
+ const c=get(cur); const i=parseInt($("advContainer").value,10); if(!c||isNaN(i))return;
+ const b=c.bookings[i]; if(!b)return;
+ const amount=$("apAmount").value.trim(); if(!amount)return alert('Payment amount is required.');
+ b.advance={amount,date:$("apDate").value,ref:$("apRef").value,bank:$("apBank").value,remitter:$("apRem").value,beneficiary:$("apBen").value,currency:$("apCurrency").value,copyName:file("apf")?.name||b.advance?.copyName||''};
+ b.released=true;
+ save();
+ alert('Advance payment saved for this container. The details are now visible in the Booking register.');
+ booking();
+}
 function loading(){let c=get(cur);shell("📦 Loading / Bill of Lading",head(c)+`<div class="ok">Advance completed — Loading/B/L unlocked.</div><div class="grid">${field("lb","B/L No.")}${field("lv","Vessel")}${field("lg","Voyage")}${field("ld","Loading Date","date")}${field("lq","Loaded Quantity (KG)")}${field("lc","Container / Seal No.","textarea",1)}${field("lf","Loading / B/L PDF","file",1)}</div><button class="btn s" onclick="saveLoading()">Save Loading/B/L</button>`)}
 function saveLoading(){let c=get(cur);c.loading={bl:$("lb").value,vessel:$("lv").value,voyage:$("lg").value,date:$("ld").value,qty:$("lq").value,containers:$("lc").value,file:file("lf")};save();openPage("invoice",cur)}
 function invoice(){let c=get(cur);shell("🧾 Final Invoice",head(c)+`<div class="ok">Loading/B/L completed — Invoice unlocked.</div><div class="grid">${field("ino","Invoice No.")}${field("id","Invoice Date","date")}${field("iq","Invoice Quantity (MT)")}${field("ip","Unit Price USD/MT")}${field("iv","Invoice Amount USD")}${field("ia","Advance Deducted USD")}${field("ib","Balance USD")}${field("if","Invoice Copy","file",1)}</div><button class="btn s" onclick="saveInvoice()">Save Final Invoice</button>`)}
