@@ -392,7 +392,7 @@ function syncSavedLoadingData(c){
   const knownSeal={'MSKU5521270':'1396902','MSKU3411823':'1397139'};
   c.bookings.forEach(b=>{
     if(!b || !b.container) return;
-    if(knownQty[b.container]) b.loadingQty=knownQty[b.container];
+    if(knownQty[b.container]) b.loadingQty=knownQty[b.container]/1000;
     if(knownSeal[b.container]) b.seal=knownSeal[b.container];
     if(!b.pol || /place of receipt|port of discharge|such carriage/i.test(String(b.pol))) b.pol='Jeddah';
     if(!b.pod) b.pod='Jawaharlal Nehru';
@@ -415,7 +415,7 @@ function booking(){
   ['Contract Qty (MT)',allocatedQty?String(allocatedQty):''],['Container Plan',perContainerPlan],['Price (USD/MT)',c.price],
   ['Contract Value (USD)',allocatedValue?allocatedValue.toFixed(2):''],['Port of Loading',c.pol],['Port of Discharge',c.pod]
  ];
- const bookingCols=[['Booking No.','no'],['Container No.','container'],['Booking Qty (MT)','qty'],['Vessel','vessel'],['ETD','etd'],['ETA','eta'],['B/L No.','bl'],['Seal No.','seal'],['Voyage','voyage'],['Loading Date','loadingDate'],['Loading Qty (KG)','loadingQty'],['Port of Loading','pol'],['Port of Discharge','pod']];
+ const bookingCols=[['Booking No.','no'],['Container No.','container'],['Booking Qty (MT)','qty'],['Vessel','vessel'],['ETD','etd'],['ETA','eta'],['B/L No.','bl'],['Seal No.','seal'],['Voyage','voyage'],['Loading Date','loadingDate'],['Loading Qty (MT)','loadingQty'],['Port of Loading','pol'],['Port of Discharge','pod']];
  const advanceCols=[['Advance USD','amount'],['Payment Date','date'],['Payment Bill / Ref No.','ref'],['Bank','bank'],['USD Rate','usdRate'],['Payment Amount INR','inr'],['Other Charges INR','otherChargesInr'],['Payment Copy','copyName']];
  const loadingCols=[];
  const allHeaders=[...contractCols.map(x=>x[0]),...bookingCols.map(x=>x[0]),...advanceCols.map(x=>x[0]),...loadingCols.map(x=>x[0]),'Release','Delete'];
@@ -429,7 +429,7 @@ function booking(){
     bookingInput(i,'etd',b.etd,'date',125),
     bookingInput(i,'eta',b.eta,'date',125),
     b.bl||'', b.seal||'', b.voyage||'', b.loadingDate||'',
-    b.loadingQty ? Number(b.loadingQty).toFixed(2) : '',
+    b.loadingQty !== undefined && b.loadingQty !== '' ? Number(b.loadingQty).toFixed(2) : '',
     b.pol||'', b.pod||''
   ];
   const vals=[...contractCols.map(x=>x[1]), ...bookingVals, ...advanceCols.map(x=>av[x[1]]||'')];
@@ -732,7 +732,7 @@ async function readLoadingCopy(){
 }
 function renderLoadingRows(entries){
  const box=$("loadingRows"); if(!box)return;
- const rows=(entries||[]).map((x,i)=>`<tr><td>${i+1}</td><td><input id="lc_${i}" value="${esc(x.container||'')}" style="min-width:170px"></td><td><input id="ls_${i}" value="${esc(x.seal||'')}" style="min-width:120px"></td><td><input id="lq_${i}" value="${x.qty||''}" type="number" step="0.01" style="min-width:110px"></td><td><input value="${esc($("lb")?.value||'')}" disabled style="min-width:120px"></td></tr>`).join('');
+ const rows=(entries||[]).map((x,i)=>`<tr><td>${i+1}</td><td><input id="lc_${i}" value="${esc(x.container||'')}" style="min-width:170px"></td><td><input id="ls_${i}" value="${esc(x.seal||'')}" style="min-width:120px"></td><td><input id="lq_${i}" value="${x.qty ? (Number(x.qty)/1000).toFixed(2) : ''}" type="number" step="0.01" style="min-width:110px"></td><td><input value="${esc($("lb")?.value||'')}" disabled style="min-width:120px"></td></tr>`).join('');
  box.innerHTML=rows||'<tr><td colspan="5">Upload the Loading/B.L PDF to read container details.</td></tr>';
 }
 let loadingSearched=false;
@@ -762,7 +762,7 @@ function loading(){
  ${field("lb","B/L No.")}${field("lv","Vessel")}${field("lg","Voyage")}${field("ld","Loading Date","date")}${field("lpol","Port of Loading")}${field("lpod","Port of Discharge")}${field("lf","Loading / B/L PDF","file",1)}
  <div class="full" id="loadingStatus" class="notice">Upload <b>3.LOADING.pdf</b>. Only the first <b>${advCount} container(s)</b>, according to Advance payment, will be loaded into the Booking register.</div>
  </div></div>
- <div class="card"><h3>Container-wise Loading — ${advCount} of ${contractCount}</h3><div class="registerWrap"><table style="min-width:900px"><thead><tr><th>Row</th><th>Container No.</th><th>Seal No.</th><th>Loading Qty (KG)</th><th>B/L No.</th></tr></thead><tbody id="loadingRows">${allowed.map((b,i)=>`<tr><td>${i+1}/${advCount}</td><td><input id="lc_${i}" value="${esc(b.container||'')}" style="min-width:170px"></td><td><input id="ls_${i}" value="${esc(b.seal||'')}" style="min-width:120px"></td><td><input id="lq_${i}" value="${esc(b.loadingQty||'')}" type="number" step="0.01" style="min-width:110px"></td><td><input id="lbl_${i}" value="${esc(b.bl||'')}" style="min-width:120px"></td></tr>`).join('')}</tbody></table></div></div>
+ <div class="card"><h3>Container-wise Loading — ${advCount} of ${contractCount}</h3><div class="registerWrap"><table style="min-width:900px"><thead><tr><th>Row</th><th>Container No.</th><th>Seal No.</th><th>Loading Qty (MT)</th><th>B/L No.</th></tr></thead><tbody id="loadingRows">${allowed.map((b,i)=>`<tr><td>${i+1}/${advCount}</td><td><input id="lc_${i}" value="${esc(b.container||'')}" style="min-width:170px"></td><td><input id="ls_${i}" value="${esc(b.seal||'')}" style="min-width:120px"></td><td><input id="lq_${i}" value="${b.loadingQty!==undefined && b.loadingQty!=='' ? Number(b.loadingQty).toFixed(2) : ''}" type="number" step="0.01" style="min-width:110px"></td><td><input id="lbl_${i}" value="${esc(b.bl||'')}" style="min-width:120px"></td></tr>`).join('')}</tbody></table></div></div>
  <button class="btn s" onclick="saveLoading()">💾 Save Loading/B.L</button>`);
  const f=$("lf"); if(f)f.addEventListener("change",readLoadingCopy);
 }
@@ -777,8 +777,8 @@ function saveLoading(){
    const pe=parsed[i]||{};
    const container=$("lc_"+i)?.value.trim()||pe.container||'';
    let qty=parseFloat($("lq_"+i)?.value||0)||0;
-   if(!qty && pe.qty) qty=Number(pe.qty)||0;
-   if(!qty && knownQty[container]) qty=knownQty[container];
+   if(!qty && pe.qty) qty=(Number(pe.qty)||0)/1000;
+   if(!qty && knownQty[container]) qty=knownQty[container]/1000;
    const seal=$("ls_"+i)?.value.trim()||pe.seal||'';
    const blRow=$("lbl_"+i)?.value.trim()||$("lb")?.value||'';
    rows.push({container,seal,qty,bl:blRow});
@@ -794,7 +794,7 @@ function boe(){let c=get(cur);shell("🛃 Bill of Entry",head(c)+`<div class="ok
 function saveBoe(){let c=get(cur);c.boe={no:$("ben").value,date:$("bed").value,value:$("bev").value,assess:$("bea").value,duty:$("bedu").value,rate:$("ber").value,ooc:$("beo").value,oocDate:$("beod").value,file:file("bef")};save();openPage("finalpay",cur)}
 function finalpay(){let c=get(cur);shell("💰 Final Payment",head(c)+`<div class="ok">Bill of Entry completed — Final Payment unlocked.</div><div class="grid">${field("fa","Final Payment USD")}${field("fd","Payment Date","date")}${field("fr","Exchange Rate")}${field("fi","INR Amount")}${field("fx","Reference")}${field("ff","Payment Copy","file",1)}</div><button class="btn s" onclick="saveFinalPay()">Save Final Payment</button>`)}
 function saveFinalPay(){let c=get(cur);c.finalpay={amount:$("fa").value,date:$("fd").value,rate:$("fr").value,inr:$("fi").value,ref:$("fx").value,file:file("ff")};save();openPage("final",cur)}
-function finalRec(){let c=get(cur);shell("📄 Final Record",head(c)+`<div class="ok">Final Payment completed — Final Record unlocked.</div><table><tr><th>Stage</th><th>Record</th></tr><tr><td>Contract</td><td>USD ${esc(c.price)}/MT | ${esc(c.qty)} MT</td></tr><tr><td>Booking</td><td>${c.bookings.length} booking(s)</td></tr><tr><td>Advance</td><td>USD ${esc(c.advance?.amount)}</td></tr><tr><td>Loading/B/L</td><td>${esc(c.loading?.bl)} | ${esc(c.loading?.qty)} KG</td></tr><tr><td>Invoice</td><td>${esc(c.invoice?.no)} | USD ${esc(c.invoice?.amount)}</td></tr><tr><td>Bill of Entry</td><td>${esc(c.boe?.no)} | Duty INR ${esc(c.boe?.duty)}</td></tr><tr><td>Final Payment</td><td>USD ${esc(c.finalpay?.amount)} | INR ${esc(c.finalpay?.inr)}</td></tr></table><div class="card"><label>Final Document</label><input id="ffinal" class="file" type="file" accept=".pdf,image/*"><button class="btn s" onclick="complete()">✅ Complete Final Record</button></div>${c.final?'<div class="ok">✅ FINAL RECORD COMPLETED</div>':''}`)}
+function finalRec(){let c=get(cur);shell("📄 Final Record",head(c)+`<div class="ok">Final Payment completed — Final Record unlocked.</div><table><tr><th>Stage</th><th>Record</th></tr><tr><td>Contract</td><td>USD ${esc(c.price)}/MT | ${esc(c.qty)} MT</td></tr><tr><td>Booking</td><td>${c.bookings.length} booking(s)</td></tr><tr><td>Advance</td><td>USD ${esc(c.advance?.amount)}</td></tr><tr><td>Loading/B/L</td><td>${esc(c.loading?.bl)} | ${esc(c.loading?.qty)} MT</td></tr><tr><td>Invoice</td><td>${esc(c.invoice?.no)} | USD ${esc(c.invoice?.amount)}</td></tr><tr><td>Bill of Entry</td><td>${esc(c.boe?.no)} | Duty INR ${esc(c.boe?.duty)}</td></tr><tr><td>Final Payment</td><td>USD ${esc(c.finalpay?.amount)} | INR ${esc(c.finalpay?.inr)}</td></tr></table><div class="card"><label>Final Document</label><input id="ffinal" class="file" type="file" accept=".pdf,image/*"><button class="btn s" onclick="complete()">✅ Complete Final Record</button></div>${c.final?'<div class="ok">✅ FINAL RECORD COMPLETED</div>':''}`)}
 function complete(){let c=get(cur),f=file("ffinal");if(!f)return alert("Upload final document.");c.final={file:f,date:new Date().toISOString()};save();finalRec()}
 document.addEventListener("input",e=>{if(e.target.id==="price"||e.target.id==="qty"){let p=parseFloat($("price")?.value||0),q=parseFloat($("qty")?.value||0);if($("contractValue"))$("contractValue").value=p&&q?(p*q).toFixed(2):"";}});render();
 </script></body></html>
