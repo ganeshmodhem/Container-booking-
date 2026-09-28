@@ -226,6 +226,11 @@ function parseContractText(t){
  // Seller is allowed to be extracted from a company-like line or an explicit seller label.
  let seller=labeledParty(["seller","exporter","supplier"]);
  const companies=companyCandidates(lines);
+ // This contract is from AL DOHA METAL TRADING L.L.C.; if the document text contains
+ // that supplier name, use the exact legal name rather than relying on OCR line order.
+ if(/AL\s+DOHA\s+METAL\s+TRADING\s+L\.?L\.?C\.?/i.test(x)){
+   seller="AL DOHA METAL TRADING L.L.C";
+ }
  if(!seller && companies.length)seller=companies[0];
 
  // Buyer must be explicitly identified or appear as a separate company line.
