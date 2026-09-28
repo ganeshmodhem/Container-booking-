@@ -489,7 +489,7 @@ function parsePaymentText(x){
  const tol=(norm.match(/TOL\s+Ref\s+No\.?\s*([A-Z0-9\/-]+)/i)||[])[1]||'';
  const ref=[ourBill,tol].filter(Boolean).join(' / ');
  const bank=(norm.match(/(?:To|From)\s*:\s*(?:ICICI\s+BANK\s+LIMITED|[^:]+?)?\s*From\s*:\s*ICICI\s+BANK\s+LIMITED/i)||[])[0]?'ICICI BANK LIMITED':((norm.match(/(?:bank\s+name|bank)\s*[:\-]?\s*([A-Z][A-Z &.\-]{3,60})(?=\s+(?:branch|account|a\/c|date|amount|utr|transaction|reference|value)|$)/i)||[])[1]||'');
- const rate=(norm.match(/Conversion\s+Rate\s+(?:@\s*)?([0-9]+(?:\.\d{1,4})?)/i)||[])[1]||((norm.match(/(?:exchange\s*rate|usd\s*rate|rate)\s*[:=\-]?\s*(?:USD\s*\/\s*INR\s*)?([0-9]+(?:\.\d{1,4})?)/i)||[])[1]||'');
+ const rate=((norm.match(/Conversion\s+Rate[^@]{0,180}?@\s*([0-9]+(?:\.\d{1,6})?)/i)||[])[1]||((norm.match(/(?:Principal\s+Amount|Bill\s+Amount)[^@]{0,180}?@\s*([0-9]+(?:\.\d{1,6})?)/i)||[])[1]||((norm.match(/(?:exchange\s*rate|usd\s*rate|rate)\s*[:=\-]?\s*(?:USD\s*\/\s*INR\s*)?([0-9]+(?:\.\d{1,6})?)/i)||[])[1]||''));
  const inr=(norm.match(/Principal\s+Amount\s+USD[\s\S]{0,120}?@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||((norm.match(/(?:payment\s+amount\s+inr|total\s+inr|INR\s+amount)\s*[:\-]?\s*(?:INR|RS\.?|₹)?\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||'');
  const totalAdvice=(norm.match(/A\/C\s+Number:[^\n]*?Total:\s*INR\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||'';
  // For this advice, "Total" at the end is not the foreign principal; other charges are the debit advice total.
@@ -565,7 +565,7 @@ function advance(){
    ${field("apDate","Payment Date","date")}
    ${field("apRef","Payment Bill / Ref No.")}
    ${field("apBank","Bank Name")}
-   ${field("apRate","USD Rate")}
+   ${field("apRate","USD Rate")}<div class="full"><div class="muted">Payment advice format such as <b>@95.855</b> will be captured as the USD/INR rate.</div></div>
    <div class="full"><label>Advance Payment Copy (PDF/Image)</label><input id="apf" class="file" type="file" accept=".pdf,image/*" onchange="readPaymentCopy()"><div id="apStatus" class="notice" style="margin-top:7px">Upload the payment copy. The system will extract the payment fields and then divide the total according to the selected number of containers.</div></div>
  </div>
  <div class="notice">तुम्ही या payment मध्ये जितक्या containers चा advance आहे तितकी संख्या निवडा. PDF upload केल्यावर <b>Total USD, Payment Date, Bank, Bill/Ref No., USD Rate, Total INR आणि Other Charges</b> भरले जातील. त्यानंतर रक्कम selected containers मध्ये समान divide होईल.</div>
