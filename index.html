@@ -503,15 +503,33 @@ function showAdvanceRow(i){
  const av=b?.advance||{};
  ['apAmount','apDate','apRef','apBank','apRem','apBen','apCurrency'].forEach(id=>{if($(id))$(id).value=av[id.replace('ap','').toLowerCase()]||$(id).value||'';});
 }
+let advanceSearched=false;
+function searchAdvanceContract(){
+ const no=(document.getElementById('advanceSearchNo')?.value||'').trim();
+ const c=get(no);
+ if(!c){alert('Sales Contract not found. Please enter the saved Sales Contract No.');return;}
+ cur=c.no; advanceSearched=true; page='advance'; render();
+}
 function advance(){
- let c=get(cur); ensureBookingRows(c);
+ let c=advanceSearched?get(cur):null;
+ if(c) ensureBookingRows(c);
+ const searchBox=`<div class="card" style="border:2px solid #d8e4ee">
+   <h3 style="margin:0 0 8px">🔎 Step 1 — Search Sales Contract</h3>
+   <div class="search"><input id="advanceSearchNo" value="${esc(c?.no||'')}" placeholder="Enter Sales Contract No."><button class="btn p" onclick="searchAdvanceContract()">Search</button></div>
+   <div class="muted" style="margin-top:6px">First search the Sales Contract. After searching, the container-wise advance allocation will appear.</div>
+ </div>`;
+ if(!c){shell("💵 Advance Payment",searchBox);return;}
  const opts=c.bookings.map((b,i)=>`<option value="${i}">Container Row ${i+1}/${c.bookings.length}${b.container?' — '+esc(b.container):''}</option>`).join('');
- shell("💵 Advance Payment",head(c)+`<div class="notice">Upload the payment copy for one container. The reader can extract payment amount, date, UTR/transaction reference, bank, remitter, beneficiary and currency when those fields are present in the document. Always verify before saving.</div>
+ const rows=c.bookings.map((b,i)=>{const a=b.advance||{};return `<tr><td>${i+1}/${c.bookings.length}</td><td>${esc(b.container||'')}</td><td>${esc((b.allocatedAdvance||0).toFixed?b.allocatedAdvance.toFixed(2):(b.allocatedAdvance||''))}</td><td>${esc(a.amount||'')}</td><td>${esc(a.date||'')}</td><td>${esc(a.ref||'')}</td><td>${esc(a.bank||'')}</td><td>${a.amount?'<span class="badge">SAVED ✓</span>':'<span class="badge" style="background:#fff0cf;color:#8a5a00">PENDING</span>'}</td></tr>`}).join('');
+ shell("💵 Advance Payment",searchBox+`
+ <div class="ok"><b>Sales Contract Found:</b> ${esc(c.no)} &nbsp; | &nbsp; <b>Buyer:</b> ${esc(c.buyer)} &nbsp; | &nbsp; <b>Total Advance:</b> USD ${esc(c.advanceAmt||'0')} &nbsp; | &nbsp; <b>Containers:</b> ${c.bookings.length}</div>
+ <div class="card" style="border:2px solid #e5eaf0"><h3 style="margin:0 0 8px">📦 Step 2 — Container-wise Advance</h3>
+ <div class="registerWrap"><table style="min-width:900px"><thead><tr><th>Container Row</th><th>Container No.</th><th>Allocated Advance USD</th><th>Paid USD</th><th>Payment Date</th><th>UTR / Ref</th><th>Bank</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+ <div class="card" style="border:2px solid #e5eaf0"><h3 style="margin:0 0 8px">📄 Step 3 — Upload Payment Copy</h3>
  <div class="grid"><div><label>Sales Contract</label><input value="${esc(c.no)}" readonly></div><div><label>Container Row</label><select id="advContainer" onchange="showAdvanceRow(parseInt(this.value,10))">${opts}</select></div>
- ${field("apAllocated","Allocated Advance USD")} ${field("apAmount","Payment Amount USD")} ${field("apDate","Payment Date","date")} ${field("apRef","UTR / Transaction Ref")} ${field("apBank","Bank")} ${field("apRem","Remitter / Payer")} ${field("apBen","Beneficiary / Payee")} ${field("apCurrency","Currency")} 
- <div class="full"><label>Advance Payment Copy</label><input id="apf" class="file" type="file" accept=".pdf,image/*" onchange="readPaymentCopy()"><div id="apStatus" class="notice" style="margin-top:7px">Select the payment copy to read it automatically.</div></div></div>
- <button class="btn s" onclick="saveAdvance()">💾 Save Advance Payment</button>
- <h3 style="margin-top:16px">Payment Records by Container</h3><div class="registerWrap"><table style="min-width:900px"><thead><tr><th>Container Row</th><th>Container</th><th>Allocated USD</th><th>Paid USD</th><th>Date</th><th>UTR / Ref</th><th>Bank</th><th>Status</th></tr></thead><tbody>${c.bookings.map((b,i)=>{const a=b.advance||{};return `<tr><td>${i+1}/${c.bookings.length}</td><td>${esc(b.container)}</td><td>${esc((b.allocatedAdvance||0).toFixed?b.allocatedAdvance.toFixed(2):b.allocatedAdvance||'')}</td><td>${esc(a.amount||'')}</td><td>${esc(a.date||'')}</td><td>${esc(a.ref||'')}</td><td>${esc(a.bank||'')}</td><td>${a.amount?'<span class="badge">SAVED ✓</span>':'Pending'}</td></tr>`}).join('')}</tbody></table></div>`);
+ ${field("apAllocated","Allocated Advance USD")} ${field("apAmount","Payment Amount USD")} ${field("apDate","Payment Date","date")} ${field("apRef","UTR / Transaction Ref")} ${field("apBank","Bank")} ${field("apRem","Remitter / Payer")} ${field("apBen","Beneficiary / Payee")} ${field("apCurrency","Currency")}
+ <div class="full"><label>Advance Payment Copy (PDF/Image)</label><input id="apf" class="file" type="file" accept=".pdf,image/*" onchange="readPaymentCopy()"><div id="apStatus" class="notice" style="margin-top:7px">Select the payment copy. It will be read automatically.</div></div></div>
+ <button class="btn s" onclick="saveAdvance()">💾 Save Advance Payment</button></div>`);
  setTimeout(()=>showAdvanceRow(0),0);
 }
 function saveAdvance(){
