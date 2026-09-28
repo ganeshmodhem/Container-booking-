@@ -788,8 +788,52 @@ function saveLoading(){
  rows.forEach((r,i)=>{if(!c.bookings[i])return;c.bookings[i].container=r.container;c.bookings[i].vessel=vessel;c.bookings[i].loadingVessel=vessel;c.bookings[i].voyage=voyage;c.bookings[i].loadingDate=date;c.bookings[i].loadingQty=r.qty;c.bookings[i].bl=r.bl||bl;c.bookings[i].seal=r.seal;c.bookings[i].pol=pol;c.bookings[i].pod=pod;});
  save(); alert(`Loading/B.L saved. ${rows.length} advance-paid container(s) updated in Booking.`); booking();
 }
-function invoice(){let c=get(cur);shell("🧾 Final Invoice",head(c)+`<div class="ok">Loading/B/L completed — Invoice unlocked.</div><div class="grid">${field("ino","Invoice No.")}${field("id","Invoice Date","date")}${field("iq","Invoice Quantity (MT)")}${field("ip","Unit Price USD/MT")}${field("iv","Invoice Amount USD")}${field("ia","Advance Deducted USD")}${field("ib","Balance USD")}${field("if","Invoice Copy","file",1)}</div><button class="btn s" onclick="saveInvoice()">Save Final Invoice</button>`)}
-function saveInvoice(){let c=get(cur),v=+($("iv").value||0),a=+($("ia").value||0);c.invoice={no:$("ino").value,date:$("id").value,qty:$("iq").value,price:$("ip").value,amount:$("iv").value,advance:$("ia").value,balance:(v-a).toFixed(2),file:file("if")};save();openPage("boe",cur)}
+function invoice(){
+ let c=get(cur);
+ if(!c || !c.loading){shell("🧾 Final Invoice",`<div class="card"><h3>🔎 Step 1 — Search Sales Contract</h3><div class="search"><input id="invoiceSearchNo" placeholder="Enter Sales Contract No."><button class="btn p" onclick="searchInvoiceContract()">Search</button></div><div class="notice">पहिले Sales Contract Search करा. Loading झालेले container आणि त्यांची Loading Qty (MT) त्यानंतर दिसतील.</div></div>`);return;}
+ const rows=(c.bookings||[]).map((b,i)=>({i,container:b.container||'',qty:Number(b.loadingQty||0),seal:b.seal||'',bl:b.bl||c.loading?.bl||''})).filter(x=>x.container && x.qty>0);
+ shell("🧾 Final Invoice",head(c)+`
+ <div class="ok"><b>Sales Contract Found:</b> ${esc(c.no)} &nbsp; | &nbsp; <b>Loading Containers:</b> ${rows.length}</div>
+ <div class="card"><h3 style="margin:0 0 10px">Step 2 — Select Invoice Container(s)</h3>
+ <label>Loading Qty (MT) — Container No. (Select one or more)</label>
+ <select id="invoiceContainers" multiple size="${Math.min(Math.max(rows.length,2),8)}" onchange="showSelectedInvoiceContainers()" style="min-height:120px">
+ ${rows.map(x=>`<option value="${x.i}">${x.qty.toFixed(3)} MT - ${esc(x.container)}</option>`).join('')||'<option disabled>No loading container found</option>'}
+ </select>
+ <div class="muted" style="margin-top:6px">PC वर Ctrl/Command दाबून एकापेक्षा जास्त container select करू शकता.</div>
+ <div id="selectedInvoiceRows" style="margin-top:12px"></div></div>
+ <div id="invoiceDetails" class="card" style="display:none"><h3 style="margin:0 0 10px">Step 3 — Invoice Details & Upload</h3>
+ <div class="grid">${field("ino","Invoice No.")}${field("id","Invoice Date","date")}${field("iq","Invoice Quantity (MT)")}${field("ip","Unit Price USD/MT")}${field("iv","Invoice Amount USD")}${field("ia","Advance Deducted USD")}${field("ib","Balance USD")}${field("if","Invoice Copy","file",1)}</div>
+ <div class="notice">Invoice Quantity (MT) is automatically calculated from the selected loading containers. You can verify/edit the invoice fields before saving.</div>
+ <button class="btn s" onclick="saveInvoice()">💾 Save Final Invoice</button></div>`);
+ showSelectedInvoiceContainers();
+}
+function selectedInvoiceData(){
+ const c=get(cur), sel=$("invoiceContainers");
+ if(!c||!sel)return [];
+ return Array.from(sel.selectedOptions).map(o=>{const i=+o.value,b=c.bookings[i]||{};return {i,container:b.container||'',qty:Number(b.loadingQty||0),seal:b.seal||'',bl:b.bl||c.loading?.bl||''};});
+}
+function showSelectedInvoiceContainers(){
+ const box=$("selectedInvoiceRows"), details=$("invoiceDetails"); if(!box)return;
+ const rows=selectedInvoiceData();
+ if(!rows.length){box.innerHTML='<div class="notice">Select at least one container. Selected containers will appear here before invoice upload.</div>';if(details)details.style.display='none';return;}
+ box.innerHTML='<h4 style="margin:0 0 8px">Selected Container(s)</h4><div class="registerWrap"><table><thead><tr><th>Row</th><th>Loading Qty (MT)</th><th>Container No.</th><th>Seal No.</th><th>B/L No.</th></tr></thead><tbody>'+rows.map((x,n)=>`<tr><td>${n+1}</td><td>${x.qty.toFixed(3)}</td><td>${esc(x.container)}</td><td>${esc(x.seal)}</td><td>${esc(x.bl)}</td></tr>`).join('')+'</tbody></table></div>';
+ if(details)details.style.display='block';
+ const total=rows.reduce((a,x)=>a+x.qty,0); if($("iq"))$("iq").value=total.toFixed(3);
+ const price=parseFloat($("ip")?.value||0); if(price && $("iv"))$("iv").value=(price*total).toFixed(2);
+}
+function searchInvoiceContract(){
+ const no=( $("invoiceSearchNo")?.value||'').trim(); const c=get(no);
+ if(!c){alert('Sales Contract not found. Please enter the saved Sales Contract No.');return;}
+ if(!c.loading){alert('Loading/B.L is not completed for this Sales Contract. Complete Loading first.');return;}
+ cur=c.no; page='invoice'; render();
+}
+function saveInvoice(){
+ let c=get(cur),selected=selectedInvoiceData();
+ if(!selected.length)return alert('Select at least one loading container for this invoice.');
+ const v=+( $("iv").value||0),a=+( $("ia").value||0);
+ c.invoice={no:$("ino").value,date:$("id").value,qty:$("iq").value,price:$("ip").value,amount:$("iv").value,advance:$("ia").value,balance:(v-a).toFixed(2),selectedContainers:selected.map(x=>x.container),selectedRows:selected.map(x=>x.i),file:file("if")};
+ save();openPage("boe",cur);
+}
 function boe(){let c=get(cur);shell("🛃 Bill of Entry",head(c)+`<div class="ok">Invoice completed — Bill of Entry unlocked.</div><div class="grid">${field("ben","BE No.")}${field("bed","BE Date","date")}${field("bev","Invoice Value USD")}${field("bea","Assessable Value INR")}${field("bedu","Total Duty INR")}${field("ber","Exchange Rate")}${field("beo","OOC No.")}${field("beod","OOC Date","date")}${field("bef","BOE PDF","file",1)}</div><button class="btn s" onclick="saveBoe()">Save Bill of Entry</button>`)}
 function saveBoe(){let c=get(cur);c.boe={no:$("ben").value,date:$("bed").value,value:$("bev").value,assess:$("bea").value,duty:$("bedu").value,rate:$("ber").value,ooc:$("beo").value,oocDate:$("beod").value,file:file("bef")};save();openPage("finalpay",cur)}
 function finalpay(){let c=get(cur);shell("💰 Final Payment",head(c)+`<div class="ok">Bill of Entry completed — Final Payment unlocked.</div><div class="grid">${field("fa","Final Payment USD")}${field("fd","Payment Date","date")}${field("fr","Exchange Rate")}${field("fi","INR Amount")}${field("fx","Reference")}${field("ff","Payment Copy","file",1)}</div><button class="btn s" onclick="saveFinalPay()">Save Final Payment</button>`)}
