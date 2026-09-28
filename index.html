@@ -137,63 +137,110 @@ function extractCompany(lines, labels){
 function parseContractText(t){
  const lines=linesOf(t);
  const x=lines.join("\n");
- // Contract number: require a label. Do not accept random OCR words such as "This".
+
+ // --- Contract number ---
+ // Prefer an explicit label; otherwise accept a document-style reference ending in SC.
  let no="";
  const noPatterns=[
-  /(?:sales\s+contract|contract)\s*(?:no\.?|number)\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\/._-]{3,})/i,
-  /(?:contract\s*(?:ref|reference))\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\/._-]{3,})/i
+  /(?:sales\s+contract|contract)\s*(?:no\.?|number|ref\.?|reference)\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\/._-]{3,})/i,
+  /\b([A-Z]{2,8}-[A-Z0-9]{2,12}-[A-Z0-9]{2,12}-SC)\b/i,
+  /\b([A-Z0-9]{2,}-[A-Z0-9-]{4,}-SC)\b/i
  ];
- for(const re of noPatterns){const m=x.match(re);if(m){no=cleanLine(m[1]);break;}}
- if(no && !/^(this|the|date|number)$/i.test(no))setv("sc",no);else if($("sc"))$("sc").value="";
+ for(const re of noPatterns){
+   const m=x.match(re);
+   if(m && !/^(this|the|date|number)$/i.test(m[1])){no=cleanLine(m[1]);break;}
+ }
+ if(no)setv("sc",no);else if($("sc"))$("sc").value="";
 
- let date="";
- const dm=x.match(/(?:contract\s+date|date\s+of\s+contract)\s*[:\-]?\s*(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})/i);
- if(dm){
-   const a=dm[1].split(/[\/.\-]/), y=a[2].length===2?"20"+a[2]:a[2];
-   // Source document commonly uses DD/MM/YYYY.
+ // --- Contract date ---
+ let dateMatch=x.match(/(?:contract\s+date|date\s+of\s+contract)\s*[:\-]?\s*(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})/i);
+ if(!dateMatch){
+   // Header fallback: first date appearing before shipment/payment terms.
+   const head=x.split(/shipment\s+period|payment\s+terms?|terms\s+of\s+payment/i)[0];
+   dateMatch=head.match(/\b(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})\b/);
+ }
+ if(dateMatch){
+   const a=dateMatch[1].split(/[\/.\-]/);
+   let y=a[2].length===2?"20"+a[2]:a[2];
+   // Existing contracts use DD/MM/YYYY.
    setv("date",`${y}-${a[1].padStart(2,"0")}-${a[0].padStart(2,"0")}`);
  }
 
- let seller=extractCompany(lines,["seller","exporter","supplier"]);
- let buyer=extractCompany(lines,["buyer","importer","consignee"]);
- if(seller && !/payment|account|bank charge|within|days/i.test(seller))setv("seller",seller);else if($("seller"))$("seller").value="";
- if(buyer && !/payment|account|bank charge|within|days|seller/i.test(buyer))setv("buyer",buyer);else if($("buyer"))$("buyer").value="";
+ // --- Seller / Buyer ---
+ // First use explicit label. Reject OCR fragments containing another field label.
+ function validParty(v){
+   v=cleanLine(v);
+   if(v.length<5)return "";
+   if(/\b(buyer|seller|payment|account|bank|charges|within|days|date|quantity|price|remarks)\b/i.test(v))return "";
+   return v;
+ }
+ let seller=validParty(extractCompany(lines,["seller","exporter","supplier"]));
+ let buyer=validParty(extractCompany(lines,["buyer","importer","consignee"]));
 
+ // Table/header fallback: company-style names (LLC/L.L.C./LTD/PVT LTD) are much safer than
+ // arbitrary OCR fragments. If exactly one company is found, use it as Seller.
+ const companies=[];
+ for(const ln of lines){
+   const v=cleanLine(ln);
+   if(/\b(L\.?L\.?C\.?|LTD\.?|LIMITED|PVT\.?\s*LTD\.?|PRIVATE\s+LIMITED|TRADING)\b/i.test(v)
+      && v.length>=8 && v.length<=120 && !/\b(payment|charges|account)\b/i.test(v)){
+     if(!companies.includes(v))companies.push(v);
+   }
+ }
+ if(!seller && companies.length>=1)seller=companies[0];
+ if(!buyer && companies.length>=2)buyer=companies[1];
+
+ // Never put a line like "2,7 Buyer" into Seller.
+ if(/\bbuyer\b/i.test(seller))seller="";
+ if(/\bseller\b/i.test(buyer))buyer="";
+ setv("seller",seller);
+ setv("buyer",buyer);
+
+ // --- IDs ---
  let gst=(x.match(/(?:GSTIN|GST\s*NO\.?)\s*[:\-]?\s*([A-Z0-9]{15})/i)||[])[1]||"";
  let iec=(x.match(/(?:IEC|I\.E\.C\.)\s*(?:CODE|NO\.?)?\s*[:\-]?\s*([A-Z0-9]{10})/i)||[])[1]||"";
  let pan=(x.match(/(?:PAN|P\.A\.N\.)\s*[:\-]?\s*([A-Z]{5}\d{4}[A-Z])/i)||[])[1]||"";
  let hs=(x.match(/(?:HS\s*CODE|HSN)\s*[:\-]?\s*(\d{8})/i)||[])[1]||"";
  setv("gst",gst);setv("iec",iec);setv("pan",pan);setv("hs",hs);
 
+ // --- Commodity ---
  let commodity=valueAfterLabel(lines,["commodity","description of goods","goods description"]);
  if(!commodity){
-   const m=x.match(/(?:ALUMIN[IU]UM)[^.\n]{5,100}(?:ISRI|SCRAP|TREAD|TALON)[^.\n]*/i);if(m)commodity=cleanLine(m[0]);
+   const m=x.match(/(?:ALUMIN[IU]UM)[^.\n]{5,100}(?:ISRI|SCRAP|TREAD|TALON)[^.\n]*/i);
+   if(m)commodity=cleanLine(m[0]);
  }
  setv("commodity",commodity);
 
+ // --- Quantity ---
  let qty=(x.match(/(?:total\s+quantity|quantity)\s*[:\-]?\s*(\d+(?:[.,]\d+)?)\s*(?:MT|M\.T\.|METRIC\s+TONS?)/i)||[])[1]||"";
- if(!qty){const m=x.match(/(\d+(?:[.,]\d+)?)\s*(?:MT|M\.T\.|METRIC\s+TONS?)/i);if(m)qty=m[1];}
+ if(!qty){
+   const m=x.match(/(\d+(?:[.,]\d+)?)\s*(?:MT|M\.T\.|METRIC\s+TONS?)/i);
+   if(m)qty=m[1];
+ }
  setv("qty",qty.replace(/,/g,""));
 
+ // --- Container plan ---
  let cp=(x.match(/(?:container\s+plan)\s*[:\-]?\s*([^\n]+)/i)||[])[1]||"";
- if(!cp){const m=x.match(/(\d+\s*[xX×]\s*(?:20|40)\s*(?:['’]?\s*(?:FT|CONTAINER))?)/i);if(m)cp=cleanLine(m[1]);}
+ if(!cp){
+   const m=x.match(/(\d+\s*[xX×]\s*(?:20|40)\s*(?:['’]?\s*(?:FT|CONTAINER))?)/i);
+   if(m)cp=cleanLine(m[1])+" CONTAINER";
+ }
  setv("cp",cp);
 
- // Price: only accept a USD value explicitly associated with price/rate and per MT.
+ // --- Price ---
  let price="";
  const p1=x.match(/(?:price|rate)\s*(?:per\s*mt|\/\s*mt|usd\s*\/\s*mt)?\s*[:\-]?\s*(?:usd|us\$|\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i);
  const p2=x.match(/(?:usd|us\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)\s*(?:\/\s*mt|per\s*mt)/i);
  if(p1)price=p1[1]; else if(p2)price=p2[1];
  setv("price",price.replace(/,/g,""));
 
+ // --- Price term / ports ---
  let term=(x.match(/\b(CIF\s+[A-Z][A-Z ,.-]{2,80})/i)||[])[1]||"";
  setv("term",cleanLine(term));
+ setv("pol",valueAfterLabel(lines,["port of loading","loading port"]));
+ setv("pod",valueAfterLabel(lines,["port of discharge","discharge port"]));
 
- let pol=valueAfterLabel(lines,["port of loading","loading port"]);
- let pod=valueAfterLabel(lines,["port of discharge","discharge port"]);
- setv("pol",pol);setv("pod",pod);
-
- // Shipment period: take only the sentence beginning with shipment/loading, not the next payment section.
+ // --- Shipment ---
  let ship=(x.match(/(?:shipment\s+period|shipment|delivery)\s*[:\-]?\s*([^\n]{8,150})/i)||[])[1]||"";
  setv("ship",cleanLine(ship));
 
@@ -201,23 +248,20 @@ function parseContractText(t){
  let partial=(x.match(/partial\s+shipment\s*[:\-]?\s*(ALLOWED|NOT ALLOWED|PROHIBITED)/i)||[])[1]||"";
  setv("trans",trans);setv("partial",partial);
 
- // Payment terms are kept together. Advance is extracted separately from the same text.
+ // --- Payment terms / advance ---
  let pay="";
  const payIdx=lines.findIndex(l=>/^(payment\s+terms?|terms\s+of\s+payment|payment\s+remarks?)/i.test(l));
- if(payIdx>=0)pay=lines.slice(payIdx+1,payIdx+5).join(" ");
+ if(payIdx>=0)pay=lines.slice(payIdx+1,payIdx+6).join(" ");
  if(!pay)pay=(x.match(/(?:payment\s+terms?|terms\s+of\s+payment)\s*[:\-]?\s*([^\n]{10,300})/i)||[])[1]||"";
  pay=cleanLine(pay);
- let adv="";
  const am=pay.match(/(?:US\$|USD|\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i);
- if(am)adv=am[1].replace(/,/g,"");
- setv("adv",adv);
+ setv("adv",am?am[1].replace(/,/g,""):"");
  setv("remarks",pay);
 
- // Contract value is shown in the dedicated field and never appended to Payment Terms.
  if($("contractValue")){
-   const p=parseFloat(($("price")?.value||"").replace(/,/g,""));
-   const q=parseFloat(($("qty")?.value||"").replace(/,/g,""));
-   $("contractValue").value=(p>0&&q>0)?(p*q).toFixed(2):"";
+   const pv=parseFloat(($("price")?.value||"").replace(/,/g,""));
+   const qv=parseFloat(($("qty")?.value||"").replace(/,/g,""));
+   $("contractValue").value=(pv>0&&qv>0)?(pv*qv).toFixed(2):"";
  }
 }
 function create(){let no=$("sc").value.trim();if(!no)return alert("Contract No. required.");if(get(no))return alert("Already exists.");db.contracts.push({no,date:$("date").value,seller:$("seller").value,buyer:$("buyer").value,gstin:$("gst").value,iec:$("iec").value,pan:$("pan").value,hs:$("hs").value,commodity:$("commodity").value,qty:$("qty").value,containerPlan:$("cp").value,price:$("price").value,term:$("term").value,pol:$("pol").value,pod:$("pod").value,ship:$("ship").value,advanceAmt:$("adv").value,trans:$("trans").value,partial:$("partial").value,remarks:$("remarks").value,contractFile:file("cf"),bookings:[]});save();cur=no;alert("Contract saved");openPage("booking")}
