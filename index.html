@@ -489,7 +489,10 @@ function parsePaymentText(x){
  const tol=(norm.match(/TOL\s+Ref\s+No\.?\s*([A-Z0-9\/-]+)/i)||[])[1]||'';
  const ref=[ourBill,tol].filter(Boolean).join(' / ');
  const bank=(norm.match(/(?:To|From)\s*:\s*(?:ICICI\s+BANK\s+LIMITED|[^:]+?)?\s*From\s*:\s*ICICI\s+BANK\s+LIMITED/i)||[])[0]?'ICICI BANK LIMITED':((norm.match(/(?:bank\s+name|bank)\s*[:\-]?\s*([A-Z][A-Z &.\-]{3,60})(?=\s+(?:branch|account|a\/c|date|amount|utr|transaction|reference|value)|$)/i)||[])[1]||'');
- const rate=((norm.match(/Conversion\s+Rate[^@]{0,180}?@\s*([0-9]+(?:\.\d{1,6})?)/i)||[])[1]||((norm.match(/(?:Principal\s+Amount|Bill\s+Amount)[^@]{0,180}?@\s*([0-9]+(?:\.\d{1,6})?)/i)||[])[1]||((norm.match(/(?:exchange\s*rate|usd\s*rate|rate)\s*[:=\-]?\s*(?:USD\s*\/\s*INR\s*)?([0-9]+(?:\.\d{1,6})?)/i)||[])[1]||''));
+ const rateMatch1=norm.match(/Conversion\s+Rate[^@]{0,180}?@\s*([0-9]+(?:\.\d{1,6})?)/i);
+ const rateMatch2=norm.match(/(?:Principal\s+Amount|Bill\s+Amount)[^@]{0,180}?@\s*([0-9]+(?:\.\d{1,6})?)/i);
+ const rateMatch3=norm.match(/(?:exchange\s*rate|usd\s*rate|rate)\s*[:=\-]?\s*(?:USD\s*\/\s*INR\s*)?([0-9]+(?:\.\d{1,6})?)/i);
+ const rate=(rateMatch1&&rateMatch1[1])||(rateMatch2&&rateMatch2[1])||(rateMatch3&&rateMatch3[1])||'';
  const inr=(norm.match(/Principal\s+Amount\s+USD[\s\S]{0,120}?@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||((norm.match(/(?:payment\s+amount\s+inr|total\s+inr|INR\s+amount)\s*[:\-]?\s*(?:INR|RS\.?|₹)?\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||'');
  const totalAdvice=(norm.match(/A\/C\s+Number:[^\n]*?Total:\s*INR\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||'';
  // For this advice, "Total" at the end is not the foreign principal; other charges are the debit advice total.
