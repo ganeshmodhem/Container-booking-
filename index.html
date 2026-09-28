@@ -824,17 +824,32 @@ async function readInvoiceCopy(){
        const pg=await pdf.getPage(i),tc=await pg.getTextContent();
        text+="\n"+tc.items.map(x=>x.str).join(" ");
      }
-     if(text.replace(/\s/g,"").length<30){
+     // First try the native PDF text layer. If important invoice fields are still
+     // missing, run OCR as a second pass even when the PDF has some text.
+     parseInvoiceText(text);
+     const critical=["ino","id","ip","iv"];
+     const missing=critical.some(id=>!$(id)?.value?.trim());
+     if(missing || text.replace(/\s/g,"").length<30){
        await ensureTesseract();
+       if(st)st.textContent="⏳ Invoice PDF has incomplete text — OCR is running…";
        for(let i=1;i<=pdf.numPages;i++){
-         const pg=await pdf.getPage(i),vp=pg.getViewport({scale:1.8});
-         const cv=document.createElement("canvas"),ctx=cv.getContext("2d");cv.width=vp.width;cv.height=vp.height;
+         const pg=await pdf.getPage(i),vp=pg.getViewport({scale:2.2});
+         const cv=document.createElement("canvas"),ctx=cv.getContext("2d");
+         cv.width=vp.width;cv.height=vp.height;
          await pg.render({canvasContext:ctx,viewport:vp}).promise;
-         const r=await Tesseract.recognize(cv,"eng"); text+="\n"+(r.data.text||"");
+         const r=await Tesseract.recognize(cv,"eng",{logger:m=>{
+           if(m.status)st.textContent="⏳ Invoice OCR "+Math.round((m.progress||0)*100)+"%";
+         }});
+         text+="\n"+(r.data.text||"");
        }
      }
    }else{
-     await ensureTesseract(); const r=await Tesseract.recognize(f,"eng"); text=r.data.text||"";
+     await ensureTesseract();
+     if(st)st.textContent="⏳ Invoice OCR is running…";
+     const r=await Tesseract.recognize(f,"eng",{logger:m=>{
+       if(m.status)st.textContent="⏳ Invoice OCR "+Math.round((m.progress||0)*100)+"%";
+     }});
+     text=r.data.text||"";
    }
    if(!text.trim())throw new Error("No readable text found");
    parseInvoiceText(text);
@@ -844,70 +859,93 @@ async function readInvoiceCopy(){
    if(st)st.textContent="⚠️ Invoice could not be read automatically. Enter the fields manually and verify the PDF.";
  }
 }
-function invoiceNumberFromText(norm){
+
+function invoiceNumberFromText(norm,lines){
  const pats=[
-  /(?:invoice\s*(?:no\.?|number)|inv\.?\s*(?:no\.?|number))\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\/-]{2,40})/i,
-  /(?:commercial\s+invoice|tax\s+invoice)\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\/-]{2,40})/i
+  /(?:invoice\s*(?:no\.?|number)|inv\.?\s*(?:no\.?|number)|invoice\s*#)\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\/_.-]{2,50})/i,
+  /(?:commercial\s+invoice|tax\s+invoice)\s*(?:no\.?|number)?\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\/_.-]{2,50})/i
  ];
  for(const re of pats){const m=norm.match(re);if(m)return m[1].trim();}
+ const ls=lines||[];
+ for(let i=0;i<ls.length;i++){
+   if(/^(invoice\s*(?:no\.?|number)|inv\.?\s*(?:no\.?|number)|invoice\s*#)$/i.test(ls[i])){
+     if(ls[i+1] && !/^(date|invoice date)$/i.test(ls[i+1])) return cleanLine(ls[i+1]);
+   }
+ }
  return "";
 }
-function invoiceDateFromText(norm){
+function invoiceDateFromText(norm,lines){
  const pats=[
-  /(?:invoice\s+date|date\s+of\s+invoice|invoice\s+issued\s+date|date\s+issued)\s*[:\-]?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/i,
-  /(?:invoice\s+date|date\s+of\s+invoice|invoice\s+issued\s+date|date\s+issued)\s*[:\-]?\s*([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})/i,
-  /(?:invoice\s+date|date\s+of\s+invoice)\s*[:\-]?\s*(\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2})/i
+  /(?:invoice\s+date|date\s+of\s+invoice|invoice\s+issued\s+date|date\s+issued|inv\.?\s+date)\s*[:\-]?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/i,
+  /(?:invoice\s+date|date\s+of\s+invoice|invoice\s+issued\s+date|date\s+issued|inv\.?\s+date)\s*[:\-]?\s*([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})/i,
+  /(?:invoice\s+date|date\s+of\s+invoice|inv\.?\s+date)\s*[:\-]?\s*(\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2})/i
  ];
- for(const re of pats){const m=norm.match(re);if(m){const d=m[1].trim(); if(/^[A-Za-z]/.test(d)){const t=Date.parse(d);if(!isNaN(t))return new Date(t).toISOString().slice(0,10);} const a=d.split(/[\/\-.]/); if(a.length===3){if(a[0].length===4)return `${a[0]}-${String(a[1]).padStart(2,'0')}-${String(a[2]).padStart(2,'0')}`; let y=a[2];if(y.length===2)y='20'+y;return `${y}-${String(a[1]).padStart(2,'0')}-${String(a[0]).padStart(2,'0')}`;}}}
+ for(const re of pats){const m=norm.match(re);if(m){const d=m[1].trim();if(/^[A-Za-z]/.test(d)){const t=Date.parse(d);if(!isNaN(t))return new Date(t).toISOString().slice(0,10);}const a=d.split(/[\/\-.]/);if(a.length===3){if(a[0].length===4)return `${a[0]}-${String(a[1]).padStart(2,'0')}-${String(a[2]).padStart(2,'0')}`;let y=a[2];if(y.length===2)y='20'+y;return `${y}-${String(a[1]).padStart(2,'0')}-${String(a[0]).padStart(2,'0')}`;}}}
+ const ls=lines||[];
+ for(let i=0;i<ls.length;i++){
+   if(/^(invoice\s+date|date\s+of\s+invoice|inv\.?\s+date)$/i.test(ls[i]) && ls[i+1]){
+     const d=ls[i+1].trim();
+     const m=d.match(/(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}|\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2})/);
+     if(m){const a=m[1].split(/[\/\-.]/);if(a[0].length===4)return `${a[0]}-${String(a[1]).padStart(2,'0')}-${String(a[2]).padStart(2,'0')}`;let y=a[2];if(y.length===2)y='20'+y;return `${y}-${String(a[1]).padStart(2,'0')}-${String(a[0]).padStart(2,'0')}`;}
+   }
+ }
  return "";
 }
+function firstMatch(text,patterns){for(const re of patterns){const m=text.match(re);if(m)return m[m.length-1];}return "";}
 function parseInvoiceText(x){
  const raw=String(x||"").replace(/\r/g,"\n");
+ const lines=linesOf(raw);
  const norm=raw.replace(/\s+/g," ").trim();
- const cleanNum=v=>String(v||"").replace(/,/g,"").trim();
- const numPat="([0-9][0-9,]*(?:\\.[0-9]{1,4})?)";
+ const cleanNum=v=>String(v||"").replace(/,/g,"").replace(/\s/g,"").trim();
+ const numPat="([0-9][0-9,]*(?:\.[0-9]{1,4})?)";
  const selected=selectedInvoiceData();
  const selectedQty=selected.reduce((a,r)=>a+(Number(r.qty)||0),0);
- // Prefer explicit invoice labels; do not use arbitrary USD numbers from the document.
- let invoiceNo=invoiceNumberFromText(norm);
- let invoiceDate=invoiceDateFromText(norm);
- let qty="";
- const qtyRes=[
-  new RegExp("(?:invoice\\s+quantity|total\\s+quantity|quantity|net\\s+weight|total\\s+net\\s+weight)\\s*(?:\\(\\s*MT\\s*\\)|MT|metric\\s+tons?)?\\s*[:=\\-]?\\s*"+numPat,"i"),
-  new RegExp(numPat+"\\s*(?:MT|M\\.?T\\.?)\\b","i")
- ];
- for(const re of qtyRes){const m=norm.match(re);if(m){qty=cleanNum(m[m.length-1]);break;}}
- // If invoice quantity is in KG, convert to MT. Only use this when a KG label is explicit.
- if(!qty){const m=norm.match(new RegExp("(?:quantity|net\\s+weight|total\\s+net\\s+weight)\\s*[:=\\-]?\\s*"+numPat+"\\s*(?:KGS?|KG)\\b","i"));if(m)qty=(parseFloat(cleanNum(m[1]))/1000).toFixed(3);}
+ let invoiceNo=invoiceNumberFromText(norm,lines);
+ let invoiceDate=invoiceDateFromText(norm,lines);
+ // Label/value pairs are common in commercial invoices, including values printed on the next line.
+ const nextValue=(labels)=>{
+   for(let i=0;i<lines.length;i++){
+     if(labels.some(l=>new RegExp('^'+l+'(?:\\s*[:#-])?\\s*$', 'i').test(lines[i]))){
+       for(let j=i+1;j<Math.min(i+3,lines.length);j++) if(lines[j] && !/^(invoice|date|description|quantity|qty|price|amount|total|currency)$/i.test(lines[j])) return lines[j];
+     }
+   }
+   return "";
+ };
+ if(!invoiceNo)invoiceNo=nextValue(['invoice\\s*(?:no\\.?|number)|inv\\.?\\s*(?:no\\.?|number)|invoice\\s*#']);
+ if(!invoiceDate){
+   const d=nextValue(['invoice\\s+date','date\\s+of\\s+invoice','inv\\.?\\s+date']);
+   if(d){const m=d.match(/\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}|\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}/);if(m){const a=m[0].split(/[\/\-.]/);if(a[0].length===4)invoiceDate=`${a[0]}-${String(a[1]).padStart(2,'0')}-${String(a[2]).padStart(2,'0')}`;else{let y=a[2];if(y.length===2)y='20'+y;invoiceDate=`${y}-${String(a[1]).padStart(2,'0')}-${String(a[0]).padStart(2,'0')}`;}}}
+ }
+ let qty=firstMatch(norm,[
+  new RegExp('(?:invoice\\s+quantity|total\\s+quantity|quantity|qty|net\\s+weight|total\\s+net\\s+weight)\\s*(?:\\(\\s*M\\.?T\\.?\\s*\\)|M\\.?T\\.?|metric\\s+tons?)?\\s*[:=\\-]?\\s*'+numPat,'i'),
+  new RegExp(numPat+'\\s*(?:MT|M\\.?T\\.?)\\b','i')
+ ]);
+ if(qty)qty=cleanNum(qty);
+ if(!qty){const q=nextValue(['invoice\\s+quantity','total\\s+quantity','quantity','qty','net\\s+weight','total\\s+net\\s+weight']);if(q){const m=q.match(/[0-9][0-9,]*(?:\.[0-9]{1,4})?/);if(m)qty=cleanNum(m[0]);if(/KG/i.test(q))qty=(parseFloat(cleanNum(m?.[0]||0))/1000).toFixed(3);}}
+ if(!qty){const m=norm.match(new RegExp('(?:quantity|qty|net\\s+weight|total\\s+net\\s+weight)\\s*[:=\\-]?\\s*'+numPat+'\\s*(?:KGS?|KG)\\b','i'));if(m)qty=(parseFloat(cleanNum(m[1]))/1000).toFixed(3);}
  if(!qty && selectedQty)qty=selectedQty.toFixed(3);
- let unit="";
- const unitRes=[
-  new RegExp("(?:unit\\s+price|price\\s+per\\s+MT|rate\\s+per\\s+MT|unit\\s+rate|price)\\s*(?:USD\\s*[/\\-]?\\s*MT|USD\\s*\\/\\s*MT|\\$\\s*\\/\\s*MT)?\\s*[:=\\-]?\\s*"+numPat,"i"),
-  new RegExp("(?:USD|US\\$|\\$)\\s*"+numPat+"\\s*(?:/\\s*MT|per\\s*MT)","i")
- ];
- for(const re of unitRes){const m=norm.match(re);if(m){unit=cleanNum(m[m.length-1]);break;}}
- let amount="";
- const amountRes=[
-  new RegExp("(?:invoice\\s+amount|total\\s+invoice\\s+amount|grand\\s+total|total\\s+amount|amount\\s+payable|total\\s+value)\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*"+numPat,"i"),
-  new RegExp("(?:USD|US\\$|\\$)\\s*"+numPat+"\\s*(?:total|invoice\\s+amount)","i")
- ];
- for(const re of amountRes){const m=norm.match(re);if(m){amount=cleanNum(m[m.length-1]);break;}}
+ let unit=firstMatch(norm,[
+  new RegExp('(?:unit\\s+price|price\\s+per\\s+MT|rate\\s+per\\s+MT|unit\\s+rate|unit\\s+cost|price\\s*\\/\\s*MT|rate\\s*\\/\\s*MT)\\s*(?:USD\\s*[/\\-]?\\s*MT|USD|\\$)?\\s*[:=\\-]?\\s*'+numPat,'i'),
+  new RegExp('(?:USD|US\\$|\\$)\\s*'+numPat+'\\s*(?:\\/\\s*MT|per\\s*MT)','i')
+ ]); if(unit)unit=cleanNum(unit);
+ if(!unit){const u=nextValue(['unit\\s+price','price\\s+per\\s+MT','rate\\s+per\\s+MT','unit\\s+rate','price\\s*\\/\\s*MT','rate\\s*\\/\\s*MT']);if(u){const m=u.match(/[0-9][0-9,]*(?:\.[0-9]{1,4})?/);if(m)unit=cleanNum(m[0]);}}
+ let amount=firstMatch(norm,[
+  new RegExp('(?:invoice\\s+amount|total\\s+invoice\\s+amount|invoice\\s+value|total\\s+invoice\\s+value|grand\\s+total|total\\s+amount|amount\\s+payable|total\\s+value|total\\s+price)\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*'+numPat,'i'),
+  new RegExp('(?:USD|US\\$|\\$)\\s*'+numPat+'\\s*(?:total|invoice\\s+amount|invoice\\s+value)','i')
+ ]); if(amount)amount=cleanNum(amount);
+ if(!amount){const a=nextValue(['invoice\\s+amount','total\\s+invoice\\s+amount','invoice\\s+value','total\\s+invoice\\s+value','grand\\s+total','total\\s+amount','amount\\s+payable','total\\s+value']);if(a){const m=a.match(/[0-9][0-9,]*(?:\.[0-9]{1,2})?/);if(m)amount=cleanNum(m[0]);}}
  if(!amount && unit && qty){const calc=parseFloat(unit)*parseFloat(qty);if(calc>0)amount=calc.toFixed(2);}
- let advance="";
- const advRes=[
-  new RegExp("(?:advance\\s+deducted|advance\\s+payment|less\\s+advance|advance\\s+received|advance)\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*"+numPat,"i"),
-  new RegExp("(?:less|deduct)\\s+(?:USD|US\\$|\\$)?\\s*"+numPat,"i")
- ];
- for(const re of advRes){const m=norm.match(re);if(m){advance=cleanNum(m[m.length-1]);break;}}
- let balance="";
- const balRes=[
-  new RegExp("(?:balance\\s+(?:amount|payable|due)|amount\\s+due|net\\s+payable|remaining\\s+amount)\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*"+numPat,"i"),
-  new RegExp("(?:balance|due)\\s*(?:USD|US\\$|\\$)\\s*[:=\\-]?\\s*"+numPat,"i")
- ];
- for(const re of balRes){const m=norm.match(re);if(m){balance=cleanNum(m[m.length-1]);break;}}
+ if(!unit && amount && qty && parseFloat(qty)>0)unit=(parseFloat(amount)/parseFloat(qty)).toFixed(2);
+ let advance=firstMatch(norm,[
+  new RegExp('(?:advance\\s+deducted|advance\\s+payment|less\\s*[:\\-]?\\s*advance|advance\\s+received|advance)\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*'+numPat,'i'),
+  new RegExp('(?:less|deduct)\\s+(?:USD|US\\$|\\$)?\\s*'+numPat,'i')
+ ]); if(advance)advance=cleanNum(advance);
+ let balance=firstMatch(norm,[
+  new RegExp('(?:balance\\s+(?:amount|payable|due)|balance\\s+payment|amount\\s+due|net\\s+payable|remaining\\s+amount)\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*'+numPat,'i'),
+  new RegExp('(?:balance|due)\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*'+numPat,'i')
+ ]); if(balance)balance=cleanNum(balance);
  if(!balance && amount && advance)balance=(parseFloat(amount)-parseFloat(advance)).toFixed(2);
- setv("ino",invoiceNo);setv("id",invoiceDate);setv("iq",qty);setv("ip",unit);setv("iv",amount);setv("ia",advance);setv("ib",balance);
- // Never replace the container-selected quantity with an arbitrary invoice quantity if containers are selected.
+ setv("ino",invoiceNo);setv("id",invoiceDate);setv("iq",selectedQty?selectedQty.toFixed(3):qty);setv("ip",unit);setv("iv",amount);setv("ia",advance);setv("ib",balance);
  if(selectedQty && $("iq"))$("iq").value=selectedQty.toFixed(3);
 }
 
