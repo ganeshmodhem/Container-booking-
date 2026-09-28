@@ -1228,6 +1228,42 @@ function pickDutyAmount(flat, labels){
  // Explicit amount/value is safer.
  return pickMoneyAfterLabel(src,labels);
 }
+function normalizeMoney(v){
+  if(v===null||v===undefined)return '';
+  let s=String(v).replace(/\u20b9/g,'').replace(/\s+/g,'').trim();
+  // Keep only a normal numeric money value; preserve decimals.
+  s=s.replace(/[^0-9.,-]/g,'');
+  if(!s)return '';
+  // Indian/English OCR can contain commas; remove them for a consistent value.
+  s=s.replace(/,/g,'');
+  const n=Number(s);
+  return Number.isFinite(n) ? String(n) : '';
+}
+function boeChallanFromText(flat,lines){
+  const src=String(flat||'').replace(/\s+/g,' ').trim();
+  // Challan number labels seen on Indian customs documents.
+  const labels=[
+    'Challan No','Challan Number','Challan #','TR-6 Challan No','TR6 Challan No',
+    'Payment Challan No','E Challan No','E-Challan No','Challan Reference No'
+  ];
+  for(const label of labels){
+    const re=new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*(?:No\\.?|Number|#)?\\s*[:=\\-]?\\s*([A-Z0-9\\/-]{4,40})','i');
+    const m=src.match(re);
+    if(m && /\d/.test(m[1])) return cleanLine(m[1]);
+  }
+  const ls=lines||[];
+  for(let i=0;i<ls.length;i++){
+    if(/challan/i.test(ls[i]) && !/amount|date|value/i.test(ls[i])){
+      const same=String(ls[i]).match(/(?:no\.?|number|#|:|-)\s*([A-Z0-9\/-]{4,40})/i);
+      if(same && /\d/.test(same[1])) return cleanLine(same[1]);
+      for(let j=i+1;j<Math.min(i+4,ls.length);j++){
+        const v=cleanLine(ls[j]);
+        if(/\d/.test(v) && /^[A-Z0-9\/-]{4,40}$/i.test(v) && !/^(?:date|amount|value|finalisation|finalization)$/i.test(v)) return v;
+      }
+    }
+  }
+  return '';
+}
 function parseBoeText(text){
  const norm=String(text||'').replace(/\r/g,'\n').replace(/\u00a0/g,' ');
  const lines=linesOf(norm), flat=norm.replace(/\s+/g,' ').trim();
