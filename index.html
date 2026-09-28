@@ -417,8 +417,9 @@ function booking(){
  ];
  const bookingCols=[['Booking No.','no'],['Container No.','container'],['Booking Qty (MT)','qty'],['Vessel','vessel'],['ETD','etd'],['ETA','eta'],['B/L No.','bl'],['Seal No.','seal'],['Voyage','voyage'],['Loading Date','loadingDate'],['Loading Qty (MT)','loadingQty'],['Port of Loading','pol'],['Port of Discharge','pod']];
  const advanceCols=[['Advance USD','amount'],['Payment Date','date'],['Payment Bill / Ref No.','ref'],['Bank','bank'],['USD Rate','usdRate'],['Payment Amount INR','inr'],['Other Charges INR','otherChargesInr'],['Payment Copy','copyName']];
+ const invoiceCols=[['Invoice No.','invoiceNo'],['Invoice Date','invoiceDate'],['Invoice Qty (MT)','invoiceQty'],['Invoice Amount USD','invoiceAmount'],['Advance Deducted USD','invoiceAdvance'],['Invoice Balance USD','invoiceBalance']];
  const loadingCols=[];
- const allHeaders=[...contractCols.map(x=>x[0]),...bookingCols.map(x=>x[0]),...advanceCols.map(x=>x[0]),...loadingCols.map(x=>x[0]),'Release','Delete'];
+ const allHeaders=[...contractCols.map(x=>x[0]),...bookingCols.map(x=>x[0]),...advanceCols.map(x=>x[0]),...invoiceCols.map(x=>x[0]),...loadingCols.map(x=>x[0]),'Release','Delete'];
  const rowFor=(b,i)=>{
   const av=b.advance||{};
   const bookingVals=[
@@ -432,7 +433,9 @@ function booking(){
     b.loadingQty !== undefined && b.loadingQty !== '' ? Number(b.loadingQty).toFixed(2) : '',
     b.pol||'', b.pod||''
   ];
-  const vals=[...contractCols.map(x=>x[1]), ...bookingVals, ...advanceCols.map(x=>av[x[1]]||'')];
+  const inv=b.invoice||{};
+  const invoiceVals=[inv.invoiceNo||'',inv.invoiceDate||'',inv.invoiceQty!==undefined&&inv.invoiceQty!==''?Number(inv.invoiceQty).toFixed(3):'',inv.invoiceAmount!==undefined&&inv.invoiceAmount!==''?Number(inv.invoiceAmount).toFixed(2):'',inv.invoiceAdvance!==undefined&&inv.invoiceAdvance!==''?Number(inv.invoiceAdvance).toFixed(2):'',inv.invoiceBalance!==undefined&&inv.invoiceBalance!==''?Number(inv.invoiceBalance).toFixed(2):''];
+  const vals=[...contractCols.map(x=>x[1]), ...bookingVals, ...advanceCols.map(x=>av[x[1]]||''), ...invoiceVals];
   const rowNo=b.slot||i+1;
   const action=b.released?'<span class="badge">RELEASED ✓</span>':`<button class="btn w" style="margin:0;padding:7px 10px" onclick="releaseB(${i})">🚢 RELEASE</button>`;
   return `<tr><td style="background:#f8fafc;font-weight:bold">${rowNo}/${n}</td>${vals.map(v=>`<td>${typeof v==='string'&&v.startsWith('<input')?v:esc(v)}</td>`).join('')}<td style="white-space:nowrap">${action}</td><td><button class="btn" style="margin:0;padding:7px 10px;background:#c62828;color:#fff" onclick="deleteBooking(${i})">🗑 DELETE</button></td></tr>`;
@@ -441,7 +444,7 @@ function booking(){
  const empty=`<tr><td colspan="${allHeaders.length}" style="text-align:center;padding:18px">No booking rows.</td></tr>`;
  shell("🚢 Booking",head(c)+`
  <h3 style="margin-top:16px">📊 Contract + Booking Register${hasLoading?' + Loading/B/L':''}</h3>
- <div class="notice">${n}-container contract is split automatically. Booking details can be entered directly in each row. Advance payment details will appear in the same container row after payment-copy verification. Payment amount, USD rate, INR amount and other charges are shown container-wise.</div>
+ <div class="notice">${n}-container contract is split automatically. Booking details can be entered directly in each row. Advance payment details will appear in the same container row after payment-copy verification. Payment amount, USD rate, INR amount and other charges are shown container-wise. <b>Invoice save केल्यानंतर selected container ची Invoice No., Date, Qty, Amount, Advance आणि Balance Booking मध्येही save होतील.</b></div>
  <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff">
  <table style="min-width:${allHeaders.length*145}px;width:max-content;border-collapse:collapse">
  <thead><tr>${allHeaders.map(h=>`<th style="position:sticky;top:0;background:#f3f6fa;white-space:nowrap">${esc(h)}</th>`).join('')}</tr></thead>
@@ -1085,7 +1088,14 @@ function saveInvoice(){
  let c=get(cur),selected=selectedInvoiceData();
  if(!selected.length)return alert('Select at least one loading container for this invoice.');
  const v=+( $("iv").value||0),a=+( $("ia").value||0);
- c.invoice={no:$("ino").value,date:$("id").value,qty:$("iq").value,price:$("ip").value,amount:$("iv").value,advance:$("ia").value,balance:(v-a).toFixed(2),selectedContainers:selected.map(x=>x.container),selectedRows:selected.map(x=>x.i),file:file("if")};
+ const totalQty=selected.reduce((sum,x)=>sum+Number(x.qty||0),0)||1;
+ const invoiceNo=$("ino").value.trim(), invoiceDate=$("id").value, invoiceQty=Number($("iq").value||totalQty), invoiceBalance=v-a;
+ c.invoice={no:invoiceNo,date:invoiceDate,qty:invoiceQty.toFixed(3),price:$("ip").value,amount:v.toFixed(2),advance:a.toFixed(2),balance:invoiceBalance.toFixed(2),selectedContainers:selected.map(x=>x.container),selectedRows:selected.map(x=>x.i),file:file("if")};
+ selected.forEach(x=>{
+   const b=c.bookings[x.i]; if(!b)return;
+   const share=Number(x.qty||0)/totalQty;
+   b.invoice={invoiceNo,invoiceDate,invoiceQty:Number(x.qty||0).toFixed(3),invoiceTotalQty:invoiceQty.toFixed(3),invoiceAmount:(v*share).toFixed(2),invoiceAdvance:(a*share).toFixed(2),invoiceBalance:(invoiceBalance*share).toFixed(2),invoiceFile:file("if")};
+ });
  save();openPage("boe",cur);
 }
 function boe(){let c=get(cur);shell("🛃 Bill of Entry",head(c)+`<div class="ok">Invoice completed — Bill of Entry unlocked.</div><div class="grid">${field("ben","BE No.")}${field("bed","BE Date","date")}${field("bev","Invoice Value USD")}${field("bea","Assessable Value INR")}${field("bedu","Total Duty INR")}${field("ber","Exchange Rate")}${field("beo","OOC No.")}${field("beod","OOC Date","date")}${field("bef","BOE PDF","file",1)}</div><button class="btn s" onclick="saveBoe()">Save Bill of Entry</button>`)}
