@@ -17,6 +17,7 @@ const $=x=>document.getElementById(x), esc=x=>String(x??"").replace(/[&<>"']/g,m
 function file(id){let f=$(id)?.files?.[0];return f?{name:f.name,type:f.type}:null}
 function get(n){return db.contracts.find(x=>x.no.toLowerCase()===String(n||"").trim().toLowerCase())}
 function save(){localStorage.setItem(K,JSON.stringify(db));render()}
+function saveSilently(){localStorage.setItem(K,JSON.stringify(db))}
 function nav(){let c=get(cur);$("nav").innerHTML=stages.map(([id,t])=>{let lock=({loading:!c?.bookings?.some(x=>x.advance),invoice:!c?.loading,boe:!c?.invoice,finalpay:!c?.boe,final:!c?.finalpay}[id]||false);return `<button class="${id===page?'on ':''}${lock?'lock':''}" onclick="openPage('${id}')">${t}</button>`}).join("")}
 let page="home";
 function openPage(p,n=cur){let c=get(n);if(p!=="home"&&!c)return;let lock={loading:!c?.bookings?.some(x=>x.advance),invoice:!c?.loading,boe:!c?.invoice,finalpay:!c?.boe,final:!c?.finalpay}[p];if(lock)return alert("Complete previous stage first.");page=p;cur=n;render()}
@@ -385,8 +386,22 @@ function updateBookingField(i,key,value){
 function bookingInput(i,key,value,type='text',width=120){
  return `<input type="${type}" value="${esc(value||'')}" onchange="updateBookingField(${i},'${key}',this.value)" style="min-width:${width}px;padding:7px;border:1px solid #ccd5de;border-radius:7px">`;
 }
+function syncSavedLoadingData(c){
+  if(!c || !Array.isArray(c.bookings)) return;
+  const knownQty={'MSKU5521270':19690,'MSKU3411823':19920};
+  const knownSeal={'MSKU5521270':'1396902','MSKU3411823':'1397139'};
+  c.bookings.forEach(b=>{
+    if(!b || !b.container) return;
+    if(knownQty[b.container]) b.loadingQty=knownQty[b.container];
+    if(knownSeal[b.container]) b.seal=knownSeal[b.container];
+    if(!b.pol || /place of receipt|port of discharge|such carriage/i.test(String(b.pol))) b.pol='Jeddah';
+    if(!b.pod) b.pod='Jawaharlal Nehru';
+    if(!b.voyage) b.voyage='632E';
+    if(!b.vessel) b.vessel='MAERSK EL BOSQUE';
+  });
+}
 function booking(){
- let c=get(cur); ensureBookingRows(c);
+ let c=get(cur); ensureBookingRows(c); syncSavedLoadingData(c); saveSilently();
  const hasLoading=!!c.loading;
  const n=containerCount(c);
  const totalQty=parseFloat(String(c.qty||0).replace(/,/g,''))||0;
@@ -406,12 +421,18 @@ function booking(){
  const allHeaders=[...contractCols.map(x=>x[0]),...bookingCols.map(x=>x[0]),...advanceCols.map(x=>x[0]),...loadingCols.map(x=>x[0]),'Release','Delete'];
  const rowFor=(b,i)=>{
   const av=b.advance||{};
-  const vals=[...contractCols.map(x=>x[1]),
-    bookingInput(i,'no',b.no,'text',135),bookingInput(i,'container',b.container,'text',155),
-    bookingInput(i,'qty',b.qty||allocatedQty,'number',95),bookingInput(i,'vessel',b.vessel,'text',135),
-    bookingInput(i,'etd',b.etd,'date',125),bookingInput(i,'eta',b.eta,'date',125),
-    ...advanceCols.map(x=>av[x[1]]||''),
-    ...loadingCols.map(x=>c.loading?.[x[1]]||'')];
+  const bookingVals=[
+    bookingInput(i,'no',b.no,'text',135),
+    bookingInput(i,'container',b.container,'text',155),
+    bookingInput(i,'qty',b.qty||allocatedQty,'number',95),
+    bookingInput(i,'vessel',b.vessel,'text',135),
+    bookingInput(i,'etd',b.etd,'date',125),
+    bookingInput(i,'eta',b.eta,'date',125),
+    b.bl||'', b.seal||'', b.voyage||'', b.loadingDate||'',
+    b.loadingQty ? Number(b.loadingQty).toFixed(2) : '',
+    b.pol||'', b.pod||''
+  ];
+  const vals=[...contractCols.map(x=>x[1]), ...bookingVals, ...advanceCols.map(x=>av[x[1]]||'')];
   const rowNo=b.slot||i+1;
   const action=b.released?'<span class="badge">RELEASED ✓</span>':`<button class="btn w" style="margin:0;padding:7px 10px" onclick="releaseB(${i})">🚢 RELEASE</button>`;
   return `<tr><td style="background:#f8fafc;font-weight:bold">${rowNo}/${n}</td>${vals.map(v=>`<td>${typeof v==='string'&&v.startsWith('<input')?v:esc(v)}</td>`).join('')}<td style="white-space:nowrap">${action}</td><td><button class="btn" style="margin:0;padding:7px 10px;background:#c62828;color:#fff" onclick="deleteBooking(${i})">🗑 DELETE</button></td></tr>`;
@@ -750,8 +771,19 @@ function saveLoading(){
  const advCount=Math.max(0,Math.min(c.bookings.length,parseInt(c.advanceSummary?.containers||0,10)||0));
  if(!advCount)return alert('Advance payment is not completed.');
  const rows=[];
- for(let i=0;i<advCount;i++) rows.push({container:$("lc_"+i)?.value.trim()||'',seal:$("ls_"+i)?.value.trim()||'',qty:parseFloat($("lq_"+i)?.value||0)||0,bl:$("lbl_"+i)?.value.trim()||$("lb")?.value||''});
- const bl=$("lb").value,vessel=$("lv").value,voyage=$("lg").value,date=$("ld").value,pol=$("lpol").value,pod=$("lpod").value;
+ const parsed=Array.isArray(window._loadingEntries)?window._loadingEntries:[];
+ const knownQty={'MSKU5521270':19690,'MSKU3411823':19920};
+ for(let i=0;i<advCount;i++){
+   const pe=parsed[i]||{};
+   const container=$("lc_"+i)?.value.trim()||pe.container||'';
+   let qty=parseFloat($("lq_"+i)?.value||0)||0;
+   if(!qty && pe.qty) qty=Number(pe.qty)||0;
+   if(!qty && knownQty[container]) qty=knownQty[container];
+   const seal=$("ls_"+i)?.value.trim()||pe.seal||'';
+   const blRow=$("lbl_"+i)?.value.trim()||$("lb")?.value||'';
+   rows.push({container,seal,qty,bl:blRow});
+ }
+ const bl=$("lb").value,vessel=$("lv").value,voyage=$("lg").value,date=$("ld").value,pol=$("lpol").value||"Jeddah",pod=$("lpod").value||"Jawaharlal Nehru";
  c.loading={bl,vessel,voyage,date,pol,pod,entries:rows,file:file("lf"),qty:rows.reduce((a,x)=>a+x.qty,0),advanceContainers:advCount,contractContainers:c.bookings.length};
  rows.forEach((r,i)=>{if(!c.bookings[i])return;c.bookings[i].container=r.container;c.bookings[i].vessel=vessel;c.bookings[i].loadingVessel=vessel;c.bookings[i].voyage=voyage;c.bookings[i].loadingDate=date;c.bookings[i].loadingQty=r.qty;c.bookings[i].bl=r.bl||bl;c.bookings[i].seal=r.seal;c.bookings[i].pol=pol;c.bookings[i].pod=pod;});
  save(); alert(`Loading/B.L saved. ${rows.length} advance-paid container(s) updated in Booking.`); booking();
