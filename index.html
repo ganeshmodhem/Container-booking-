@@ -937,6 +937,11 @@ function parseInvoiceText(x){
  };
  if(!invoiceNo){const v=labelValue('invoice\\s*(?:no\\.?|number)|inv\\.?\\s*(?:no\\.?|number)|invoice\\s*#'); if(v) invoiceNo=v.replace(/[^A-Za-z0-9\\/_.-]/g,'').trim();}
  if(!invoiceDate){const v=labelValue('invoice\\s+date|date\\s+of\\s+invoice|date\\s+of\\s+issue|issue\\s+date'); if(v){const d=invoiceDateFromText('Invoice Date: '+v, [v]); if(d) invoiceDate=d;}}
+ // Fallback when OCR loses the Invoice Date label.
+ if(!invoiceDate){
+   const ds=[...raw.matchAll(/\b(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}|\d{4}[\/.\-]\d{1,2}[\/.\-]\d{1,2}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4}|[A-Za-z]{3,9}\s+\d{1,2},?\s+\d{2,4})\b/g)];
+   for(const m of ds){const d=invoiceDateFromText('Invoice Date: '+m[1],[m[1]]);if(d){invoiceDate=d;break;}}
+ }
 
  let qty=firstMatch(norm,[
   new RegExp('(?:invoice\\s+quantity|total\\s+quantity|quantity|qty|net\\s+weight|total\\s+net\\s+weight)\\s*(?:\\(\\s*M\\.?T\\.?\\s*\\)|M\\.?T\\.?|metric\\s+tons?)?\\s*[:=\\-]?\\s*'+numPat,'i'),
@@ -957,6 +962,8 @@ function parseInvoiceText(x){
  ]); if(amount)amount=cleanNum(amount);
  if(!amount){const a=nextValue(['invoice\\s+amount','total\\s+invoice\\s+amount','invoice\\s+value','total\\s+invoice\\s+value','grand\\s+total','total\\s+amount','amount\\s+payable','total\\s+value']);if(a){const m=a.match(/[0-9][0-9,]*(?:\.[0-9]{1,2})?/);if(m)amount=cleanNum(m[0]);}}
  if(!unit){const u=labelValue('unit\\s+price|unit\\s+rate|price\\s+per\\s+MT|rate\\s+per\\s+MT|price\\s*\\/\\s*MT|rate\\s*\\/\\s*MT');const m=u&&u.match(/[0-9][0-9,]*(?:\\.[0-9]{1,4})?/);if(m)unit=cleanNum(m[0]);}
+ // Controlled fallback: Sales Contract agreed price, only when invoice OCR did not yield a unit price.
+ if(!unit){const cc=get(cur);const cp=cc&&parseFloat(String(cc.price||'').replace(/,/g,''));if(Number.isFinite(cp)&&cp>0)unit=cp.toFixed(2);}
  if(!amount){const a=labelValue('invoice\\s+amount|invoice\\s+value|invoice\\s+total|total\\s+invoice\\s+amount|grand\\s+total|total\\s+amount|amount\\s+payable|total\\s+value');const m=a&&a.match(/[0-9][0-9,]*(?:\\.[0-9]{1,2})?/);if(m)amount=cleanNum(m[0]);}
  if(!amount && unit && qty){const calc=parseFloat(unit)*parseFloat(qty);if(calc>0)amount=calc.toFixed(2);}
  if(!unit && amount && qty && parseFloat(qty)>0)unit=(parseFloat(amount)/parseFloat(qty)).toFixed(2);
@@ -964,6 +971,7 @@ function parseInvoiceText(x){
   new RegExp('(?:advance\\s+deducted|advance\\s+payment|less\\s*[:\\-]?\\s*advance|advance\\s+received|advance)\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*'+numPat,'i'),
   new RegExp('(?:less|deduct)\\s+(?:USD|US\\$|\\$)?\\s*'+numPat,'i')
  ]); if(advance)advance=cleanNum(advance);
+ if(!advance){const cc=get(cur);const av=cc&&parseFloat(String(cc.advance?.amount||'').replace(/,/g,''));if(Number.isFinite(av)&&av>0)advance=av.toFixed(2);}
  let balance=firstMatch(norm,[
   new RegExp('(?:balance\\s+(?:amount|payable|due)|balance\\s+payment|amount\\s+due|net\\s+payable|remaining\\s+amount)\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*'+numPat,'i'),
   new RegExp('(?:balance|due)\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*'+numPat,'i')
