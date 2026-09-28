@@ -1170,10 +1170,112 @@ function boe(){
  <div id="selectedBoeRows" style="margin-top:12px"></div></div>
  <div id="boeDetails" class="card" style="display:none"><h3 style="margin:0 0 10px">Step 3 — Bill of Entry Details & Upload</h3>
  <div class="grid">${field("ben","BE No.")}${field("bed","BE Date","date")}${field("beQty","BE Quantity (MT)")}${field("bea","Assessable Value INR")}${field("bebcd","BCD INR")}${field("besws","SWS INR")}${field("beigst","IGST INR")}${field("ber","Exchange Rate")}${field("bech","Challan No.")}</div>
- <div class="full" style="margin-top:10px"><label>Bill of Entry Copy (PDF/Image)</label><input id="bef" class="file" type="file" accept=".pdf,image/*"><div id="boeStatus" class="notice" style="margin-top:7px">Select the Bill of Entry PDF/Image and enter/verify the details before saving.</div></div>
+ <div class="full" style="margin-top:10px"><label>Bill of Entry Copy (PDF/Image)</label><input id="bef" class="file" type="file" accept=".pdf,image/*" onchange="readBoeCopy()"><div id="boeStatus" class="notice" style="margin-top:7px">Upload the Bill of Entry PDF/Image. BE No., BE Date, Assessable Value, BCD, SWS, IGST, Exchange Rate and Challan No. will be extracted automatically.</div></div>
  <div class="notice">BE Quantity (MT) is automatically calculated from the selected loading containers. Save केल्यानंतर selected प्रत्येक container च्या Booking row मध्ये Bill of Entry details save होतील.</div>
  <button class="btn s" onclick="saveBoe()">💾 Save Bill of Entry</button></div>`);
  showSelectedBoeContainers();
+}
+
+function boeNumberFromText(norm,lines){
+ const pats=[
+  /(?:bill\s*of\s*entry|b\.?\s*e\.?|be)\s*(?:no\.?|number|#)\s*[:\-]?\s*([A-Z0-9][A-Z0-9\/-]{2,40})/i,
+  /(?:be\s*no\.?|bill\s*of\s*entry\s*no\.?)\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\/-]{2,40})/i
+ ];
+ for(const re of pats){const m=norm.match(re);if(m)return cleanLine(m[1]);}
+ for(let i=0;i<(lines||[]).length;i++){
+  if(/^(?:bill\s*of\s*entry|b\.?\s*e\.?)\s*(?:no\.?|number|#)?$/i.test(lines[i])){
+   for(let j=i+1;j<Math.min(i+3,lines.length);j++){
+    const v=cleanLine(lines[j]); if(/^[A-Z0-9][A-Z0-9\/-]{2,40}$/i.test(v)) return v;
+   }
+  }
+ }
+ return '';
+}
+function boeFieldFromText(norm,lines,labels){
+ const src=String(norm||'').replace(/\s+/g,' ').trim();
+ const labelAlt=labels.map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
+ const num='([0-9][0-9,]*(?:\\.[0-9]{1,4})?)';
+ const direct=new RegExp('(?:'+labelAlt+')\\s*(?:[:#=\\-])?\\s*'+num,'i');
+ let m=src.match(direct); if(m)return cleanLine(m[1]);
+ const ls=lines||[];
+ for(let i=0;i<ls.length;i++){
+  const line=String(ls[i]||'').trim();
+  const lm=new RegExp('(?:^|\\s)(?:'+labelAlt+')(?:\\s|$)','i');
+  if(lm.test(line)){
+   const tail=line.replace(lm,'').replace(/^\\s*[:#=\\-]?\\s*/,'');
+   const tm=tail.match(new RegExp('^'+num)); if(tm)return cleanLine(tm[1]);
+   for(let j=i+1;j<Math.min(i+4,ls.length);j++){
+    const vm=String(ls[j]||'').match(new RegExp('^\\s*'+num+'\\s*(?:INR|Rs\\.?|₹)?\\s*$','i'));
+    if(vm)return cleanLine(vm[1]);
+   }
+  }
+ }
+ return '';
+}
+function boeChallanFromText(norm,lines){
+ const src=String(norm||'').replace(/\s+/g,' ').trim();
+ const re=/(?:challan\s*(?:no\.?|number|#)|tr[- ]?6\s*challan)\s*[:#=\-]?\s*([A-Z0-9][A-Z0-9\/-]{2,40})/i;
+ const m=src.match(re);if(m)return cleanLine(m[1]);
+ for(let i=0;i<(lines||[]).length;i++){
+  if(/challan/i.test(lines[i])){
+   const v=String(lines[i]).match(/([A-Z0-9][A-Z0-9\/-]{3,30})$/i);if(v&&!/challan/i.test(v[1]))return cleanLine(v[1]);
+   if(lines[i+1] && /^[A-Z0-9][A-Z0-9\/-]{3,30}$/i.test(lines[i+1]))return cleanLine(lines[i+1]);
+  }
+ }
+ return '';
+}
+function normalizeMoney(v){return cleanLine(v).replace(/^(?:INR|Rs\.?|₹)\s*/i,'').replace(/,/g,'');}
+function parseBoeText(text){
+ const norm=String(text||'').replace(/\r/g,'\n').replace(/\u00a0/g,' ');
+ const lines=linesOf(norm), flat=norm.replace(/\s+/g,' ').trim();
+ const no=boeNumberFromText(flat,lines);
+ const date=invoiceDateFromText(flat,lines);
+ const assess=boeFieldFromText(flat,lines,['Assessable Value','Assessable Value INR','Assessable Value (INR)']);
+ const bcd=boeFieldFromText(flat,lines,['BCD','Basic Customs Duty','Basic Duty']);
+ const sws=boeFieldFromText(flat,lines,['SWS','Social Welfare Surcharge','Social Welfare']);
+ const igst=boeFieldFromText(flat,lines,['IGST','IGST Amount','Integrated GST']);
+ const rate=boeFieldFromText(flat,lines,['Exchange Rate','Exchange Rate (USD)','Rate of Exchange','Exchange Rate INR']);
+ const challan=boeChallanFromText(flat,lines);
+ setv('ben',no); setv('bed',date); setv('bea',normalizeMoney(assess)); setv('bebcd',normalizeMoney(bcd)); setv('besws',normalizeMoney(sws)); setv('beigst',normalizeMoney(igst)); setv('ber',rate); setv('bech',challan);
+ return {no,date,assess,bcd,sws,igst,rate,challan};
+}
+async function readBoeCopy(){
+ const f=$('bef')?.files?.[0]; if(!f)return;
+ const st=$('boeStatus'); if(st)st.textContent='⏳ Reading Bill of Entry PDF/Image…';
+ try{
+  let text='';
+  if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
+   await ensurePdfJS();
+   const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+   for(let i=1;i<=pdf.numPages;i++){
+    const pg=await pdf.getPage(i),tc=await pg.getTextContent();
+    text+='\n'+tc.items.map(x=>x.str).join(' ');
+   }
+   parseBoeText(text);
+   const critical=['ben','bed','bea','bebcd','besws','beigst','ber','bech'];
+   const missing=critical.filter(id=>!$(id)?.value?.trim());
+   if(missing.length || text.replace(/\s/g,'').length<50){
+    await ensureTesseract();
+    if(st)st.textContent='⏳ Bill of Entry PDF has incomplete text — OCR is running…';
+    for(let i=1;i<=pdf.numPages;i++){
+     const pg=await pdf.getPage(i),vp=pg.getViewport({scale:3.0});
+     const cv=document.createElement('canvas'),ctx=cv.getContext('2d'); cv.width=vp.width;cv.height=vp.height;
+     await pg.render({canvasContext:ctx,viewport:vp}).promise;
+     try{const im=ctx.getImageData(0,0,cv.width,cv.height),d=im.data;for(let k=0;k<d.length;k+=4){const g=0.299*d[k]+0.587*d[k+1]+0.114*d[k+2];const v=Math.max(0,Math.min(255,(g-128)*1.65+128));d[k]=d[k+1]=d[k+2]=v;}ctx.putImageData(im,0,0);}catch(_){ }
+     const r=await Tesseract.recognize(cv,'eng',{logger:m=>{if(m.status)st.textContent='⏳ BOE OCR '+Math.round((m.progress||0)*100)+'%';}});
+     text+='\n'+(r.data.text||'');
+     parseBoeText(text);
+    }
+   }
+  }else{
+   await ensureTesseract(); if(st)st.textContent='⏳ Bill of Entry OCR is running…';
+   const r=await Tesseract.recognize(f,'eng',{logger:m=>{if(m.status)st.textContent='⏳ BOE OCR '+Math.round((m.progress||0)*100)+'%';}});
+   text=r.data.text||''; parseBoeText(text);
+  }
+  if(!text.trim())throw new Error('No readable text found');
+  const got=['ben','bed','bea','bebcd','besws','beigst','ber','bech'].filter(id=>$(id)?.value?.trim()).length;
+  if(st)st.textContent=got>=2?`✅ Bill of Entry read successfully (${got}/8 fields found). Verify the extracted information before saving.`:'⚠️ BOE was read, but some fields were not detected. Please verify/enter the missing fields.';
+ }catch(e){console.error(e);if(st)st.textContent='⚠️ Bill of Entry could not be read automatically. Enter the fields manually and verify the PDF.';}
 }
 function saveBoe(){
  let c=get(cur),selected=selectedBoeData();
