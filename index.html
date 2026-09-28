@@ -843,6 +843,17 @@ async function readInvoiceCopy(){
            if(m.status)st.textContent="⏳ Invoice OCR "+Math.round((m.progress||0)*100)+"%";
          }});
          text+="\n"+(r.data.text||"");
+         // Targeted second OCR pass: invoice dates are often printed in a small
+         // header area and can be missed by the normal page segmentation.
+         // Sparse-text OCR is deliberately run for every page when the first
+         // pass did not contain a recognizable date.
+         if(!invoiceDateFromText(text,linesOf(text))){
+           const r2=await Tesseract.recognize(cv,"eng",{
+             config:{tessedit_pageseg_mode:11},
+             logger:m=>{if(m.status)st.textContent="⏳ Invoice date OCR "+Math.round((m.progress||0)*100)+"%";}
+           });
+           text+="\n"+(r2.data.text||"");
+         }
        }
      }
    }else{
