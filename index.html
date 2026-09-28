@@ -24,9 +24,107 @@ function shell(title,body){$("main").innerHTML=`<section class="page on"><div cl
 function render(){
 nav();if(page==="home")home();else if(page==="booking")booking();else if(page==="advance")advance();else if(page==="loading")loading();else if(page==="invoice")invoice();else if(page==="boe")boe();else if(page==="finalpay")finalpay();else finalRec()
 }
-function home(){shell("🔎 Sales Contract",`<div class="search"><input id="q" placeholder="Sales Contract No."><button class="btn p" onclick="search()">Search</button></div><hr><div class="notice">Upload your Sales Contract, then confirm/edit the master information.</div><input id="cf" class="file" type="file" accept=".pdf,image/*"><div class="grid" style="margin-top:10px">
-${field("sc","Sales Contract No.")}${field("date","Contract Date","date")}${field("seller","Seller")}${field("buyer","Buyer")}${field("gst","GSTIN")}${field("iec","IEC")}${field("pan","PAN")}${field("hs","HS Code")}${field("commodity","Commodity","",1)}${field("qty","Quantity (MT)")}${field("cp","Container Plan")}${field("price","Price (USD/MT)")}${field("term","Price Term")}${field("pol","Port of Loading")}${field("pod","Port of Discharge")}${field("ship","Shipment Period")}${field("adv","Advance (USD)")}${field("trans","Transshipment")}${field("partial","Partial Shipment")}${field("remarks","Payment Terms / Remarks","textarea",1)}</div><button class="btn p" onclick="create()">💾 Save Contract</button><h3>Saved Contracts</h3><div id="list"></div>`);list()}
+function home(){shell("🔎 Sales Contract",`<div class="search"><input id="q" placeholder="Sales Contract No."><button class="btn p" onclick="search()">Search</button></div><hr><div class="notice">Upload your Sales Contract, then confirm/edit the master information.</div><input id="cf" class="file" type="file" accept=".pdf,image/*"><button class="btn w" onclick="readContract()">🔍 Read Contract</button><div id="ocrStatus" class="notice">Select a PDF/Image and tap Read Contract.</div><div class="grid" style="margin-top:10px">
+${field("sc","Sales Contract No.")}${field("date","Contract Date","date")}${field("seller","Seller")}${field("buyer","Buyer")}${field("gst","GSTIN")}${field("iec","IEC")}${field("pan","PAN")}${field("hs","HS Code")}${field("commodity","Commodity","",1)}${field("qty","Quantity (MT)")}${field("cp","Container Plan")}${field("price","Price (USD/MT)")}${field("term","Price Term")}<div><label>Contract Value (USD)</label><input id="contractValue" readonly></div>${field("pol","Port of Loading")}${field("pod","Port of Discharge")}${field("ship","Shipment Period")}${field("adv","Advance (USD)")}${field("trans","Transshipment")}${field("partial","Partial Shipment")}${field("remarks","Payment Terms / Remarks","textarea",1)}</div><button class="btn p" onclick="create()">💾 Save Contract</button><h3>Saved Contracts</h3><div id="list"></div>`);list()}
 function field(id,l,type="",full=0){return `<div class="${full?'full':''}"><label>${l}</label>${type==="textarea"?`<textarea id="${id}"></textarea>`:`<input id="${id}" type="${type||'text'}">`}</div>`}
+
+async function readContract(){
+ const f=$("cf").files?.[0];
+ if(!f)return alert("First select the Sales Contract PDF/Image.");
+ $("ocrStatus").innerHTML="⏳ Reading contract…";
+ try{
+   let text="";
+   if(f.type==="application/pdf"){
+     if(!window.pdfjsLib){
+       await loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.mjs");
+     }
+     const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+     for(let i=1;i<=pdf.numPages;i++){
+       const pg=await pdf.getPage(i), tc=await pg.getTextContent();
+       text+=tc.items.map(x=>x.str).join(" ")+"\\n";
+     }
+   }else{
+     if(!window.Tesseract) await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js");
+     const r=await Tesseract.recognize(f,"eng",{logger:m=>{if(m.status) $("ocrStatus").textContent="⏳ "+m.status;}});
+     text=r.data.text||"";
+   }
+   parseContractText(text);
+   $("ocrStatus").innerHTML="✅ Contract read. Please verify/edit the fields before saving.";
+ }catch(e){
+   console.error(e);
+   $("ocrStatus").innerHTML="⚠️ Could not read automatically. Please enter/edit the fields manually.";
+ }
+}
+function loadScript(src){
+ return new Promise((resolve,reject)=>{
+  const sc=document.createElement("script");sc.src=src;sc.onload=resolve;sc.onerror=reject;document.head.appendChild(sc);
+ });
+}
+function setv(id,v){if(v && $(id)) $(id).value=String(v).trim();}
+function first(re,t){let m=t.match(re);return m?m[1].trim():"";}
+function parseContractText(t){
+ const x=t.replace(/\r/g,"\n").replace(/[ \t]+/g," ").replace(/\n+/g,"\n");
+ // Contract number: prefer "sales contract" context; never use the first random OCR word.
+ let no=first(/(?:our\s+)?sales\s+contract\s*(?:no\.?|number)?\s*[:\-]?\s*([A-Z0-9][A-Z0-9\/._-]{3,})/i,x);
+ if(no) setv("sc",no);
+
+ let date=first(/(?:contract\s+date|date)\s*[:\-]?\s*(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})/i,x);
+ if(date){let a=date.split(/[\/.\-]/);if(a.length===3){let y=a[2].length===2?"20"+a[2]:a[2];setv("date",`${y}-${a[1].padStart(2,"0")}-${a[0].padStart(2,"0")}`);}}
+
+ let seller=first(/(?:seller|exporter|supplier)\s*[:\-]?\s*([^\n]+)/i,x);
+ let buyer=first(/(?:buyer|importer|consignee)\s*[:\-]?\s*([^\n]+)/i,x);
+ setv("seller",seller);setv("buyer",buyer);
+
+ let gst=first(/(?:GSTIN|GST\s*NO\.?)\s*[:\-]?\s*([A-Z0-9]{10,20})/i,x);
+ let iec=first(/(?:IEC|I\.E\.C\.)\s*(?:CODE|NO\.?)?\s*[:\-]?\s*([A-Z0-9]{5,15})/i,x);
+ let pan=first(/(?:PAN|P\.A\.N\.)\s*[:\-]?\s*([A-Z]{5}\d{4}[A-Z])/i,x);
+ let hs=first(/(?:HS\s*CODE|HSN)\s*[:\-]?\s*(\d{6,10})/i,x);
+ setv("gst",gst);setv("iec",iec);setv("pan",pan);setv("hs",hs);
+
+ let commodity=first(/(?:commodity|description\s+of\s+goods?)\s*[:\-]?\s*([^\n]+)/i,x);
+ if(!commodity){
+   let m=x.match(/(?:ALUMIN[IU]UM|ALUMINUM)[^.\n]{5,100}(?:ISRI|SCRAP|TREAD|TALON)[^.\n]*/i); if(m) commodity=m[0];
+ }
+ setv("commodity",commodity);
+
+ let qty=first(/(?:total\s+quantity|quantity)\s*[:\-]?\s*(\d+(?:[.,]\d+)?)\s*(?:MT|M\.T\.|METRIC\s+TONS?)/i,x);
+ if(!qty){let m=x.match(/(\d+(?:[.,]\d+)?)\s*(?:MT|M\.T\.)/i);if(m)qty=m[1].replace(/,/g,"");}
+ setv("qty",qty);
+
+ let cp=first(/(?:container\s+plan|containers?|container)\s*[:\-]?\s*([0-9]+\s*[xX×]\s*20[’']?\s*(?:CONTAINER)?)/i,x);
+ setv("cp",cp);
+
+ // IMPORTANT: price is parsed only when it is explicitly near USD/US$ and per MT.
+ let pm=x.match(/(?:PRICE|RATE)\s*[:\-]?\s*(?:USD|US\$|\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)\s*(?:\/\s*MT|PER\s*MT|\/MT)?/i);
+ if(!pm) pm=x.match(/(?:USD|US\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)\s*\/?\s*MT/i);
+ let price=pm?pm[1].replace(/,/g,""):"";
+ setv("price",price);
+
+ let term=first(/(CIF\s+[A-Z][A-Z ,.-]{3,60})/i,x);
+ setv("term",term);
+
+ let pol=first(/(?:port\s+of\s+loading|loading\s+port)\s*[:\-]?\s*([^\n]+)/i,x);
+ let pod=first(/(?:port\s+of\s+discharge|discharge\s+port)\s*[:\-]?\s*([^\n]+)/i,x);
+ setv("pol",pol);setv("pod",pod);
+
+ let adv=first(/(?:advance|advance\s+payment)[^$\n]*(?:USD|US\$|\$)\s*([0-9,]+(?:\.[0-9]{1,2})?)/i,x);
+ setv("adv",adv.replace(/,/g,""));
+
+ let trans=first(/transshipment\s*[:\-]?\s*([A-Z ]+)/i,x);
+ let partial=first(/partial\s+shipment\s*[:\-]?\s*([A-Z ]+)/i,x);
+ setv("trans",trans);setv("partial",partial);
+
+ let ship=first(/(?:shipment\s+period|shipment|delivery)\s*[:\-]?\s*([^\n]{5,120})/i,x);
+ setv("ship",ship);
+
+ let remarks=first(/(?:payment\s+terms?|terms\s+of\s+payment|remarks?)\s*[:\-]?\s*([^\n]{10,250})/i,x);
+ setv("remarks",remarks);
+
+ if(price && qty){
+   let total=(parseFloat(price)*parseFloat(qty)).toFixed(2);
+   $("remarks").value=(($("remarks").value||"").trim()?$("remarks").value.trim()+"\n":"")+"Calculated Contract Value: USD "+total;
+ }
+}
 function create(){let no=$("sc").value.trim();if(!no)return alert("Contract No. required.");if(get(no))return alert("Already exists.");db.contracts.push({no,date:$("date").value,seller:$("seller").value,buyer:$("buyer").value,gstin:$("gst").value,iec:$("iec").value,pan:$("pan").value,hs:$("hs").value,commodity:$("commodity").value,qty:$("qty").value,containerPlan:$("cp").value,price:$("price").value,term:$("term").value,pol:$("pol").value,pod:$("pod").value,ship:$("ship").value,advanceAmt:$("adv").value,trans:$("trans").value,partial:$("partial").value,remarks:$("remarks").value,contractFile:file("cf"),bookings:[]});save();cur=no;alert("Contract saved");openPage("booking")}
 function list(){$("list").innerHTML=db.contracts.map(c=>`<div class="item"><b>${esc(c.no)}</b><br>${esc(c.buyer)} | ${esc(c.commodity)} | ${esc(c.qty)} MT | USD ${esc(c.price)}/MT<br><button class="btn p" onclick="openPage('booking','${esc(c.no)}')">Open</button></div>`).join("")||"<p>No contracts.</p>"}
 function search(){let c=get($("q").value);if(c){cur=c.no;openPage("booking",c.no)}else alert("Contract not found")}
@@ -46,5 +144,5 @@ function finalpay(){let c=get(cur);shell("💰 Final Payment",head(c)+`<div clas
 function saveFinalPay(){let c=get(cur);c.finalpay={amount:$("fa").value,date:$("fd").value,rate:$("fr").value,inr:$("fi").value,ref:$("fx").value,file:file("ff")};save();openPage("final",cur)}
 function finalRec(){let c=get(cur);shell("📄 Final Record",head(c)+`<div class="ok">Final Payment completed — Final Record unlocked.</div><table><tr><th>Stage</th><th>Record</th></tr><tr><td>Contract</td><td>USD ${esc(c.price)}/MT | ${esc(c.qty)} MT</td></tr><tr><td>Booking</td><td>${c.bookings.length} booking(s)</td></tr><tr><td>Advance</td><td>USD ${esc(c.advance?.amount)}</td></tr><tr><td>Loading/B/L</td><td>${esc(c.loading?.bl)} | ${esc(c.loading?.qty)} KG</td></tr><tr><td>Invoice</td><td>${esc(c.invoice?.no)} | USD ${esc(c.invoice?.amount)}</td></tr><tr><td>Bill of Entry</td><td>${esc(c.boe?.no)} | Duty INR ${esc(c.boe?.duty)}</td></tr><tr><td>Final Payment</td><td>USD ${esc(c.finalpay?.amount)} | INR ${esc(c.finalpay?.inr)}</td></tr></table><div class="card"><label>Final Document</label><input id="ffinal" class="file" type="file" accept=".pdf,image/*"><button class="btn s" onclick="complete()">✅ Complete Final Record</button></div>${c.final?'<div class="ok">✅ FINAL RECORD COMPLETED</div>':''}`)}
 function complete(){let c=get(cur),f=file("ffinal");if(!f)return alert("Upload final document.");c.final={file:f,date:new Date().toISOString()};save();finalRec()}
-render();
+document.addEventListener("input",e=>{if(e.target.id==="price"||e.target.id==="qty"){let p=parseFloat($("price")?.value||0),q=parseFloat($("qty")?.value||0);if($("contractValue"))$("contractValue").value=p&&q?(p*q).toFixed(2):"";}});render();
 </script></body></html>
