@@ -4,7 +4,7 @@
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f3f6fa;font-family:Arial;color:#1d2a35}header{background:#123f68;color:white;text-align:center;padding:18px 10px;position:sticky;top:0;z-index:5}header h1{margin:0;font-size:22px}header p{margin:7px 0;font-size:14px}
 nav{display:flex;overflow:auto;gap:7px;background:white;padding:8px;position:sticky;top:86px;z-index:4}nav button{border:0;border-radius:10px;padding:10px 13px;font-weight:bold;white-space:nowrap}nav .on{background:#123f68;color:#fff}nav .lock{opacity:.4}
-main{max-width:950px;margin:auto;padding:12px}.page{display:none}.page.on{display:block}.card{background:#fff;padding:15px;border-radius:15px;margin-bottom:12px;box-shadow:0 2px 10px #0001}h2{margin:0 0 13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{display:block;font-size:12px;font-weight:bold;color:#5b6875;margin-bottom:5px}input,select,textarea{width:100%;padding:11px;border:1px solid #ccd5de;border-radius:10px;font-size:14px}textarea{min-height:80px}.btn{border:0;border-radius:10px;padding:11px 14px;font-weight:bold;margin:6px 4px 0 0}.p{background:#123f68;color:white}.s{background:#16844d;color:white}.w{background:#d88900;color:white}.file{border-style:dashed}.item{border:1px solid #dde4eb;border-radius:10px;padding:12px;margin:9px 0}.muted{font-size:12px;color:#6d7882}.ok{background:#e1f6ea;color:#155d39;padding:10px;border-radius:9px;margin:8px 0}.notice{background:#fff5d8;padding:10px;border-radius:9px;font-size:13px}.search{display:flex;gap:7px}.search input{flex:1}table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #ddd;text-align:left;font-size:13px}.badge{padding:5px 8px;border-radius:15px;background:#d9f4e5;color:#14613c;font-size:11px;font-weight:bold}
+main{max-width:950px;margin:auto;padding:12px}.page{display:none}.page.on{display:block}.card{background:#fff;padding:15px;border-radius:15px;margin-bottom:12px;box-shadow:0 2px 10px #0001}h2{margin:0 0 13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{display:block;font-size:12px;font-weight:bold;color:#5b6875;margin-bottom:5px}input,select,textarea{width:100%;padding:11px;border:1px solid #ccd5de;border-radius:10px;font-size:14px}textarea{min-height:80px}.btn{border:0;border-radius:10px;padding:11px 14px;font-weight:bold;margin:6px 4px 0 0}.p{background:#123f68;color:white}.s{background:#16844d;color:white}.w{background:#d88900;color:white}.file{border-style:dashed}.item{border:1px solid #dde4eb;border-radius:10px;padding:12px;margin:9px 0}.muted{font-size:12px;color:#6d7882}.ok{background:#e1f6ea;color:#155d39;padding:10px;border-radius:9px;margin:8px 0}.notice{background:#fff5d8;padding:10px;border-radius:9px;font-size:13px}.search{display:flex;gap:7px}.search input{flex:1}table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #ddd;text-align:left;font-size:13px}table thead th{background:#eef3f7;white-space:nowrap;border-bottom:2px solid #cbd5df}table tbody tr:hover{background:#f8fafc}table tbody td{white-space:nowrap}.badge{padding:5px 8px;border-radius:15px;background:#d9f4e5;color:#14613c;font-size:11px;font-weight:bold}
 @media(max-width:650px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}
 </style></head>
 <body>
@@ -341,9 +341,46 @@ function create(){let no=$("sc").value.trim();if(!no)return alert("Contract No. 
 function list(){$("list").innerHTML=db.contracts.map(c=>`<div class="item"><b>${esc(c.no)}</b><br>${esc(c.buyer)} | ${esc(c.commodity)} | ${esc(c.qty)} MT | USD ${esc(c.price)}/MT<br><button class="btn p" onclick="openPage('booking','${esc(c.no)}')">Open</button></div>`).join("")||"<p>No contracts.</p>"}
 function search(){let c=get($("q").value);if(c){cur=c.no;openPage("booking",c.no)}else alert("Contract not found")}
 function head(c){return `<div class="item"><b>${esc(c.no)}</b><br><span class="muted">${esc(c.buyer)} | ${esc(c.commodity)} | Contract ${esc(c.qty)} MT | USD ${esc(c.price)}/MT</span></div>`}
-function booking(){let c=get(cur);shell("🚢 Booking",head(c)+`<div class="card"><div class="grid">${field("bn","Booking No.")}${field("cn","Container No.")}${field("bq","Quantity (MT)")}${field("bv","Vessel")}${field("be","ETD","date")}${field("ba","ETA","date")}${field("bf","Booking PDF/Image","file",1)}</div><button class="btn p" onclick="addB()">Save Booking</button></div><h3>All Bookings</h3>${c.bookings.map((b,i)=>`<div class="item"><b>Booking ${i+1}: ${esc(b.no)}</b><br>Container ${esc(b.container)} | ${esc(b.qty)} MT | ${esc(b.vessel)} | ETA ${esc(b.eta)}<br>${b.released?'<span class="badge">RELEASED ✓</span>':'<button class="btn w" onclick="releaseB('+i+')">🚢 RELEASE</button>'}</div>`).join("")||"<p>No bookings.</p>"}`)}
+function booking(){
+ let c=get(cur);
+ const hasLoading=!!c.loading;
+ const contractCols=[
+  ['Contract No.',c.no],['Contract Date',c.date],['Seller',c.seller],['Buyer',c.buyer],
+  ['GSTIN',c.gstin],['IEC',c.iec],['HS Code',c.hs],['Commodity',c.commodity],
+  ['Contract Qty (MT)',c.qty],['Container Plan',c.containerPlan],['Price (USD/MT)',c.price],
+  ['Contract Value (USD)',(parseFloat(c.price||0)&&parseFloat(c.qty||0))?(parseFloat(c.price)*parseFloat(c.qty)).toFixed(2):''],
+  ['Price Term',c.term],['Port of Loading',c.pol],['Port of Discharge',c.pod],
+  ['Shipment Period',c.ship],['Advance (USD)',c.advanceAmt],['Transshipment',c.trans]
+ ];
+ const bookingCols=[['Booking No.','no'],['Booking Container','container'],['Booking Qty (MT)','qty'],['Vessel','vessel'],['ETD','etd'],['ETA','eta']];
+ const loadingCols=hasLoading?[
+  ['B/L No.','bl'],['Loading Vessel','vessel'],['Voyage','voyage'],['Loading Date','date'],
+  ['Loaded Qty (KG)','qty'],['Container / Seal No.','containers']
+ ]:[];
+ const allHeaders=[...contractCols.map(x=>x[0]),...bookingCols.map(x=>x[0]),...loadingCols.map(x=>x[0]),'Release'];
+ const rowFor=(b,i)=>{
+  const vals=[...contractCols.map(x=>x[1]),...bookingCols.map(x=>b[x[1]]||''),
+    ...(hasLoading?loadingCols.map(x=>c.loading?.[x[1]]||''):[])];
+  return `<tr>${vals.map(v=>`<td>${esc(v)}</td>`).join('')}<td style="white-space:nowrap">${b.released?'<span class="badge">RELEASED ✓</span>':'<button class="btn w" style="margin:0;padding:7px 10px" onclick="releaseB(${i})">🚢 RELEASE</button>'} <button class="btn" style="margin:0;padding:7px 10px;background:#c62828;color:#fff" onclick="deleteBooking(${i})">🗑 DELETE</button></td></tr>`;
+ };
+ const empty=`<tr><td colspan="${allHeaders.length}" style="text-align:center;padding:18px">No bookings.</td></tr>`;
+ shell("🚢 Booking",head(c)+`<div class="card"><div class="grid">${field("bn","Booking No.")}${field("cn","Container No.")}${field("bq","Quantity (MT)")}${field("bv","Vessel")}${field("be","ETD","date")}${field("ba","ETA","date")}${field("bf","Booking PDF/Image","file",1)}</div><button class="btn p" onclick="addB()">Save Booking</button></div>
+ <h3 style="margin-top:16px">📊 Contract + Booking Register${hasLoading?' + Loading/B/L':''}</h3>
+ <div class="notice">Sales Contract columns are kept first. New stage columns are added to the right when that stage is completed. Scroll horizontally to see all columns.</div>
+ <div style="overflow-x:auto;border:1px solid #d6dde5;border-radius:10px;background:#fff">
+ <table style="min-width:${allHeaders.length*120}px;width:100%;border-collapse:collapse">
+ <thead><tr>${allHeaders.map((h,i)=>`<th style="position:sticky;top:0;background:#f3f6fa;white-space:nowrap">${esc(h)}</th>`).join('')}</tr></thead>
+ <tbody>${c.bookings.map(rowFor).join('')||empty}</tbody>
+ </table></div>`);
+}
 function addB(){let c=get(cur);c.bookings.push({no:$("bn").value,container:$("cn").value,qty:$("bq").value,vessel:$("bv").value,etd:$("be").value,eta:$("ba").value,file:file("bf"),released:false});save();booking()}
 function releaseB(i){get(cur).bookings[i].released=true;save();alert("Booking released. Advance unlocked.");openPage("advance",cur)}
+function deleteBooking(i){
+ const c=get(cur); const b=c?.bookings?.[i]; if(!b)return;
+ const label=b.no||b.container||`Booking ${i+1}`;
+ if(!confirm(`Delete ${label}? This booking row will be permanently removed.`))return;
+ c.bookings.splice(i,1); save(); booking();
+}
 function advance(){let c=get(cur);shell("💵 Advance Payment",head(c)+`<div class="ok">Booking released — Advance Payment unlocked.</div><div class="grid">${field("aa","Advance USD")}${field("ad","Payment Date","date")}${field("ar","Exchange Rate")}${field("ai","INR Amount")}${field("ax","Reference")}${field("af","Payment Copy","file",1)}</div><button class="btn s" onclick="saveAdvance()">Save Advance Payment</button>`)}
 function saveAdvance(){let c=get(cur);c.advance={amount:$("aa").value,date:$("ad").value,rate:$("ar").value,inr:$("ai").value,ref:$("ax").value,file:file("af")};save();openPage("loading",cur)}
 function loading(){let c=get(cur);shell("📦 Loading / Bill of Lading",head(c)+`<div class="ok">Advance completed — Loading/B/L unlocked.</div><div class="grid">${field("lb","B/L No.")}${field("lv","Vessel")}${field("lg","Voyage")}${field("ld","Loading Date","date")}${field("lq","Loaded Quantity (KG)")}${field("lc","Container / Seal No.","textarea",1)}${field("lf","Loading / B/L PDF","file",1)}</div><button class="btn s" onclick="saveLoading()">Save Loading/B/L</button>`)}
