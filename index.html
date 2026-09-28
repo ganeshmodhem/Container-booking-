@@ -3,7 +3,7 @@
 <title>Import Contract Tracker</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f3f6fa;font-family:Arial;color:#1d2a35}header{background:#123f68;color:white;text-align:center;padding:18px 10px;position:sticky;top:0;z-index:5}header h1{margin:0;font-size:22px}header p{margin:7px 0;font-size:14px}
-nav{display:flex;overflow:auto;gap:7px;background:white;padding:8px;position:sticky;top:86px;z-index:4}nav button{border:0;border-radius:10px;padding:10px 13px;font-weight:bold;white-space:nowrap}nav .on{background:#123f68;color:#fff}nav .lock{opacity:.4}
+nav{display:flex;overflow:auto;gap:7px;background:white;padding:8px;position:sticky;top:86px;z-index:4}nav button{border:0;border-radius:10px;padding:10px 13px;font-weight:bold;white-space:nowrap}nav .on{background:#123f68;color:#fff}nav .lock{opacity:.55}nav button{cursor:pointer}nav{z-index:20}
 main{width:98vw;max-width:none;margin:0 auto;padding:14px}.page{display:none}.page.on{display:block}.card{background:#fff;padding:15px;border-radius:15px;margin-bottom:12px;box-shadow:0 2px 10px #0001}h2{margin:0 0 13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{display:block;font-size:12px;font-weight:bold;color:#5b6875;margin-bottom:5px}input,select,textarea{width:100%;padding:11px;border:1px solid #ccd5de;border-radius:10px;font-size:14px}textarea{min-height:80px}.btn{border:0;border-radius:10px;padding:11px 14px;font-weight:bold;margin:6px 4px 0 0}.p{background:#123f68;color:white}.s{background:#16844d;color:white}.w{background:#d88900;color:white}.file{border-style:dashed}.item{border:1px solid #dde4eb;border-radius:10px;padding:12px;margin:9px 0}.muted{font-size:12px;color:#6d7882}.ok{background:#e1f6ea;color:#155d39;padding:10px;border-radius:9px;margin:8px 0}.notice{background:#fff5d8;padding:10px;border-radius:9px;font-size:13px}.search{display:flex;gap:7px}.search input{flex:1}table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #ddd;text-align:left;font-size:13px}table thead th{background:#eef3f7;white-space:nowrap;border-bottom:2px solid #cbd5df}table tbody tr:hover{background:#f8fafc}table tbody td{white-space:nowrap}.registerWrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.registerWrap table{min-width:max-content}.badge{padding:5px 8px;border-radius:15px;background:#d9f4e5;color:#14613c;font-size:11px;font-weight:bold}
 @media(max-width:650px){main{width:100%;padding:8px}.grid{grid-template-columns:1fr}.full{grid-column:auto}}
 </style></head>
@@ -17,9 +17,9 @@ const $=x=>document.getElementById(x), esc=x=>String(x??"").replace(/[&<>"']/g,m
 function file(id){let f=$(id)?.files?.[0];return f?{name:f.name,type:f.type}:null}
 function get(n){return db.contracts.find(x=>x.no.toLowerCase()===String(n||"").trim().toLowerCase())}
 function save(){localStorage.setItem(K,JSON.stringify(db));render()}
-function nav(){let c=get(cur);$("nav").innerHTML=stages.map(([id,t])=>{let lock=({advance:!(c?.bookings?.some(x=>x.released)),loading:!c?.advance,invoice:!c?.loading,boe:!c?.invoice,finalpay:!c?.boe,final:!c?.finalpay}[id]||false);return `<button class="${id===page?'on ':''}${lock?'lock':''}" onclick="openPage('${id}')">${t}</button>`}).join("")}
+function nav(){let c=get(cur);$("nav").innerHTML=stages.map(([id,t])=>{let lock=({loading:!c?.bookings?.some(x=>x.advance),invoice:!c?.loading,boe:!c?.invoice,finalpay:!c?.boe,final:!c?.finalpay}[id]||false);return `<button class="${id===page?'on ':''}${lock?'lock':''}" onclick="openPage('${id}')">${t}</button>`}).join("")}
 let page="home";
-function openPage(p,n=cur){let c=get(n);if(p!=="home"&&!c)return;let lock={advance:!(c?.bookings?.some(x=>x.released)),loading:!c?.advance,invoice:!c?.loading,boe:!c?.invoice,finalpay:!c?.boe,final:!c?.finalpay}[p];if(lock)return alert("Complete previous stage first.");page=p;cur=n;render()}
+function openPage(p,n=cur){let c=get(n);if(p!=="home"&&!c)return;let lock={loading:!c?.bookings?.some(x=>x.advance),invoice:!c?.loading,boe:!c?.invoice,finalpay:!c?.boe,final:!c?.finalpay}[p];if(lock)return alert("Complete previous stage first.");page=p;cur=n;render()}
 function shell(title,body){$("main").innerHTML=`<section class="page on"><div class="card"><h2>${title}</h2>${body}</div></section>`;nav()}
 function render(){
 nav();if(page==="home")home();else if(page==="booking")booking();else if(page==="advance")advance();else if(page==="loading")loading();else if(page==="invoice")invoice();else if(page==="boe")boe();else if(page==="finalpay")finalpay();else finalRec()
@@ -436,8 +436,8 @@ function addB(){
 function releaseB(i){
  const c=get(cur); const b=c?.bookings?.[i]; if(!b)return;
  b.released=true; localStorage.setItem(K,JSON.stringify(db)); cur=c.no;
- alert('Booking released. Now upload the advance payment copy for this container.');
- openPage('advance',cur); setTimeout(()=>{const sel=$('advContainer'); if(sel){sel.value=String(i); showAdvanceRow(i);}},50);
+ alert('Booking released. You can now upload the advance payment copy for this container.');
+ booking();
 }
 function deleteBooking(i){
  const c=get(cur); const b=c?.bookings?.[i]; if(!b)return;
