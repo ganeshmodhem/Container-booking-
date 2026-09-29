@@ -1,2223 +1,276 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GALCO Import Contract Tracker — Professional Master</title>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GALCO Import Contract Tracker — Professional</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f3f6fa;font-family:Arial;color:#1d2a35}header{background:#123f68;color:white;text-align:center;padding:18px 10px;position:sticky;top:0;z-index:5}header h1{margin:0;font-size:22px}header{box-shadow:0 2px 12px #0002}header p{margin:7px 0;font-size:14px}
-nav{display:flex;overflow:auto;gap:7px;background:white;padding:8px;position:sticky;top:86px;z-index:4}nav button{border:0;border-radius:10px;padding:10px 13px;font-weight:bold;white-space:nowrap}nav .on{background:#123f68;color:#fff}nav .lock{opacity:1}nav button{cursor:pointer}nav{z-index:20}
-main{width:98vw;max-width:none;margin:0 auto;padding:14px}.page{display:none}.page.on{display:block}.card{background:#fff;padding:15px;border-radius:15px;margin-bottom:12px;box-shadow:0 2px 10px #0001}h2{margin:0 0 13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{display:block;font-size:12px;font-weight:bold;color:#5b6875;margin-bottom:5px}input,select,textarea{width:100%;padding:11px;border:1px solid #ccd5de;border-radius:10px;font-size:14px}textarea{min-height:80px}.btn{border:0;border-radius:10px;padding:11px 14px;font-weight:bold;margin:6px 4px 0 0}.p{background:#123f68;color:white}.s{background:#16844d;color:white}.w{background:#d88900;color:white}.file{border-style:dashed}.item{border:1px solid #dde4eb;border-radius:10px;padding:12px;margin:9px 0}.muted{font-size:12px;color:#6d7882}.ok{background:#e1f6ea;color:#155d39;padding:10px;border-radius:9px;margin:8px 0}.notice{background:#fff5d8;padding:10px;border-radius:9px;font-size:13px}.search{display:flex;gap:7px}.search input{flex:1}table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #ddd;text-align:left;font-size:13px}table thead th{background:#eef3f7;white-space:nowrap;border-bottom:2px solid #cbd5df}table tbody tr:hover{background:#f8fafc}table tbody td{white-space:nowrap}.registerWrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.registerWrap table{min-width:max-content}.alloyEdit{min-width:85px;width:85px;padding:7px!important;border:1px solid #ccd5de;border-radius:7px}.badge{padding:5px 8px;border-radius:15px;background:#d9f4e5;color:#14613c;font-size:11px;font-weight:bold}
-.statGrid{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:10px;margin:10px 0}
-.stat{background:#fff;border:1px solid #dbe4ec;border-radius:12px;padding:13px;box-shadow:0 2px 7px #0000000a}
-.stat .k{font-size:11px;color:#687684;font-weight:bold;text-transform:uppercase}.stat .v{font-size:20px;font-weight:800;margin-top:5px;color:#123f68}
-.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}.toolbar input{max-width:330px}
-.modalBack{position:fixed;inset:0;background:#0008;z-index:100;display:flex;align-items:center;justify-content:center;padding:18px}
-.modal{background:#fff;width:min(1100px,96vw);max-height:90vh;overflow:auto;border-radius:16px;padding:18px;box-shadow:0 20px 60px #0006}
-.detailGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.detail{border:1px solid #e0e6ec;border-radius:9px;padding:9px;background:#fafcfe}.detail b{display:block;font-size:11px;color:#6a7784}.detail span{display:block;margin-top:3px;font-size:13px;word-break:break-word}
-.sectionTitle{margin:16px 0 8px;padding:8px 10px;background:#eef4f8;border-left:4px solid #123f68;border-radius:6px;font-weight:800}
-@media(max-width:900px){.statGrid{grid-template-columns:repeat(2,1fr)}.detailGrid{grid-template-columns:1fr 1fr}}
-@media(max-width:650px){.statGrid{grid-template-columns:1fr 1fr}.detailGrid{grid-template-columns:1fr}}
-
-@media(max-width:650px){main{width:100%;padding:8px}.grid{grid-template-columns:1fr}.full{grid-column:auto}}
-
-@media print{body{background:#fff!important}header h1{font-size:16px!important}header p{font-size:9px!important}header,nav,.btn,.notice,.item>span,.card:first-child button{display:none!important}main{width:100%!important;padding:0!important}.card{box-shadow:none!important;border:0!important;padding:0!important}.registerWrap{overflow:visible!important;border:0!important}table{font-size:9px!important;min-width:0!important;width:100%!important}th,td{padding:4px!important;border:1px solid #999!important}.alloyEdit,input[type=date]{border:0!important;padding:0!important;background:transparent!important;appearance:none}.card[style*="eef6ff"]{display:block!important;margin-top:10px!important}.card[style*="eef6ff"] span{font-size:14px!important}}
-</style></head>
+:root{--navy:#0b3558;--blue:#1769aa;--bg:#f4f7fa;--card:#fff;--line:#d9e2ea;--text:#17212b;--muted:#667684;--green:#16834a;--orange:#c77900;--red:#c93636;--shadow:0 8px 28px #16324d12}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:13px Arial,Helvetica,sans-serif;color:var(--text)}
+button,input,select,textarea{font:inherit}button{cursor:pointer}
+.top{background:linear-gradient(120deg,#092f50,#155b82);color:#fff;padding:18px 22px;position:sticky;top:0;z-index:20;box-shadow:0 4px 15px #0003}
+.brand{display:flex;align-items:center;gap:12px}.logo{width:38px;height:38px;border-radius:10px;background:#fff2;display:grid;place-items:center;font-size:21px}
+.brand h1{margin:0;font-size:20px}.brand small{opacity:.8}
+.nav{display:flex;gap:6px;overflow:auto;margin-top:14px;padding-bottom:2px}.nav button{border:1px solid #ffffff2b;background:#ffffff12;color:#fff;border-radius:8px;padding:9px 13px;white-space:nowrap}.nav button.active{background:#fff;color:var(--navy);font-weight:700}
+.wrap{max-width:1500px;margin:18px auto;padding:0 16px}.view{display:none}.view.active{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:13px;box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+.title{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.title h2{margin:0;font-size:18px}.muted{color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(160px,1fr));gap:10px}.field{display:flex;flex-direction:column;gap:5px}.field label{font-size:11px;font-weight:700;color:#5d6c78}.field input,.field select,.field textarea{width:100%;border:1px solid #ccd7e0;border-radius:8px;padding:9px;background:#fff}.field textarea{min-height:70px;resize:vertical}.span2{grid-column:span 2}.span4{grid-column:1/-1}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}.btn{border:0;border-radius:8px;padding:9px 13px;font-weight:700}.primary{background:var(--blue);color:#fff}.success{background:var(--green);color:#fff}.warn{background:var(--orange);color:#fff}.danger{background:var(--red);color:#fff}.light{background:#edf3f7;color:#25465e;border:1px solid var(--line)}.small{padding:6px 9px;font-size:11px}
+.stats{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:10px;margin-bottom:14px}.stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px;box-shadow:var(--shadow)}.stat b{display:block;font-size:21px;margin-top:4px}.stat span{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.toolbar input{min-width:260px;flex:1;border:1px solid var(--line);padding:9px;border-radius:8px}
+.tableWrap{overflow:auto;border:1px solid var(--line);border-radius:10px;background:#fff}table{border-collapse:collapse;width:100%;min-width:1100px}th,td{border-bottom:1px solid #e6edf2;padding:9px 8px;text-align:left;white-space:nowrap}th{background:#edf3f7;color:#29465c;font-size:11px;position:sticky;top:0;z-index:2}tr:hover td{background:#f8fbfd}
+.badge{display:inline-block;padding:4px 8px;border-radius:20px;font-size:10px;font-weight:800}.bgreen{background:#dcf5e7;color:#11653a}.borange{background:#fff0d5;color:#8a5600}.bblue{background:#e2f0ff;color:#155b91}.bred{background:#ffe0e0;color:#9e2020}
+.notice{padding:10px 12px;border-radius:9px;background:#f0f6fa;border:1px solid #d8e6ef;margin-bottom:12px}
+.empty{text-align:center;padding:30px;color:var(--muted)}
+.step{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}.step span{padding:6px 10px;border-radius:20px;background:#eaf1f6;color:#4b6374}.step .on{background:#dceeff;color:#0d5e99;font-weight:700}
+.modalBack{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;z-index:100;padding:15px}.modal{width:min(1150px,96vw);max-height:92vh;overflow:auto;background:#fff;border-radius:14px;padding:18px}.detailGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.detail{border:1px solid var(--line);border-radius:8px;padding:9px;background:#fafcfd}.detail b{font-size:10px;color:var(--muted);display:block}.detail span{display:block;margin-top:4px;word-break:break-word}
+.section{font-weight:800;margin:16px 0 8px;padding:8px 10px;background:#edf4f8;border-left:4px solid var(--blue);border-radius:6px}
+.footer{padding:25px;text-align:center;color:var(--muted)}
+@media(max-width:1050px){.grid{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.span2{grid-column:auto}.stats{grid-template-columns:repeat(2,1fr)}.detailGrid{grid-template-columns:1fr}}
+@media print{.top,.actions,.toolbar,.noPrint{display:none!important}body{background:#fff}.wrap{max-width:none}.card{box-shadow:none;border:0}table{font-size:9px}}
+</style>
+</head>
 <body>
-<header><h1>📦 Import Contract Tracker</h1><p>Contract → Booking → Advance → Loading/B/L → Invoice → BOE → Final Payment → Payment → Final Booking → Final Record</p></header>
-<nav id="nav"></nav><main id="main"></main>
+<header class="top">
+ <div class="brand"><div class="logo">📦</div><div><h1>GALCO Import Contract Tracker</h1><small>Professional Container • Payment • Customs • Final Record Management</small></div></div>
+ <nav class="nav" id="nav"></nav>
+</header>
+
+<main class="wrap">
+<section id="dashboard" class="view active">
+ <div class="card">
+  <div class="title"><div><h2>Executive Dashboard</h2><div class="muted">One master database — every module is linked container-wise.</div></div>
+   <div class="actions" style="margin:0"><button class="btn light" onclick="exportData()">Export Backup</button><button class="btn light" onclick="document.getElementById('importFile').click()">Import Backup</button><input id="importFile" type="file" accept=".json" hidden onchange="importData(this)"></div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div class="notice"><b>Workflow:</b> Contract → Booking → Advance → Loading/B.L. → Invoice → Bill of Entry → Final Payment → Final Booking → Payment → Final Record.</div>
+ </div>
+ <div class="card"><div class="title"><h2>Quick Actions</h2></div><div class="actions">
+  <button class="btn primary" onclick="go('contract')">+ New Contract</button><button class="btn primary" onclick="go('booking')">Booking</button><button class="btn primary" onclick="go('payment')">Payment Queue</button><button class="btn success" onclick="go('final')">Final Record</button>
+ </div></div>
+</section>
+
+<section id="contract" class="view">
+ <div class="card">
+  <div class="title"><div><h2>Sales Contract</h2><div class="muted">Create the master contract first. All later modules use this record.</div></div></div>
+  <form id="contractForm" class="grid">
+   <div class="field"><label>Contract Date</label><input name="date" type="date"></div><div class="field"><label>Contract No.</label><input name="no" required></div><div class="field"><label>Seller</label><input name="seller"></div><div class="field"><label>Buyer</label><input name="buyer"></div>
+   <div class="field"><label>Buyer GSTIN</label><input name="gstin"></div><div class="field"><label>Buyer IEC</label><input name="iec"></div><div class="field"><label>PAN</label><input name="pan"></div><div class="field"><label>HS Code</label><input name="hs"></div>
+   <div class="field span2"><label>Commodity</label><input name="commodity"></div><div class="field"><label>Contract Qty (MT)</label><input name="qty" type="number" step="0.001"></div><div class="field"><label>Container Plan</label><select name="containerPlan"><option>1x20</option><option>1x40</option></select></div>
+   <div class="field"><label>Price (USD/MT)</label><input name="price" type="number" step="0.01"></div><div class="field"><label>Contract Value (USD)</label><input name="value" type="number" step="0.01"></div><div class="field"><label>Price Term</label><input name="priceTerm" placeholder="e.g. CIF"></div><div class="field"><label>Port of Loading</label><input name="pol"></div>
+   <div class="field"><label>Port of Discharge</label><input name="pod"></div><div class="field"><label>Shipment Period</label><input name="shipmentPeriod"></div><div class="field"><label>Transshipment</label><input name="transhipment"></div><div class="field"><label>Advance (USD)</label><input name="advance" type="number" step="0.01"></div>
+   <div class="field span4"><label>Notes</label><textarea name="notes"></textarea></div>
+   <div class="actions span4"><button class="btn success">Save Contract</button><button type="reset" class="btn light">Clear</button></div>
+  </form>
+ </div>
+ <div class="card"><div class="title"><h2>Contract Register</h2></div><div id="contractTable"></div></div>
+</section>
+
+<section id="booking" class="view">
+ <div class="card">
+  <div class="title"><div><h2>Booking — Container Master</h2><div class="muted">Each row represents one physical container.</div></div></div>
+  <form id="bookingForm" class="grid">
+   <div class="field span2"><label>Contract</label><select name="contractId" id="bookingContract" required></select></div><div class="field"><label>Container No.</label><input name="container" required></div><div class="field"><label>Loading Qty (MT)</label><input name="loadingQty" type="number" step="0.001" required></div>
+   <div class="field"><label>Container Plan</label><select name="plan"><option>1x20</option><option>1x40</option></select></div><div class="field"><label>ALLOY</label><input name="alloy" placeholder="Auto: 1x20=6063 / 1x40=6061"></div><div class="field"><label>Seal No.</label><input name="seal"></div><div class="field"><label>B/L No.</label><input name="bl"></div>
+   <div class="field"><label>Vessel</label><input name="vessel"></div><div class="field"><label>ETD</label><input name="etd" type="date"></div><div class="field"><label>ETA</label><input name="eta" type="date"></div><div class="field"><label>Loading Date</label><input name="loadingDate" type="date"></div>
+   <div class="field"><label>Port of Loading</label><input name="pol"></div><div class="field"><label>Port of Discharge</label><input name="pod"></div><div class="field"><label>Voyage</label><input name="voyage"></div>
+   <div class="actions span4"><button class="btn success">Add Container</button><button type="reset" class="btn light">Clear</button></div>
+  </form>
+ </div>
+ <div class="card"><div class="title"><h2>Active Booking Register</h2></div><div class="toolbar"><input id="bookingSearch" placeholder="Search contract / container / seller" oninput="renderBooking()"></div><div id="bookingTable"></div></div>
+</section>
+
+<section id="advance" class="view">
+ <div class="card"><div class="title"><h2>Advance Payment</h2><div class="muted">Advance is linked to Contract and can be allocated to containers.</div></div>
+ <form id="advanceForm" class="grid">
+  <div class="field span2"><label>Contract</label><select name="contractId" id="advanceContract" required></select></div><div class="field"><label>Advance USD</label><input name="amount" type="number" step="0.01"></div><div class="field"><label>Payment Date</label><input name="date" type="date"></div>
+  <div class="field"><label>USD Rate</label><input name="usdRate" type="number" step="0.0001"></div><div class="field"><label>Advance INR</label><input name="inr" type="number" step="0.01"></div><div class="field"><label>Other Charges INR</label><input name="otherChargesInr" type="number" step="0.01"></div><div class="field"><label>Payment Bill / Ref No.</label><input name="ref"></div>
+  <div class="field"><label>Bank Name</label><input name="bank"></div><div class="field span2"><label>Notes</label><input name="notes"></div><div class="actions span4"><button class="btn success">Save Advance</button></div>
+ </form></div><div class="card"><div id="advanceTable"></div></div>
+</section>
+
+<section id="loading" class="view">
+ <div class="card"><div class="title"><h2>Loading / B.L.</h2></div>
+ <form id="loadingForm" class="grid">
+  <div class="field span2"><label>Container</label><select name="containerId" id="loadingContainer" required></select></div><div class="field"><label>Loading Qty (MT)</label><input name="loadingQty" type="number" step="0.001"></div><div class="field"><label>Loading Date</label><input name="loadingDate" type="date"></div>
+  <div class="field"><label>Seal No.</label><input name="seal"></div><div class="field"><label>B/L No.</label><input name="bl"></div><div class="field"><label>Vessel</label><input name="vessel"></div><div class="field"><label>ETD</label><input name="etd" type="date"></div>
+  <div class="field"><label>ETA</label><input name="eta" type="date"></div><div class="field"><label>Port of Loading</label><input name="pol"></div><div class="field"><label>Port of Discharge</label><input name="pod"></div><div class="actions span4"><button class="btn success">Save Loading / B.L.</button></div>
+ </form></div><div class="card"><div id="loadingTable"></div></div>
+</section>
+
+<section id="invoice" class="view">
+ <div class="card"><div class="title"><h2>Invoice</h2></div>
+ <form id="invoiceForm" class="grid">
+  <div class="field span2"><label>Container / Invoice</label><select name="containerId" id="invoiceContainer" required></select></div><div class="field"><label>Invoice No.</label><input name="invoiceNo" required></div><div class="field"><label>Invoice Date</label><input name="invoiceDate" type="date"></div>
+  <div class="field"><label>Invoice Qty (MT)</label><input name="invoiceQty" type="number" step="0.001"></div><div class="field"><label>Invoice Amount USD</label><input name="invoiceAmount" type="number" step="0.01"></div><div class="field"><label>Advance USD</label><input name="invoiceAdvance" type="number" step="0.01"></div><div class="field"><label>Balance USD</label><input name="invoiceBalance" type="number" step="0.01"></div>
+  <div class="actions span4"><button class="btn success">Save Invoice</button></div>
+ </form></div><div class="card"><div id="invoiceTable"></div></div>
+</section>
+
+<section id="boe" class="view">
+ <div class="card"><div class="title"><h2>Bill of Entry</h2><div class="muted">Enter/verify document values; browser-only OCR is intentionally not used as the source of truth.</div></div>
+ <form id="boeForm" class="grid">
+  <div class="field span2"><label>Container</label><select name="containerId" id="boeContainer" required></select></div><div class="field"><label>BE No.</label><input name="beNo"></div><div class="field"><label>BE Date</label><input name="beDate" type="date"></div>
+  <div class="field"><label>BE Qty (MT)</label><input name="boeQty" type="number" step="0.001"></div><div class="field"><label>Assessable Value INR</label><input name="assessableValue" type="number" step="0.01"></div><div class="field"><label>BCD INR</label><input name="bcd" type="number" step="0.01"></div><div class="field"><label>SWS INR</label><input name="sws" type="number" step="0.01"></div>
+  <div class="field"><label>IGST INR</label><input name="igst" type="number" step="0.01"></div><div class="field"><label>Exchange Rate</label><input name="exchangeRate" type="number" step="0.0001"></div><div class="field"><label>Challan No.</label><input name="challanNo"></div><div class="field"><label>BOE File / Reference</label><input name="boeFile"></div>
+  <div class="actions span4"><button class="btn success">Save Bill of Entry</button></div>
+ </form></div><div class="card"><div id="boeTable"></div></div>
+</section>
+
+<section id="finalpay" class="view">
+ <div class="card"><div class="title"><h2>Final Payment</h2><div class="muted">Select invoice(s); final payment is calculated as Invoice Total − Advance.</div></div>
+ <form id="finalPayForm" class="grid">
+  <div class="field span2"><label>Container / Invoice</label><select name="containerId" id="finalPayContainer" required></select></div><div class="field"><label>Final Payment USD</label><input name="amount" type="number" step="0.01"></div><div class="field"><label>Payment Date</label><input name="date" type="date"></div>
+  <div class="field"><label>Exchange Rate</label><input name="rate" type="number" step="0.0001"></div><div class="field"><label>INR Amount</label><input name="inr" type="number" step="0.01"></div><div class="field span2"><label>Our Bill No. / Reference</label><input name="ref" placeholder="e.g. 3516NFMC0002427"></div>
+  <div class="actions span4"><button class="btn success">Save Final Payment</button></div>
+ </form></div><div class="card"><div id="finalPayTable"></div></div>
+</section>
+
+<section id="finalbooking" class="view">
+ <div class="card"><div class="title"><div><h2>Final Booking — Master Report</h2><div class="muted">Only containers ready for release are shown.</div></div><button class="btn light noPrint" onclick="window.print()">📄 PDF / Print</button></div>
+ <div class="notice">Alloy rule: <b>1x20 → 6063</b> and <b>1x40 → 6061</b>. Alloy remains editable.</div><div id="finalBookingTable"></div></div>
+</section>
+
+<section id="payment" class="view">
+ <div class="card"><div class="title"><div><h2>Payment — Released Containers</h2><div class="muted">RELEASE moves a container here. DONE moves it permanently to Final Record.</div></div></div><div id="paymentTable"></div></div>
+</section>
+
+<section id="final" class="view">
+ <div class="card"><div class="title"><div><h2>Final Record — Master Container Register</h2><div class="muted">Complete historical record. One row per Contract + Container.</div></div><button class="btn light noPrint" onclick="window.print()">📄 PDF / Print</button></div>
+ <div class="stats" id="finalStats"></div><div class="toolbar noPrint"><input id="finalSearch" placeholder="Search contract / container / seller / invoice" oninput="renderFinal()"></div><div id="finalTable"></div></div>
+</section>
+</main>
+<div class="footer">GALCO Import Contract Tracker • Local browser database • Export backups regularly</div>
+
 <script>
-const K="IMPORT_TRACKER_V2";let db=JSON.parse(localStorage.getItem(K)||'{"contracts":[]}'),cur="";
-const stages=[["home","🏠 Contract"],["booking","🚢 Booking"],["advance","💵 Advance"],["loading","📦 Loading/B/L"],["invoice","🧾 Invoice"],["boe","🛃 Bill of Entry"],["finalpay","💰 Final Payment"],["payment","💳 Payment"],["finalbooking","📊 Final Booking"],["final","📄 Final Record"]];
-const $=x=>document.getElementById(x), esc=x=>String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-function file(id){let f=$(id)?.files?.[0];return f?{name:f.name,type:f.type}:null}
-function get(n){return db.contracts.find(x=>x.no.toLowerCase()===String(n||"").trim().toLowerCase())}
-function save(){localStorage.setItem(K,JSON.stringify(db));render()}
-function saveSilently(){localStorage.setItem(K,JSON.stringify(db))}
-function nav(){
- $("nav").innerHTML=stages.map(([id,t])=>{
-   return `<button class="${id===page?'on ':''}" onclick="openPage('${id}')">${t}</button>`;
- }).join("");
-}
-let page="home";
-function openPage(p,n=cur){
- // Every module is intentionally open at all times.
- // If no contract is active, that module shows its own search/empty state.
- page=p;
- if(n) cur=n;
- render();
-}
-function shell(title,body){
- const back=(page!=="booking"&&page!=="home"&&cur)?`<div style="display:flex;justify-content:flex-end;margin:-4px 0 10px"><button class="btn p" style="margin:0;padding:7px 12px" onclick="openPage('booking','${esc(cur)}')">↩ Booking Master</button></div>`:'';
- $("main").innerHTML=`<section class="page on"><div class="card"><h2>${title}</h2>${back}${body}</div></section>`;
- nav();
-}
-function searchFinalRecordContract(){
- const no=String($('finalRecSearchNo')?.value||'').trim();
- if(!no){alert('Enter Sales Contract No.');return;}
- if(!get(no)){alert('Sales Contract not found.');return;}
- cur=no; page='final'; render();
-}
-function render(){
-nav();if(page==="home")home();else if(page==="booking")booking();else if(page==="advance")advance();else if(page==="loading")loading();else if(page==="invoice")invoice();else if(page==="boe")boe();else if(page==="finalpay")finalpay();else if(page==="payment")payment();else if(page==="finalbooking")finalBooking();else finalRec()
-}
-function home(){shell("🔎 Sales Contract",`<div class="search"><input id="q" placeholder="Sales Contract No."><button class="btn p" onclick="search()">Search</button></div><hr><div class="notice">Upload your Sales Contract, then confirm/edit the master information.</div><input id="cf" class="file" type="file" accept=".pdf,image/*"><button class="btn w" onclick="readContract()">🔍 Read Contract</button><div id="ocrStatus" class="notice">Select a PDF/Image and tap Read Contract.</div><div class="grid" style="margin-top:10px">
-${field("sc","Sales Contract No.")}${field("date","Contract Date","date")}${field("seller","Seller")}${field("buyer","Buyer Name")}${field("gst","Buyer GSTIN")}${field("iec","Buyer IEC No.")}${field("pan","PAN")}${field("hs","HS Code")}${field("commodity","Commodity","",1)}${field("qty","Quantity (MT)")}${field("cp","Container Plan")}${field("price","Price (USD/MT)")}${field("term","Price Term")}<div><label>Contract Value (USD)</label><input id="contractValue" readonly></div>${field("pol","Port of Loading")}${field("pod","Port of Discharge")}${field("ship","Shipment Period")}${field("adv","Advance (USD)")}${field("trans","Transshipment")}${field("partial","Partial Shipment")}${field("remarks","Payment Terms / Remarks","textarea",1)}</div><div class="notice" style="margin-top:10px">
-⚠️ <b>Verify Buyer details:</b> Buyer Name, Buyer GSTIN and Buyer IEC are taken only when found in the uploaded document. If the PDF does not contain them, the fields remain blank — no guessed value is inserted.
-</div><button class="btn p" onclick="create()">💾 Save Contract</button><h3>Saved Contracts</h3><div id="list"></div>`);list()}
-function field(id,l,type="",full=0){return `<div class="${full?'full':''}"><label>${l}</label>${type==="textarea"?`<textarea id="${id}"></textarea>`:`<input id="${id}" type="${type||'text'}">`}</div>`}
+const KEY='GALCO_IMPORT_PRO_V1';
+let db=JSON.parse(localStorage.getItem(KEY)||'{"contracts":[],"bookings":[],"advances":[],"loading":[],"invoices":[],"boes":[],"finalPayments":[],"released":[],"finalRecords":[]}');
+function save(){localStorage.setItem(KEY,JSON.stringify(db));renderAll()}
+function saveSilent(){localStorage.setItem(KEY,JSON.stringify(db))}
+const $=id=>document.getElementById(id);
+const esc=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const money=v=>Number(v||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=v=>Number(v||0);
+function go(id){document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));$(id).classList.add('active');document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.id===id));renderAll();scrollTo({top:0,behavior:'smooth'})}
+const tabs=[['dashboard','Dashboard'],['contract','Contract'],['booking','Booking'],['advance','Advance'],['loading','Loading/B.L.'],['invoice','Invoice'],['boe','Bill of Entry'],['finalpay','Final Payment'],['finalbooking','Final Booking'],['payment','Payment'],['final','Final Record']];
+$('nav').innerHTML=tabs.map(([id,n])=>`<button data-id="${id}" onclick="go('${id}')">${n}</button>`).join('');
+document.querySelector('#nav button').classList.add('active');
 
-async function readContract(){
- const f=$("cf").files?.[0];
- if(!f)return alert("First select the Sales Contract PDF/Image.");
- $("ocrStatus").innerHTML="⏳ Loading document reader…";
- try{
-   let text="";
-   if(f.type==="application/pdf" || /\.pdf$/i.test(f.name)){
-     await ensurePdfJS();
-     $("ocrStatus").innerHTML="⏳ Reading PDF text…";
-     const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
-     for(let i=1;i<=pdf.numPages;i++){
-       const pg=await pdf.getPage(i);
-       const tc=await pg.getTextContent();
-       text+=tc.items.map(x=>x.str).join(" ")+"\\n";
-     }
-     // If PDF has no text layer, use OCR on rendered pages.
-     if(text.replace(/\s/g,"").length<30){
-       await ensureTesseract();
-       $("ocrStatus").innerHTML="⏳ PDF is scanned — OCR is running…";
-       for(let i=1;i<=pdf.numPages;i++){
-         const pg=await pdf.getPage(i), vp=pg.getViewport({scale:1.7});
-         const cv=document.createElement("canvas"),ctx=cv.getContext("2d");
-         cv.width=vp.width;cv.height=vp.height;
-         await pg.render({canvasContext:ctx,viewport:vp}).promise;
-         const r=await Tesseract.recognize(cv,"eng",{logger:m=>{
-           if(m.status) $("ocrStatus").textContent="⏳ OCR "+Math.round((m.progress||0)*100)+"%";
-         }});
-         text+="\\n"+(r.data.text||"");
-       }
-     }
-   }else{
-     await ensureTesseract();
-     $("ocrStatus").innerHTML="⏳ OCR is running…";
-     const r=await Tesseract.recognize(f,"eng",{logger:m=>{
-       if(m.status) $("ocrStatus").textContent="⏳ OCR "+Math.round((m.progress||0)*100)+"%";
-     }});
-     text=r.data.text||"";
-   }
-   if(!text.trim()) throw new Error("No readable text found");
-   parseContractText(text);
-   $("ocrStatus").innerHTML="✅ Contract read successfully. Please verify/edit before saving.";
- }catch(e){
-   console.error(e);
-   $("ocrStatus").innerHTML="⚠️ Reader could not process this file. Try the PDF again or enter/edit the fields manually.";
+function fd(form){return Object.fromEntries(new FormData(form).entries())}
+function setSelect(id,items,placeholder='Select…'){
+ const s=$(id);if(!s)return;const old=s.value;s.innerHTML=`<option value="">${placeholder}</option>`+items.map(x=>`<option value="${x.id}">${esc(x.label)}</option>`).join('');if(items.some(x=>x.id===old))s.value=old;
+}
+function contractOptions(){return db.contracts.map(c=>({id:c.id,label:`${c.no} — ${c.seller||'Seller'}`}))}
+function containerOptions(){return db.bookings.map(b=>{const c=db.contracts.find(x=>x.id===b.contractId)||{};return{id:b.id,label:`${b.container} — ${c.no||''} — ${b.loadingQty||0} MT`}})}
+function autoAlloy(plan){return plan==='1x20'?'6063':plan==='1x40'?'6061':''}
+function due(release){if(!release)return '';const a=new Date(release+'T00:00:00'),b=new Date();return Math.max(0,Math.floor((b-a)/86400000))}
+function today(){return new Date().toISOString().slice(0,10)}
+
+$('contractForm').onsubmit=e=>{e.preventDefault();const x=fd(e.target);x.id=uid();if(!x.date)x.date=today();db.contracts.push(x);e.target.reset();save();alert('Contract saved.');go('booking')}
+$('bookingForm').onsubmit=e=>{e.preventDefault();const x=fd(e.target);x.id=uid();x.alloy=x.alloy||autoAlloy(x.plan);db.bookings.push(x);e.target.reset();save();alert('Container added to Booking.')}
+$('advanceForm').onsubmit=e=>{e.preventDefault();const x=fd(e.target);x.id=uid();db.advances.push(x);e.target.reset();save();alert('Advance saved.')}
+$('loadingForm').onsubmit=e=>{e.preventDefault();const x=fd(e.target);x.id=uid();db.loading.push(x);let b=db.bookings.find(z=>z.id===x.containerId);if(b){Object.assign(b,{loadingQty:x.loadingQty||b.loadingQty,loadingDate:x.loadingDate||b.loadingDate,seal:x.seal||b.seal,bl:x.bl||b.bl,vessel:x.vessel||b.vessel,etd:x.etd||b.etd,eta:x.eta||b.eta,pol:x.pol||b.pol,pod:x.pod||b.pod})}e.target.reset();save();alert('Loading / B.L. saved.')}
+$('invoiceForm').onsubmit=e=>{e.preventDefault();const x=fd(e.target);x.id=uid();if(!x.invoiceBalance)x.invoiceBalance=num(x.invoiceAmount)-num(x.invoiceAdvance);db.invoices.push(x);e.target.reset();save();alert('Invoice saved.')}
+$('boeForm').onsubmit=e=>{e.preventDefault();const x=fd(e.target);x.id=uid();db.boes.push(x);e.target.reset();save();alert('Bill of Entry saved.')}
+$('finalPayForm').onsubmit=e=>{e.preventDefault();const x=fd(e.target);x.id=uid();const iv=db.invoices.find(z=>z.containerId===x.containerId);const av=db.advances.find(z=>z.contractId===(db.bookings.find(b=>b.id===x.containerId)||{}).contractId);if(!x.amount)x.amount=String(num(iv?.invoiceAmount)-num(iv?.invoiceAdvance||av?.amount));db.finalPayments.push(x);e.target.reset();save();alert('Final payment saved.')}
+$('bookingForm').plan.onchange=()=>{if(!$('bookingForm').alloy.value)$('bookingForm').alloy.value=autoAlloy($('bookingForm').plan.value)}
+
+function release(id){
+ const b=db.bookings.find(x=>x.id===id);if(!b)return;
+ if(!b.eta){alert('Please enter ETA in Booking before RELEASE.');go('booking');return}
+ if(db.released.some(x=>x.bookingId===id)){go('payment');return}
+ db.released.push({id:uid(),bookingId:id,releaseDate:today(),status:'RELEASED'});
+ save();go('payment')
+}
+function donePayment(id){
+ const q=db.released.find(x=>x.id===id);if(!q)return;
+ const b=db.bookings.find(x=>x.id===q.bookingId);if(!b)return;
+ const c=db.contracts.find(x=>x.id===b.contractId)||{};
+ const a=db.advances.find(x=>x.contractId===c.id)||{};
+ const iv=db.invoices.find(x=>x.containerId===b.id)||{};
+ const boe=db.boes.find(x=>x.containerId===b.id)||{};
+ const fp=db.finalPayments.find(x=>x.containerId===b.id)||{};
+ const rec={id:uid(),completedAt:today(),contract:{...c},booking:{...b},advance:{...a},invoice:{...iv},boe:{...boe},finalPayment:{...fp},releaseDate:q.releaseDate,releaseStatus:'RELEASED',doneDate:today()};
+ // exact duplicate protection
+ if(!db.finalRecords.some(r=>r.contract?.no===c.no&&r.booking?.container===b.container)){
+   db.finalRecords.push(rec)
  }
-}
-function loadScript(src){
- return new Promise((resolve,reject)=>{
-  if(document.querySelector('script[src="'+src+'"]')){ 
-    let n=0;const timer=setInterval(()=>{if((src.includes("pdf")&&window.pdfjsLib)||(src.includes("tesseract")&&window.Tesseract)){clearInterval(timer);resolve();}if(++n>100){clearInterval(timer);reject(new Error("Script load timeout"));}},100);
-    return;
-  }
-  const sc=document.createElement("script");sc.src=src;sc.async=true;
-  sc.onload=resolve;sc.onerror=()=>reject(new Error("Could not load reader library"));document.head.appendChild(sc);
- });
-}
-async function ensurePdfJS(){
- if(window.pdfjsLib)return;
- const src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
- await loadScript(src);
- if(!window.pdfjsLib)throw new Error("PDF.js unavailable");
- window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-}
-async function ensureTesseract(){
- if(window.Tesseract)return;
- await loadScript("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js");
- if(!window.Tesseract)throw new Error("Tesseract unavailable");
-}
-function setv(id,v){if(v && $(id)) $(id).value=String(v).trim();}
-function cleanLine(v){
- return String(v||"").replace(/\s+/g," ").replace(/^[\s:;,\-]+|[\s:;,\-]+$/g,"").trim();
-}
-function linesOf(t){
- return t.replace(/\r/g,"\n").split("\n").map(cleanLine).filter(x=>x.length>1);
-}
-function valueAfterLabel(lines, labels){
- for(let i=0;i<lines.length;i++){
-   const l=lines[i];
-   for(const lab of labels){
-     const re=new RegExp("^"+lab.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\s*(?:No\\.?|Number)?\\s*[:\\-]?\\s*(.*)$","i");
-     const m=l.match(re);
-     if(m && cleanLine(m[1]) && !/^(no|number|date|details)$/i.test(m[1])) return cleanLine(m[1]);
-     if(m){
-       for(let j=i+1;j<Math.min(i+3,lines.length);j++){
-         if(lines[j] && !/^(seller|buyer|exporter|importer|consignee|date|gstin|iec|pan|hs code|commodity|quantity|price|payment terms)/i.test(lines[j])) return lines[j];
-       }
-     }
-   }
- }
- return "";
-}
-function extractCompany(lines, labels){
- for(let i=0;i<lines.length;i++){
-   for(const lab of labels){
-     if(new RegExp("^"+lab+"\\s*[:\\-]?\\s*$","i").test(lines[i])){
-       for(let j=i+1;j<Math.min(i+4,lines.length);j++){
-         const v=cleanLine(lines[j]);
-         if(v && v.length>4 && !/^(buyer|seller|gstin|iec|pan|hs code|commodity|quantity|price|payment|date)\b/i.test(v)) return v;
-       }
-     }
-     const m=lines[i].match(new RegExp("^"+lab+"\\s*[:\\-]\\s*(.+)$","i"));
-     if(m && cleanLine(m[1]).length>4)return cleanLine(m[1]);
-   }
- }
- return "";
-}
-function parseContractText(t){
- const lines=linesOf(t);
- const x=lines.join("\n");
-
- // --- Contract number ---
- // Prefer an explicit label; otherwise accept a document-style reference ending in SC.
- let no="";
- const noPatterns=[
-  /(?:sales\s+contract|contract)\s*(?:no\.?|number|ref\.?|reference)\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\/._-]{3,})/i,
-  /\b([A-Z]{2,10}[-\/][A-Z0-9]{2,16}[-\/][A-Z0-9]{2,16}[A-Z0-9])\b/i,
-  /\b([A-Z]{2,10}[-\/][A-Z0-9]{2,20}[A-Z0-9])\b/i
- ];
- for(const re of noPatterns){
-   const m=x.match(re);
-   if(m && !/^(this|the|date|number|contract|sales)$/i.test(m[1])){no=cleanLine(m[1]);break;}
- }
- // Common OCR error: spaces inserted around hyphens.
- if(!no){
-   const compact=x.replace(/\s*[-–—]\s*/g,"-").replace(/([A-Z])\s+([0-9])/gi,"$1$2").replace(/([0-9])\s+([A-Z])/gi,"$1$2");
-   const m=compact.match(/\b([A-Z]{2,12}-[A-Z0-9]{2,20}-[A-Z0-9]{2,20}[A-Z0-9])\b/i);
-   if(m)no=cleanLine(m[1]);
- }
- if(no)setv("sc",no);else if($("sc"))$("sc").value="";
-
- // --- Contract date ---
- let dateMatch=x.match(/(?:contract\s+date|date\s+of\s+contract)\s*[:\-]?\s*(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})/i);
- if(!dateMatch){
-   // Header fallback: first date appearing before shipment/payment terms.
-   const head=x.split(/shipment\s+period|payment\s+terms?|terms\s+of\s+payment/i)[0];
-   dateMatch=head.match(/\b(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})\b/);
- }
- if(dateMatch){
-   const a=dateMatch[1].split(/[\/.\-]/);
-   let y=a[2].length===2?"20"+a[2]:a[2];
-   // Existing contracts use DD/MM/YYYY.
-   setv("date",`${y}-${a[1].padStart(2,"0")}-${a[0].padStart(2,"0")}`);
- }
-
- // --- Seller / Buyer ---
- function cleanParty(v){
-   v=cleanLine(v);
-   if(v.length<5 || v.length>140)return "";
-   if(/^(this|the|we|we hereby|this is to confirm|to confirm)\b/i.test(v))return "";
-   if(/\b(payment|account|bank|charges|within\s+\d+\s+days|shipment|quantity|price|remarks)\b/i.test(v))return "";
-   const ms=v.match(/\bM\/S\.?\s*([A-Z][A-Z0-9 .,&'()\/-]{4,110}?)(?=\s+(?:P\.?\s*O\.?\s*BOX|GSTIN|IEC|PAN|TEL|PHONE|EMAIL|DATE)\b|$)/i);
-   if(ms)v=cleanLine(ms[1]);
-   return v;
- }
- function companyCandidates(lines){
-   const out=[];
-   for(const ln of lines){
-     const v=cleanParty(ln);
-     if(!v)continue;
-     if(/\b(L\.?L\.?C\.?|LTD\.?|LIMITED|PVT\.?\s*LTD\.?|PRIVATE\s+LIMITED|TRADING|INDUSTRIES|CORPORATION|CO\.?)\b/i.test(v)
-       && !/^(this|the|we)\b/i.test(v)){
-       if(!out.some(z=>z.toLowerCase()===v.toLowerCase()))out.push(v);
-     }
-   }
-   return out;
- }
- function labeledParty(labels, strictStandalone=false){
-   for(let i=0;i<lines.length;i++){
-     for(const lab of labels){
-       const same=lines[i].match(new RegExp("^\\s*"+lab+"\\s*(?:NAME)?\\s*[:\\-]\\s*(.+)$","i"));
-       if(same){
-         const raw=cleanLine(same[1]);
-         // For Buyer, do not treat a confirmation sentence containing the Seller as the Buyer.
-         if(strictStandalone && /^(this|the|we|we hereby|this is to confirm|to confirm)\b/i.test(raw)) continue;
-         if(strictStandalone && raw.length>90) continue;
-         const v=cleanParty(raw);
-         if(v)return v;
-       }
-       if(new RegExp("^\\s*"+lab+"\\s*(?:NAME)?\\s*$","i").test(lines[i])){
-         for(let j=i+1;j<Math.min(i+5,lines.length);j++){
-           const raw=cleanLine(lines[j]);
-           if(strictStandalone && /^(this|the|we|we hereby|this is to confirm|to confirm)\b/i.test(raw)) continue;
-           if(strictStandalone && raw.length>90) continue;
-           const v=cleanParty(raw);
-           // Buyer must be a standalone company/person line, not a sentence that merely mentions one.
-           if(v && (!strictStandalone || /\b(L\.?L\.?C\.?|LTD\.?|LIMITED|PVT\.?\s*LTD\.?|PRIVATE\s+LIMITED|TRADING|INDUSTRIES|CORPORATION|CO\.?)\b/i.test(v))) return v;
-         }
-       }
-     }
-   }
-   return "";
- }
-
- // Seller is allowed to be extracted from a company-like line or an explicit seller label.
- let seller=labeledParty(["seller","exporter","supplier"]);
- const companies=companyCandidates(lines);
- // This contract is from AL DOHA METAL TRADING L.L.C.; if the document text contains
- // that supplier name, use the exact legal name rather than relying on OCR line order.
- if(/AL\s+DOHA\s+METAL\s+TRADING\s+L\.?L\.?C\.?/i.test(x)){
-   seller="AL DOHA METAL TRADING L.L.C";
- }
- if(!seller && companies.length)seller=companies[0];
-
- // Buyer must be explicitly identified or appear as a separate company line.
- // Do NOT use the Seller as Buyer, even if the Seller is mentioned inside a Buyer paragraph.
- let buyer=labeledParty(["buyer","importer","consignee","customer","importer name"], true);
- // Known buyer for Galco Aluminium contracts: use the exact legal name when it is actually present in the document.
- if(/\bGALCO\s+ALUMINIUM\s+PVT\.?\s*LTD\.?\b/i.test(x)){
-   buyer="GALCO ALUMINIUM PVT. LTD.";
- }
- if(buyer && seller && buyer.toLowerCase()===seller.toLowerCase()) buyer="";
- if(!buyer){
-   const otherCompany=companies.find(v=>!seller || v.toLowerCase()!==seller.toLowerCase());
-   if(otherCompany) buyer=otherCompany;
- }
- if(!buyer){
-   for(const ln of lines){
-     const raw=cleanLine(ln);
-     const m=raw.match(/^(?:to|messrs?\.?|m\/s\.?)\s*[:\-]?\s*(.+)$/i);
-     if(m){
-       const v=cleanParty(m[1]);
-       if(v && (!seller || v.toLowerCase()!==seller.toLowerCase()) && /\b(L\.?L\.?C\.?|LTD\.?|LIMITED|PVT\.?\s*LTD\.?|PRIVATE\s+LIMITED|TRADING|INDUSTRIES|CORPORATION|CO\.?)\b/i.test(v)){ buyer=v; break; }
-     }
-   }
- }
- if(seller && /\bbuyer\b/i.test(seller))seller="";
- if(buyer && /\bseller\b/i.test(buyer))buyer="";
- setv("seller",seller);
- setv("buyer",buyer);
-
- // --- IDs ---
- const norm=x.replace(/G\s+S\s+T\s+I\s+N/gi,"GSTIN")
-              .replace(/I\s*\.?\s*E\s*\.?\s*C/gi,"IEC")
-              .replace(/P\s*\.?\s*A\s*\.?\s*N/gi,"PAN")
-              .replace(/H\s*S\s*(?:N|CODE)/gi,"HS CODE");
- // Prefer IDs occurring near their labels. Never derive IEC from PAN.
- function labeledId(label,re){
-   const m=norm.match(new RegExp("\\b"+label+"\\b\\s*(?:NO\\.?|NUMBER|CODE)?\\s*[:#\\-]?\\s*("+re+")","i"));
-   return m?m[1].toUpperCase():"";
- }
- let gst=labeledId("GSTIN","[0-9A-Z]{15}");
- let iec=labeledId("IEC","[0-9A-Z]{10}");
- let pan=labeledId("PAN","[A-Z]{5}\\d{4}[A-Z]");
- let hs=labeledId("HS\\s*CODE","\\d{8}");
- setv("gst",gst);setv("iec",iec);setv("pan",pan);setv("hs",hs);
-
- // --- Commodity ---
- let commodity=valueAfterLabel(lines,["commodity","description of goods","goods description"]);
- if(!commodity){
-   const m=x.match(/(?:ALUMIN[IU]UM)[^.\n]{5,100}(?:ISRI|SCRAP|TREAD|TALON)[^.\n]*/i);
-   if(m)commodity=cleanLine(m[0]);
- }
- setv("commodity",commodity);
-
- // --- Quantity ---
- let qty=(x.match(/(?:total\s+quantity|quantity)\s*[:\-]?\s*(\d+(?:[.,]\d+)?)\s*(?:MT|M\.T\.|METRIC\s+TONS?)/i)||[])[1]||"";
- if(!qty){
-   const m=x.match(/(\d+(?:[.,]\d+)?)\s*(?:MT|M\.T\.|METRIC\s+TONS?)/i);
-   if(m)qty=m[1];
- }
- setv("qty",qty.replace(/,/g,""));
-
- // --- Container plan ---
- let cp=(x.match(/(?:container\s+plan)\s*[:\-]?\s*([^\n]+)/i)||[])[1]||"";
- if(!cp){
-   const m=x.match(/(\d+\s*[xX×]\s*(?:20|40)\s*(?:['’]?\s*(?:FT|CONTAINER))?)/i);
-   if(m)cp=cleanLine(m[1])+" CONTAINER";
- }
- setv("cp",cp);
-
- // --- Price ---
- let price="";
- const p1=x.match(/(?:price|rate)\s*(?:per\s*mt|\/\s*mt|usd\s*\/\s*mt)?\s*[:\-]?\s*(?:usd|us\$|\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i);
- const p2=x.match(/(?:usd|us\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)\s*(?:\/\s*mt|per\s*mt)/i);
- if(p1)price=p1[1]; else if(p2)price=p2[1];
- setv("price",price.replace(/,/g,""));
-
- // --- Price term / ports ---
- let term=(x.match(/\b(CIF\s+[A-Z][A-Z ,.-]{2,80})/i)||[])[1]||"";
- setv("term",cleanLine(term));
- setv("pol",valueAfterLabel(lines,["port of loading","loading port"]));
- setv("pod",valueAfterLabel(lines,["port of discharge","discharge port"]));
-
- // --- Shipment ---
- let ship=(x.match(/(?:shipment\s+period|shipment|delivery)\s*[:\-]?\s*([^\n]{8,150})/i)||[])[1]||"";
- setv("ship",cleanLine(ship));
-
- let trans=(x.match(/transshipment\s*[:\-]?\s*(ALLOWED|NOT ALLOWED|PROHIBITED)/i)||[])[1]||"";
- let partial=(x.match(/partial\s+shipment\s*[:\-]?\s*(ALLOWED|NOT ALLOWED|PROHIBITED)/i)||[])[1]||"";
- setv("trans",trans);setv("partial",partial);
-
- // --- Payment terms / advance ---
- let pay="";
- const payIdx=lines.findIndex(l=>/^(payment\s+terms?|terms\s+of\s+payment|payment\s+remarks?)/i.test(l));
- if(payIdx>=0)pay=lines.slice(payIdx+1,payIdx+6).join(" ");
- if(!pay)pay=(x.match(/(?:payment\s+terms?|terms\s+of\s+payment)\s*[:\-]?\s*([^\n]{10,300})/i)||[])[1]||"";
- pay=cleanLine(pay);
- const am=pay.match(/(?:US\$|USD|\$)\s*([0-9]{1,3}(?:,[0-9]{3})*(?:\.[0-9]{1,2})?)/i);
- setv("adv",am?am[1].replace(/,/g,""):"");
- setv("remarks",pay);
-
- if($("contractValue")){
-   const pv=parseFloat(($("price")?.value||"").replace(/,/g,""));
-   const qv=parseFloat(($("qty")?.value||"").replace(/,/g,""));
-   $("contractValue").value=(pv>0&&qv>0)?(pv*qv).toFixed(2):"";
- }
-}
-function create(){let no=$("sc").value.trim();if(!no)return alert("Contract No. required.");if(get(no))return alert("Already exists.");db.contracts.push({no,date:$("date").value,seller:$("seller").value,buyer:$("buyer").value,gstin:$("gst").value,iec:$("iec").value,pan:$("pan").value,hs:$("hs").value,commodity:$("commodity").value,qty:$("qty").value,containerPlan:$("cp").value,price:$("price").value,term:$("term").value,pol:$("pol").value,pod:$("pod").value,ship:$("ship").value,advanceAmt:$("adv").value,trans:$("trans").value,partial:$("partial").value,remarks:$("remarks").value,contractFile:file("cf"),bookings:[]});save();cur=no;alert("Contract saved");openPage("booking")}
-function list(){$("list").innerHTML=db.contracts.map(c=>`<div class="item"><b>${esc(c.no)}</b><br>${esc(c.buyer)} | ${esc(c.commodity)} | ${esc(c.qty)} MT | USD ${esc(c.price)}/MT<br><button class="btn p" onclick="openPage('booking','${esc(c.no)}')">Open</button></div>`).join("")||"<p>No contracts.</p>"}
-function search(){let c=get($("q").value);if(c){cur=c.no;openPage("booking",c.no)}else alert("Contract not found")}
-function head(c){return `<div class="item"><b>${esc(c.no)}</b><br><span class="muted">${esc(c.buyer)} | ${esc(c.commodity)} | Contract ${esc(c.qty)} MT | USD ${esc(c.price)}/MT</span></div>`}
-function containerCount(c){
- const m=String(c?.containerPlan||'').match(/(\d+)\s*[xX×]/);
- return m?Math.max(1,parseInt(m[1],10)):1;
-}
-function ensureBookingRows(c){
- const n=containerCount(c);
- if(!Array.isArray(c.bookings)) c.bookings=[];
- // For a new contract, create one register row per planned container.
- // Existing real booking rows are preserved.
- const real=c.bookings.filter(b=>b && !b._slot);
- const totalQty=parseFloat(String(c.qty||0).replace(/,/g,''))||0;
- const totalAdv=parseFloat(String(c.advanceAmt||0).replace(/,/g,''))||0;
- const totalValue=(parseFloat(c.price||0)||0)*totalQty;
- const q=totalQty/n, adv=totalAdv/n, val=totalValue/n;
- // Always maintain at least one register row per planned container.
- // Existing booking details are preserved; missing rows become blank booking slots with allocated values.
- while(c.bookings.length<n){
-   const slot=c.bookings.length+1;
-   c.bookings.push({
-     _slot:true, slot, no:'', container:'', qty:q?String(q):'', vessel:'', etd:'', eta:'', file:null,
-     released:false, allocatedQty:q, allocatedAdvance:adv, allocatedValue:val
-   });
- }
- // Refresh allocation values for all rows after a contract edit.
- c.bookings.forEach((b,i)=>{
-   b.slot=b.slot||i+1;
-   b.allocatedQty=q; b.allocatedAdvance=adv; b.allocatedValue=val;
-   if(b._slot && !b.qty) b.qty=q?String(q):'';
- });
-}
-function updateBookingField(i,key,value){
- const c=get(cur); if(!c)return; ensureBookingRows(c);
- const b=c.bookings[i]; if(!b)return;
- b[key]=value;
- // Booking quantity stays tied to the contract allocation unless user explicitly changes it.
- if(key==='qty' && value===''){
-   const n=containerCount(c), tq=parseFloat(String(c.qty||0).replace(/,/g,''))||0;
-   b.qty=n?(tq/n).toString():'';
- }
- localStorage.setItem(K,JSON.stringify(db));
-}
-function bookingInput(i,key,value,type='text',width=120){
- return `<input type="${type}" value="${esc(value||'')}" onchange="updateBookingField(${i},'${key}',this.value)" style="min-width:${width}px;padding:7px;border:1px solid #ccd5de;border-radius:7px">`;
-}
-function syncSavedLoadingData(c){
-  if(!c || !Array.isArray(c.bookings)) return;
-  const knownQty={'MSKU5521270':19690,'MSKU3411823':19920};
-  const knownSeal={'MSKU5521270':'1396902','MSKU3411823':'1397139'};
-  c.bookings.forEach(b=>{
-    if(!b || !b.container) return;
-    if(knownQty[b.container]) b.loadingQty=knownQty[b.container]/1000;
-    if(knownSeal[b.container]) b.seal=knownSeal[b.container];
-    if(!b.pol || /place of receipt|port of discharge|such carriage/i.test(String(b.pol))) b.pol='Jeddah';
-    if(!b.pod) b.pod='Jawaharlal Nehru';
-    if(!b.voyage) b.voyage='632E';
-    if(!b.vessel) b.vessel='MAERSK EL BOSQUE';
-  });
-}
-function booking(){
- let c=get(cur);
- if(!c){
-   shell("🚢 Booking — Master Register",`<div class="card">
-     <h3>🔎 Select Sales Contract</h3>
-     <div class="search">
-       <input id="bookingSearchNo" placeholder="Enter Sales Contract No.">
-       <button class="btn p" onclick="searchBookingContract()">Open Booking</button>
-     </div>
-     <div class="notice" style="margin-top:8px">Booking is the main register. All other tabs remain available from the top menu.</div>
-   </div>`);
-   return;
- }
- ensureBookingRows(c); syncSavedLoadingData(c); saveSilently();
- const hasLoading=!!c.loading;
- const n=containerCount(c);
- const totalQty=parseFloat(String(c.qty||0).replace(/,/g,''))||0;
- const totalAdv=parseFloat(String(c.advanceAmt||0).replace(/,/g,''))||0;
- const totalValue=(parseFloat(c.price||0)||0)*totalQty;
- const allocatedQty=totalQty/n, allocatedAdv=totalAdv/n, allocatedValue=totalValue/n;
- const perContainerPlan=`1 x 20' Container`;
- const contractCols=[
-  ['Contract No.',c.no],['Contract Date',c.date],['Seller',c.seller],['Buyer',c.buyer],
-  ['GSTIN',c.gstin],['IEC',c.iec],['HS Code',c.hs],['Commodity',c.commodity],
-  ['Contract Qty (MT)',allocatedQty?String(allocatedQty):''],['Container Plan',perContainerPlan],['Price (USD/MT)',c.price],
-  ['Contract Value (USD)',allocatedValue?allocatedValue.toFixed(2):''],['Port of Loading',c.pol],['Port of Discharge',c.pod]
- ];
- const bookingCols=[['Booking No.','no'],['Container No.','container'],['Booking Qty (MT)','qty'],['Vessel','vessel'],['ETD','etd'],['ETA','eta'],['B/L No.','bl'],['Seal No.','seal'],['Voyage','voyage'],['Loading Date','loadingDate'],['Loading Qty (MT)','loadingQty'],['Port of Loading','pol'],['Port of Discharge','pod']];
- const advanceCols=[['Advance USD','amount'],['Payment Date','date'],['Payment Bill / Ref No.','ref'],['Bank','bank'],['USD Rate','usdRate'],['Payment Amount INR','inr'],['Other Charges INR','otherChargesInr'],['Payment Copy','copyName']];
- const invoiceCols=[['Invoice No.','invoiceNo'],['Invoice Date','invoiceDate'],['Invoice Qty (MT)','invoiceQty'],['Invoice Amount USD','invoiceAmount'],['Advance Deducted USD','invoiceAdvance'],['Invoice Balance USD','invoiceBalance']];
- const boeCols=[['BE No.','beNo'],['BE Date','beDate'],['BOE Qty (MT)','boeQty'],['Assessable Value INR','assessableValue'],['BCD INR','bcd'],['SWS INR','sws'],['IGST INR','igst'],['Exchange Rate','exchangeRate'],['Challan No.','challanNo']];
- const finalPayCols=[['Final USD','finalPaymentUsd'],['Final Date','finalPaymentDate'],['Final Rate','finalPaymentRate'],['Final INR','finalPaymentInr'],['Our Bill No.','finalPaymentRef']];
- const loadingCols=[];
- const allHeaders=[...contractCols.map(x=>x[0]),...bookingCols.map(x=>x[0]),...advanceCols.map(x=>x[0]),...invoiceCols.map(x=>x[0]),...boeCols.map(x=>x[0]),...finalPayCols.map(x=>x[0]),...loadingCols.map(x=>x[0]),'Release','Delete'];
- const rowFor=(b,i)=>{
-  const av=b.advance||{};
-  const bookingVals=[
-    bookingInput(i,'no',b.no,'text',135),
-    bookingInput(i,'container',b.container,'text',155),
-    bookingInput(i,'qty',b.qty||allocatedQty,'number',95),
-    bookingInput(i,'vessel',b.vessel,'text',135),
-    bookingInput(i,'etd',b.etd,'date',125),
-    bookingInput(i,'eta',b.eta,'date',125),
-    b.bl||'', b.seal||'', b.voyage||'', b.loadingDate||'',
-    b.loadingQty !== undefined && b.loadingQty !== '' ? Number(b.loadingQty).toFixed(2) : '',
-    b.pol||'', b.pod||''
-  ];
-  const inv=b.invoice||{};
-  const invoiceVals=[inv.invoiceNo||'',inv.invoiceDate||'',inv.invoiceQty!==undefined&&inv.invoiceQty!==''?Number(inv.invoiceQty).toFixed(3):'',inv.invoiceAmount!==undefined&&inv.invoiceAmount!==''?Number(inv.invoiceAmount).toFixed(2):'',inv.invoiceAdvance!==undefined&&inv.invoiceAdvance!==''?Number(inv.invoiceAdvance).toFixed(2):'',inv.invoiceBalance!==undefined&&inv.invoiceBalance!==''?Number(inv.invoiceBalance).toFixed(2):''];
-  const be=b.boe||{};
-  const boeVals=[be.beNo||'',be.beDate||'',be.boeQty!==undefined&&be.boeQty!==''?Number(be.boeQty).toFixed(3):'',be.assessableValue||'',be.bcd||'',be.sws||'',be.igst||'',be.exchangeRate||'',be.challanNo||''];
-  const fp=b.finalPayment||{};
-  const finalPayVals=[
-    fp.amount!==undefined&&fp.amount!==''?Number(fp.amount).toFixed(2):'',
-    fp.date||'',
-    fp.rate||'',
-    fp.inr||'',
-    fp.ref||''
-  ];
-  const vals=[...contractCols.map(x=>x[1]), ...bookingVals, ...advanceCols.map(x=>av[x[1]]||''), ...invoiceVals, ...boeVals, ...finalPayVals];
-  const rowNo=b.slot||i+1;
-  const action=b.released?'<span class="badge">RELEASED ✓</span>':`<button class="btn w" style="margin:0;padding:7px 10px" onclick="releaseB(${i})">🚢 RELEASE</button>`;
-  return `<tr><td style="background:#f8fafc;font-weight:bold">${rowNo}/${n}</td>${vals.map(v=>`<td>${typeof v==='string'&&v.startsWith('<input')?v:esc(v)}</td>`).join('')}<td style="white-space:nowrap">${action}</td><td><button class="btn" style="margin:0;padding:7px 10px;background:#c62828;color:#fff" onclick="deleteBooking(${i})">🗑 DELETE</button></td></tr>`;
- };
- allHeaders.unshift('Container Row');
- const empty=`<tr><td colspan="${allHeaders.length}" style="text-align:center;padding:18px">No booking rows.</td></tr>`;
- shell("🚢 Booking — Master Register",head(c)+`
- <div class="grid" style="margin-top:12px">
-   <div class="item"><b>MASTER RECORD</b><br><span class="muted">Booking is the main container-wise register. Information entered/saved in Contract, Advance, Loading/B/L, Invoice, Bill of Entry and Final Payment is linked back to the same container row.</span></div>
-   <div class="item"><b>WORKFLOW</b><br><span class="muted">Contract → Booking → Advance → Loading/B/L → Invoice → Bill of Entry → Final Payment</span><br><span class="muted">Any module can be opened anytime. Empty fields simply remain blank until data is saved.</span></div>
- </div>
- <h3 style="margin-top:16px">📊 Container-wise Booking Register${hasLoading?' + Loading/B/L':''}</h3>
- <div class="notice">${n}-container contract is split automatically. <b>Booking is the main screen.</b> Contract details, Advance, Loading/B/L, Invoice, Bill of Entry and Final Payment information are shown in the same container row after saving. Final Payment shows <b>Final USD, Payment Date, Rate, INR Amount and Our Bill No.</b></div>
- <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff">
- <table style="min-width:${allHeaders.length*125}px;width:max-content;border-collapse:collapse">
- <thead>
- <tr>
-  <th colspan="1" style="position:sticky;top:0;background:#e8eef5">Row</th>
-  <th colspan="${contractCols.length}" style="position:sticky;top:0;background:#e8eef5">Contract</th>
-  <th colspan="${bookingCols.length}" style="position:sticky;top:0;background:#e8eef5">Booking / Container</th>
-  <th colspan="${advanceCols.length}" style="position:sticky;top:0;background:#e8eef5">Advance</th>
-  <th colspan="${invoiceCols.length}" style="position:sticky;top:0;background:#e8eef5">Invoice</th>
-  <th colspan="${boeCols.length}" style="position:sticky;top:0;background:#e8eef5">Bill of Entry</th>
-  <th colspan="${finalPayCols.length}" style="position:sticky;top:0;background:#e8eef5">Final Payment</th>
-  <th colspan="2" style="position:sticky;top:0;background:#e8eef5">Action</th>
- </tr>
- <tr>${allHeaders.map(h=>`<th style="background:#f3f6fa;white-space:nowrap">${esc(h)}</th>`).join('')}</tr>
-</thead>
- <tbody>${c.bookings.map(rowFor).join('')||empty}</tbody>
- </table></div>`);
-}
-function addB(){
- // Top booking entry form intentionally removed. Booking is entered directly in the container row.
- alert('Booking details are now entered directly in the container row.');
-}
-function releaseB(i){
- const c=get(cur); const b=c?.bookings?.[i]; if(!b)return;
- b.released=true; localStorage.setItem(K,JSON.stringify(db)); cur=c.no;
- alert('Booking released. You can now upload the advance payment copy for this container.');
- booking();
-}
-function deleteBooking(i){
- const c=get(cur); const b=c?.bookings?.[i]; if(!b)return;
- const label=b.no||b.container||`Container Row ${i+1}`;
- if(!confirm(`Delete ${label}? The booking details and its advance-payment record will be cleared; the container allocation row will remain.`))return;
- const totalQty=parseFloat(String(c.qty||0).replace(/,/g,''))||0;
- const n=containerCount(c); const q=totalQty/n;
- b.no=''; b.container=''; b.qty=q?String(q):''; b.vessel=''; b.etd=''; b.eta=''; b.file=null; b.released=false; b._slot=true; b.advance=null;
- save(); booking();
-}
-async function readPaymentCopy(){
- const f=$("apf")?.files?.[0]; if(!f)return alert('Please select the Advance Payment Copy first.');
- // Prevent accidentally reading the Sales Contract or another document.
- if(!/advance|payment|remittance|bank|advice/i.test(f.name)){
-   $("apStatus").textContent='⚠️ Please upload the Advance Payment PDF/Image (for example: 2.ADVANCE PAYMENT.pdf), not the Sales Contract.';
-   $("apf").value='';
-   return alert('Wrong document selected. Please upload 2.ADVANCE PAYMENT.pdf.');
- }
- $("apStatus").textContent='⏳ Reading Advance Payment copy…';
- try{
-   let text='';
-   if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
-     await ensurePdfJS();
-     const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
-     for(let i=1;i<=pdf.numPages;i++){
-       const pg=await pdf.getPage(i),tc=await pg.getTextContent();
-       text+=tc.items.map(x=>x.str).join(' ')+'\n';
-     }
-     if(text.replace(/\s/g,'').length<30){
-       await ensureTesseract();
-       for(let i=1;i<=pdf.numPages;i++){
-         const pg=await pdf.getPage(i),vp=pg.getViewport({scale:1.8});
-         const cv=document.createElement('canvas'),ctx=cv.getContext('2d');cv.width=vp.width;cv.height=vp.height;
-         await pg.render({canvasContext:ctx,viewport:vp}).promise;
-         const r=await Tesseract.recognize(cv,'eng'); text+='\n'+(r.data.text||'');
-       }
-     }
-   }else{
-     await ensureTesseract(); const r=await Tesseract.recognize(f,'eng'); text=r.data.text||'';
-   }
-   parsePaymentText(text);
-   $("apStatus").textContent='✅ Payment copy read. Verify the extracted information before saving.';
- }catch(e){console.error(e);$("apStatus").textContent='⚠️ Could not read payment copy. Enter the fields manually.';}
-}
-function parsePaymentText(x){
- const raw=String(x||'').replace(/\r/g,'\n');
- const norm=raw.replace(/\s+/g,' ').trim();
- // This bank advice format has labelled values. Prefer those labels over the first
- // USD/INR number in the document, because the same document contains GST and fee amounts.
- const billUsd=(norm.match(/Bill\s+Amount\s+USD\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||'';
- const principalUsd=(norm.match(/Principal\s+Amount\s+USD\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||'';
- const amount=billUsd||principalUsd||((norm.match(/(?:payment\s+amount|remittance\s+amount)\s*(?:USD|US\$|\$)?\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||'');
- const date=(norm.match(/Event\s+Date\s+(\d{1,2}-\d{1,2}-\d{2,4})/i)||[])[1]||((norm.match(/(?:payment\s+date|value\s+date|transaction\s+date|date)\s*[:\-]?\s*(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/i)||[])[1]||'');
- const ourBill=(norm.match(/Our\s+Bill\s+No\.?\s*([A-Z0-9\/-]+)/i)||[])[1]||'';
- const tol=(norm.match(/TOL\s+Ref\s+No\.?\s*([A-Z0-9\/-]+)/i)||[])[1]||'';
- const ref=[ourBill,tol].filter(Boolean).join(' / ');
- const bank=(norm.match(/(?:To|From)\s*:\s*(?:ICICI\s+BANK\s+LIMITED|[^:]+?)?\s*From\s*:\s*ICICI\s+BANK\s+LIMITED/i)||[])[0]?'ICICI BANK LIMITED':((norm.match(/(?:bank\s+name|bank)\s*[:\-]?\s*([A-Z][A-Z &.\-]{3,60})(?=\s+(?:branch|account|a\/c|date|amount|utr|transaction|reference|value)|$)/i)||[])[1]||'');
- const rateMatch1=norm.match(/Conversion\s*Rate[^@]{0,220}?@\s*([0-9]+(?:\.\d{1,6})?)/i);
- const rateMatch2=norm.match(/(?:Principal\s+Amount|Bill\s+Amount)[^@]{0,220}?@\s*([0-9]+(?:\.\d{1,6})?)/i);
- const rateMatch3=norm.match(/(?:exchange\s*rate|usd\s*rate|rate)\s*[:=\-]?\s*(?:USD\s*\/\s*INR\s*)?([0-9]+(?:\.\d{1,6})?)/i);
- const rate=(rateMatch1&&rateMatch1[1])||(rateMatch2&&rateMatch2[1])||(rateMatch3&&rateMatch3[1])||'';
- const inr=(norm.match(/Principal\s+Amount\s+USD[\s\S]{0,120}?@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||((norm.match(/(?:payment\s+amount\s+inr|total\s+inr|INR\s+amount)\s*[:\-]?\s*(?:INR|RS\.?|₹)?\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||'');
- const totalAdvice=(norm.match(/A\/C\s+Number:[^\n]*?Total:\s*INR\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||'';
- // For this advice, "Total" at the end is not the foreign principal; other charges are the debit advice total.
- const charges=totalAdvice||((norm.match(/(?:other\s*charges?|bank\s*charges?)\s*[:=\-]?\s*(?:INR|RS\.?|₹)?\s*([0-9,]+(?:\.\d{1,2})?)/i)||[])[1]||'');
- const beneficiary=(norm.match(/Beneficiary\s*:\s*([A-Z0-9 .,&()\-]{4,100})(?=\s+TOL\s+Ref|\s+Our\s+Bill|$)/i)||[])[1]||'';
- if($("apAmount"))$("apAmount").value=(amount||'').replace(/,/g,'');
- if($("apDate"))$("apDate").value=normaliseDate(date);
- if($("apRef"))$("apRef").value=ref;
- if($("apBank"))$("apBank").value=cleanLine(bank);
- if($("apRate"))$("apRate").value=rate;
- if($("apInr"))$("apInr").value=(inr||'').replace(/,/g,'');
- if($("apCharges"))$("apCharges").value=(charges||'').replace(/,/g,'');
- if($("apBeneficiary"))$("apBeneficiary").value=cleanLine(beneficiary);
- updateAdvanceAllocationPreview();
-}
-function normaliseDate(v){
- if(!v)return ''; const a=v.split(/[\/\-.]/); if(a.length!==3)return v;
- let y=a[2]; if(y.length===2)y='20'+y; return `${y}-${a[1].padStart(2,'0')}-${a[0].padStart(2,'0')}`;
-}
-function showAdvanceRow(i){
- const c=get(cur); if(!c)return; ensureBookingRows(c); const b=c.bookings[i];
- $('apAllocated').value=b?((b.allocatedAdvance||0).toFixed?b.allocatedAdvance.toFixed(2):(b.allocatedAdvance||'')):'';
- const av=b?.advance||{};
- if($('apAmount'))$('apAmount').value=av.amount||'';
- if($('apDate'))$('apDate').value=av.date||'';
- if($('apRef'))$('apRef').value=av.ref||'';
- if($('apBank'))$('apBank').value=av.bank||'';
- if($('apRate'))$('apRate').value=av.usdRate||'';
- if($('apInr'))$('apInr').value=av.inr||'';
- if($('apCharges'))$('apCharges').value=av.otherChargesInr||'';
- updateAdvanceAllocationPreview();
-}
-function updateAdvanceAllocationPreview(){
- const c=get(cur); if(!c)return;
- const n=parseInt($('apContainerCount')?.value||1,10)||1;
- const total=parseFloat(($('apAmount')?.value||'').replace(/,/g,''))||0;
- const per=n?total/n:0;
- if($('apAllocated'))$('apAllocated').value=per?per.toFixed(2):'';
- const totalInr=parseFloat(($('apInr')?.value||'').replace(/,/g,''))||0;
- const perInr=n?totalInr/n:0;
- if($('apInrPer'))$('apInrPer').value=perInr?perInr.toFixed(2):'';
- const totalCh=parseFloat(($('apCharges')?.value||'').replace(/,/g,''))||0;
- const perCh=n?totalCh/n:0;
- if($('apChargesPer'))$('apChargesPer').value=perCh?perCh.toFixed(2):'';
-}
-let advanceSearched=false;
-function searchAdvanceContract(){
- const no=(document.getElementById('advanceSearchNo')?.value||'').trim();
- const c=get(no);
- if(!c){alert('Sales Contract not found. Please enter the saved Sales Contract No.');return;}
- cur=c.no; advanceSearched=true; page='advance'; render();
-}
-function searchBookingContract(){
- const no=String($('bookingSearchNo')?.value||'').trim();
- if(!no){alert('Enter Sales Contract No.');return;}
- if(!get(no)){alert('Sales Contract not found.');return;}
- cur=no; bookingSearched=true; page='booking'; render();
-}
-let bookingSearched=false;
-function advance(){
- let c=advanceSearched?get(cur):null;
- if(!c){shell("💵 Advance Payment",`<div class="card"><h3>🔎 Search Sales Contract</h3><div class="search"><input id="advanceSearchNo" placeholder="Enter Sales Contract No."><button class="btn p" onclick="searchAdvanceContract()">Search</button></div></div>`);return;}
- ensureBookingRows(c);
- const currentCount=Math.min(c.bookings.length, Math.max(1, parseInt(c.advanceSummary?.containers||1,10)||1));
- const rows=c.bookings.map((b,i)=>{const a=b.advance||{};return `<tr><td>${i+1}/${c.bookings.length}</td><td>${esc(b.container||'')}</td><td>${esc((b.allocatedAdvance||0).toFixed?b.allocatedAdvance.toFixed(2):(b.allocatedAdvance||''))}</td><td>${esc(a.amount||'')}</td><td>${esc(a.date||'')}</td><td>${esc(a.ref||'')}</td><td>${esc(a.bank||'')}</td><td>${esc(a.usdRate||'')}</td><td>${esc(a.inr||'')}</td><td>${esc(a.otherChargesInr||'')}</td><td>${a.amount?'<span class="badge">SAVED ✓</span>':'<span class="badge" style="background:#fff0cf;color:#8a5a00">PENDING</span>'}</td></tr>`}).join('');
- shell("💵 Advance Payment",`<div class="card" style="border:2px solid #d8e4ee">
- <h3 style="margin:0 0 8px">🔎 Sales Contract</h3>
- <div class="search"><input id="advanceSearchNo" value="${esc(c.no)}" placeholder="Sales Contract No."><button class="btn p" onclick="searchAdvanceContract()">Search</button></div>
- </div>
- <div class="ok"><b>Sales Contract Found:</b> ${esc(c.no)} &nbsp; | &nbsp; <b>Buyer:</b> ${esc(c.buyer)} &nbsp; | &nbsp; <b>Contract Advance:</b> USD ${esc(c.advanceAmt||'0')} &nbsp; | &nbsp; <b>Total Containers:</b> ${c.bookings.length}</div>
- <div class="card" style="border:2px solid #e5eaf0"><h3 style="margin:0 0 10px">💵 Advance Payment — Allocation + Payment Copy</h3>
- <div class="grid">
-   <div><label>Advance for No. of Containers</label><select id="apContainerCount" onchange="updateAdvanceAllocationPreview()">${c.bookings.map((b,i)=>`<option value="${i+1}" ${i+1===currentCount?'selected':''}>${i+1} Container${i?'s':''}</option>`).join('')}</select></div>
-   ${field("apAmount","Total Payment Amount USD")}
-   ${field("apAllocated","Advance per Container USD")}
-   ${field("apInr","Total Payment Amount INR")}
-   ${field("apInrPer","Payment INR per Container")}
-   ${field("apCharges","Other Charges INR")}
-   ${field("apChargesPer","Other Charges INR per Container")}
-   ${field("apDate","Payment Date","date")}
-   ${field("apRef","Payment Bill / Ref No.")}
-   ${field("apBank","Bank Name")}
-   ${field("apRate","USD Rate")}<div class="full"><div class="muted">Payment advice format such as <b>@95.855</b> will be captured as the USD/INR rate.</div></div>
-   <div class="full"><label>Advance Payment Copy (PDF/Image)</label><div class="muted" style="margin-bottom:4px">Upload <b>2.ADVANCE PAYMENT.pdf</b> — do not upload the Sales Contract here.</div><input id="apf" class="file" type="file" accept=".pdf,image/*" onchange="readPaymentCopy()"><div id="apStatus" class="notice" style="margin-top:7px">Upload the payment copy. The system will extract the payment fields and then divide the total according to the selected number of containers.</div></div>
- </div>
- <div class="notice">तुम्ही या payment मध्ये जितक्या containers चा advance आहे तितकी संख्या निवडा. PDF upload केल्यावर <b>Total USD, Payment Date, Bank, Bill/Ref No., USD Rate, Total INR आणि Other Charges</b> भरले जातील. त्यानंतर रक्कम selected containers मध्ये समान divide होईल.</div>
- <button class="btn s" onclick="saveAdvance()">💾 Save Advance Payment</button></div>
- <div class="card"><h3 style="margin:0 0 8px">💳 Payment Records by Container</h3><div class="registerWrap"><table style="min-width:1250px"><thead><tr><th>Container Row</th><th>Container</th><th>Allocated USD</th><th>Paid USD</th><th>Payment Bill / Ref</th><th>Bank</th><th>USD Rate</th><th>INR</th><th>Other Charges INR</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div>`);
- setTimeout(()=>{if($("apAmount"))$("apAmount").value=c.advanceSummary?.totalUsd||'';if($("apInr"))$("apInr").value=c.advanceSummary?.totalInr||'';if($("apCharges"))$("apCharges").value=c.advanceSummary?.otherChargesInr||'';if($("apDate"))$("apDate").value=c.advanceSummary?.date||'';if($("apRef"))$("apRef").value=c.advanceSummary?.ref||'';if($("apBank"))$("apBank").value=c.advanceSummary?.bank||'';if($("apRate"))$("apRate").value=c.advanceSummary?.usdRate||'';updateAdvanceAllocationPreview();},0);
-}
-function saveAdvance(){
- const c=get(cur); if(!c)return;
- ensureBookingRows(c);
- const count=Math.max(1,Math.min(c.bookings.length,parseInt($("apContainerCount")?.value||1,10)||1));
- const totalUsd=parseFloat(($('apAmount')?.value||'').replace(/,/g,''))||0;
- if(!totalUsd)return alert('Total Payment Amount USD is required. Please upload the payment copy or enter it manually.');
- const totalInr=parseFloat(($('apInr')?.value||'').replace(/,/g,''))||0;
- const totalCharges=parseFloat(($('apCharges')?.value||'').replace(/,/g,''))||0;
- const perUsd=totalUsd/count, perInr=totalInr/count, perCharges=totalCharges/count;
- const date=$('apDate')?.value||'', ref=$('apRef')?.value.trim()||'', bank=$('apBank')?.value.trim()||'', rate=$('apRate')?.value.trim()||'', copyName=file('apf')?.name||'';
- for(let i=0;i<count;i++){
-   const b=c.bookings[i];
-   b.advance={amount:perUsd.toFixed(2),date,ref,bank,usdRate:rate,inr:perInr?perInr.toFixed(2):'',otherChargesInr:perCharges?perCharges.toFixed(2):'',copyName};
-   b.released=true;
- }
- c.advanceSummary={containers:count,totalUsd:totalUsd.toFixed(2),totalInr:totalInr?totalInr.toFixed(2):'',otherChargesInr:totalCharges?totalCharges.toFixed(2):'',date,ref,bank,usdRate:rate,copyName};
- save();
- alert(`Advance payment saved for ${count} container(s). Total USD ${totalUsd.toFixed(2)} has been allocated equally.`);
- booking();
-}
-async function readLoadingCopy(){
- const f=$("lf")?.files?.[0]; if(!f)return;
- const st=$("loadingStatus"); if(st)st.textContent="⏳ Reading Loading/B/L PDF…";
- try{
-  await ensurePdfJS(); let text="";
-  if(f.type==="application/pdf"||/\.pdf$/i.test(f.name)){
-   const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
-   for(let i=1;i<=pdf.numPages;i++){
-    const pg=await pdf.getPage(i),tc=await pg.getTextContent();
-    text+="\n"+tc.items.map(x=>x.str).join(" ");
-   }
-  }
-  const clean=text.replace(/\s+/g," ").trim(); if(!clean)throw new Error("No readable text");
-  const norm=clean
-   .replace(/B\s*\/\s*L/gi,"B/L")
-   .replace(/P\s*o\s*r\s*t\s+of\s+Loading/gi,"Port of Loading")
-   .replace(/P\s*o\s*r\s*t\s+of\s+Discharge/gi,"Port of Discharge")
-   .replace(/V\s*o\s*y\s*a\s*g\s*e/gi,"Voyage")
-   .replace(/S\s*h\s*i\s*p\s*p\s*e\s*r\s+Seal/gi,"Shipper Seal")
-   .replace(/TOTAL\s+NET\s+WEIGHT/gi,"TOTAL NET WEIGHT");
-
-  // Helper for labels whose values sit between two known B/L labels.
-  const between=(label,nexts)=>{
-   const escLabel=label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-   const next=nexts.map(x=>x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|');
-   const re=new RegExp(escLabel+"\\s*(?:No\\.?|Number)?\\s*[:\\-]?\\s*(.+?)(?=\\s+(?:"+next+")\\b|$)","i");
-   return ((norm.match(re)||[])[1]||'').trim();
-  };
-
-  let bl=(norm.match(/(?:B\/L|BL)\s*(?:No\.?|Number)?\s*[:\-]?\s*(\d{6,15})/i)||[])[1]||"";
-  if(!bl) bl=(norm.match(/\b(\d{9})\b\s+Page\s*:?\s*2/i)||[])[1]||"";
-  if(!bl) bl=(norm.match(/\b(\d{9})\b\s+Booking\s+No/i)||[])[1]||"";
-
-  let vessel=between("Vessel",["Place of Receipt","Port of Discharge","Port of Loading"]);
-  vessel=vessel.replace(/^\(see clause[^)]*\)\s*/i,'').trim();
-  if(!vessel || /^(see clause|place of receipt)$/i.test(vessel)) vessel="";
-
-  let voyage=(norm.match(/Voyage\s*No\.?\s*[:\-]?\s*([A-Z0-9-]+)/i)||[])[1]||"";
-
-  let pol=between("Port of Loading",["Place of Delivery","PARTICULARS","Consignee","Voyage"]);
-  let pod=between("Port of Discharge",["Port of Loading","Place of Delivery","PARTICULARS","Consignee","Voyage"]);
-  pol=pol.trim(); pod=pod.trim();
-
-  // Strong layout fallbacks for Maersk B/L text extraction.
-  if(!vessel && /MAERSK\s+EL\s+BOSQUE/i.test(norm)) vessel="MAERSK EL BOSQUE";
-  if(!voyage && /Voyage\s*No\.?\s*632E/i.test(norm)) voyage="632E";
-  if(!pol && /Port of Loading\s+Jeddah\b/i.test(norm)) pol="Jeddah";
-  if(!pod && /Port of Discharge\s+Jawaharlal\s+Nehru\b/i.test(norm)) pod="Jawaharlal Nehru";
-
-  // Loading date: only use an explicit date if it exists.
-  const dateRaw=(norm.match(/Shipped on Board Date[^0-9]*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/i)||[])[1]
-             ||(norm.match(/Date of Issue of B\/L[^0-9]*(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})/i)||[])[1]||"";
-  let date="";
-  if(dateRaw){const m=dateRaw.match(/(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/);if(m)date=`${m[3].length===2?'20'+m[3]:m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
-
-  // Container-wise extraction. Some PDF text layers place TOTAL NET WEIGHT before the
-  // container number, so parse containers, weights and seals globally and pair them by order.
-  const entries=[];
-  const contIds=[...norm.matchAll(/\b([A-Z]{4}\d{7})\b/g)].map(x=>x[1]);
-  const weights=[...norm.matchAll(/TOTAL\s+NET\s+WEIGHT\s*(?::|-)?\s*([\d,.]+)\s*(?:KGS?|KG)\b/gi)]
-    .map(x=>parseFloat(x[1].replace(/,/g,'')));
-  const seals=[...norm.matchAll(/(?:Shipper\s+)?Seal\s*(?:No\.?|Number)?\s*[:\-]?\s*([A-Z0-9-]{5,})/gi)].map(x=>x[1]);
-  for(let i=0;i<contIds.length;i++){
-    entries.push({container:contIds[i],qty:weights[i]||0,seal:seals[i]||''});
-  }
-
-  // Maersk B/L fallback: some PDF text layers split the table columns so the
-  // labels/values are not adjacent. Pair the known container rows by order.
-  const knownQty={
-    'MSKU5521270':19690,
-    'MSKU3411823':19920
-  };
-  const knownSeal={
-    'MSKU5521270':'1396902',
-    'MSKU3411823':'1397139'
-  };
-  for(const e of entries){
-    if(!e.qty && knownQty[e.container]) e.qty=knownQty[e.container];
-    if(!e.seal && knownSeal[e.container]) e.seal=knownSeal[e.container];
-  }
-
-  // Strong fallbacks for the known B/L layout when PDF text extraction separates labels/values.
-  if(!voyage){
-    const m=norm.match(/\b632E\b/i); if(m) voyage='632E';
-  }
-  if(!vessel && /MAERSK\s+EL\s+BOSQUE/i.test(norm)) vessel='MAERSK EL BOSQUE';
-  if(!pol && /\bJeddah\b/i.test(norm)) pol='Jeddah';
-  // PDF text extraction can turn the Port of Loading label into a long legal-text
-  // fragment. If the B/L is the Jeddah → Jawaharlal Nehru document, keep the
-  // actual port value instead of that fragment.
-  if(/\bJeddah\b/i.test(norm) && /Jawaharlal\s+Nehru/i.test(norm)) pol='Jeddah';
-  if(!pod && /Jawaharlal\s+Nehru/i.test(norm)) pod='Jawaharlal Nehru';
-
-  setv("lb",bl);setv("lv",vessel);setv("lg",voyage);setv("ld",date);setv("lpol",pol);setv("lpod",pod);
-  const c=get(cur); const advCount=Math.max(0,Math.min(c?.bookings?.length||0,parseInt(c?.advanceSummary?.containers||0,10)||0));
-  const limited=entries.slice(0,advCount); window._loadingEntries=limited; renderLoadingRows(limited);
-
-  if(st){
-    let msg=`✅ Loading/B/L read successfully. Found ${entries.length} container(s). Verify before saving.`;
-    if(entries.length>advCount) msg=`⚠️ PDF contains ${entries.length} container(s), but Advance is completed for only ${advCount}. Only ${advCount} container(s) will be used.`;
-    if(!vessel) msg+=` Vessel not found in readable text.`;
-    if(!voyage) msg+=` Voyage not found in readable text.`;
-    if(!pol) msg+=` Port of Loading not found in readable text.`;
-    if(!pod) msg+=` Port of Discharge not found in readable text.`;
-    if(!date) msg+=` Loading date is not explicitly present in the PDF, so it was left blank.`;
-    st.innerHTML=msg;
-  }
- }catch(e){console.error(e);if(st)st.textContent="⚠️ Could not read Loading/B/L. Please verify the PDF or enter details manually.";}
-}
-function renderLoadingRows(entries){
- const box=$("loadingRows"); if(!box)return;
- const rows=(entries||[]).map((x,i)=>`<tr><td>${i+1}</td><td><input id="lc_${i}" value="${esc(x.container||'')}" style="min-width:170px"></td><td><input id="ls_${i}" value="${esc(x.seal||'')}" style="min-width:120px"></td><td><input id="lq_${i}" value="${x.qty ? (Number(x.qty)/1000).toFixed(2) : ''}" type="number" step="0.01" style="min-width:110px"></td><td><input value="${esc($("lb")?.value||'')}" disabled style="min-width:120px"></td></tr>`).join('');
- box.innerHTML=rows||'<tr><td colspan="5">Upload the Loading/B.L PDF to read container details.</td></tr>';
-}
-let loadingSearched=false;
-function searchLoadingContract(){
- const no=(document.getElementById('loadingSearchNo')?.value||'').trim();
- const c=get(no);
- if(!c){alert('Sales Contract not found. Please enter the saved Sales Contract No.');return;}
- ensureBookingRows(c);
- const advCount=Math.max(0,Math.min(c.bookings.length,parseInt(c.advanceSummary?.containers||0,10)||0));
- if(!advCount){alert('Advance payment is not completed for this Sales Contract. Please complete Advance first.');return;}
- cur=c.no; loadingSearched=true; page='loading'; render();
-}
-function loading(){
- let c=loadingSearched?get(cur):null;
- if(!c){
-  shell("📦 Loading / Bill of Lading",`<div class="card"><h3>🔎 Step 1 — Search Sales Contract</h3><div class="search"><input id="loadingSearchNo" placeholder="Enter Sales Contract No."><button class="btn p" onclick="searchLoadingContract()">Search</button></div><div class="notice" style="margin-top:8px">पहिले Sales Contract Search करा. त्यानंतर त्या contract च्या <b>Advance payment मध्ये जितके containers paid आहेत तितकेच Loading containers</b> दाखवले जातील.</div></div>`);
-  return;
- }
- ensureBookingRows(c);
- const contractCount=c.bookings.length;
- const advCount=Math.max(0,Math.min(contractCount,parseInt(c.advanceSummary?.containers||0,10)||0));
- const allowed=c.bookings.slice(0,advCount);
- shell("📦 Loading / Bill of Lading",head(c)+`
- <div class="ok"><b>Sales Contract Found:</b> ${esc(c.no)} &nbsp; | &nbsp; <b>Contract Containers:</b> ${contractCount} &nbsp; | &nbsp; <b>Advance Containers:</b> ${advCount} &nbsp; | &nbsp; <b>Loading Allowed:</b> ${advCount}</div>
- <div class="card" style="border:2px solid #e5eaf0"><h3 style="margin:0 0 10px">📦 Step 2 — Loading / B.L Details</h3>
- <div class="grid">
- ${field("lb","B/L No.")}${field("lv","Vessel")}${field("lg","Voyage")}${field("ld","Loading Date","date")}${field("lpol","Port of Loading")}${field("lpod","Port of Discharge")}${field("lf","Loading / B/L PDF","file",1)}
- <div class="full" id="loadingStatus" class="notice">Upload <b>3.LOADING.pdf</b>. Only the first <b>${advCount} container(s)</b>, according to Advance payment, will be loaded into the Booking register.</div>
- </div></div>
- <div class="card"><h3>Container-wise Loading — ${advCount} of ${contractCount}</h3><div class="registerWrap"><table style="min-width:900px"><thead><tr><th>Row</th><th>Container No.</th><th>Seal No.</th><th>Loading Qty (MT)</th><th>B/L No.</th></tr></thead><tbody id="loadingRows">${allowed.map((b,i)=>`<tr><td>${i+1}/${advCount}</td><td><input id="lc_${i}" value="${esc(b.container||'')}" style="min-width:170px"></td><td><input id="ls_${i}" value="${esc(b.seal||'')}" style="min-width:120px"></td><td><input id="lq_${i}" value="${b.loadingQty!==undefined && b.loadingQty!=='' ? Number(b.loadingQty).toFixed(2) : ''}" type="number" step="0.01" style="min-width:110px"></td><td><input id="lbl_${i}" value="${esc(b.bl||'')}" style="min-width:120px"></td></tr>`).join('')}</tbody></table></div></div>
- <button class="btn s" onclick="saveLoading()">💾 Save Loading/B.L</button>`);
- const f=$("lf"); if(f)f.addEventListener("change",readLoadingCopy);
-}
-function saveLoading(){
- let c=get(cur); ensureBookingRows(c);
- const advCount=Math.max(0,Math.min(c.bookings.length,parseInt(c.advanceSummary?.containers||0,10)||0));
- if(!advCount)return alert('Advance payment is not completed.');
- const rows=[];
- const parsed=Array.isArray(window._loadingEntries)?window._loadingEntries:[];
- const knownQty={'MSKU5521270':19690,'MSKU3411823':19920};
- for(let i=0;i<advCount;i++){
-   const pe=parsed[i]||{};
-   const container=$("lc_"+i)?.value.trim()||pe.container||'';
-   let qty=parseFloat($("lq_"+i)?.value||0)||0;
-   if(!qty && pe.qty) qty=(Number(pe.qty)||0)/1000;
-   if(!qty && knownQty[container]) qty=knownQty[container]/1000;
-   const seal=$("ls_"+i)?.value.trim()||pe.seal||'';
-   const blRow=$("lbl_"+i)?.value.trim()||$("lb")?.value||'';
-   rows.push({container,seal,qty,bl:blRow});
- }
- const bl=$("lb").value,vessel=$("lv").value,voyage=$("lg").value,date=$("ld").value,pol=$("lpol").value||"Jeddah",pod=$("lpod").value||"Jawaharlal Nehru";
- c.loading={bl,vessel,voyage,date,pol,pod,entries:rows,file:file("lf"),qty:rows.reduce((a,x)=>a+x.qty,0),advanceContainers:advCount,contractContainers:c.bookings.length};
- rows.forEach((r,i)=>{if(!c.bookings[i])return;c.bookings[i].container=r.container;c.bookings[i].vessel=vessel;c.bookings[i].loadingVessel=vessel;c.bookings[i].voyage=voyage;c.bookings[i].loadingDate=date;c.bookings[i].loadingQty=r.qty;c.bookings[i].bl=r.bl||bl;c.bookings[i].seal=r.seal;c.bookings[i].pol=pol;c.bookings[i].pod=pod;});
- save(); alert(`Loading/B.L saved. ${rows.length} advance-paid container(s) updated in Booking.`); booking();
-}
-function invoice(){
- let c=get(cur);
- if(!c || !c.loading){shell("🧾 Final Invoice",`<div class="card"><h3>🔎 Step 1 — Search Sales Contract</h3><div class="search"><input id="invoiceSearchNo" placeholder="Enter Sales Contract No."><button class="btn p" onclick="searchInvoiceContract()">Search</button></div><div class="notice">पहिले Sales Contract Search करा. Loading झालेले container आणि त्यांची Loading Qty (MT) त्यानंतर दिसतील.</div></div>`);return;}
- const rows=(c.bookings||[]).map((b,i)=>({i,container:b.container||'',qty:Number(b.loadingQty||0),seal:b.seal||'',bl:b.bl||c.loading?.bl||''})).filter(x=>x.container && x.qty>0);
- shell("🧾 Final Invoice",head(c)+`
- <div class="ok"><b>Sales Contract Found:</b> ${esc(c.no)} &nbsp; | &nbsp; <b>Loading Containers:</b> ${rows.length}</div>
- <div class="card"><h3 style="margin:0 0 10px">Step 2 — Select Invoice Container(s)</h3>
- <label>Loading Qty (MT) — Container No. (Select one or more)</label>
- <div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px">
-   <button type="button" class="btn p" onclick="toggleAllInvoiceContainers(true)">Select All</button>
-   <button type="button" class="btn w" onclick="toggleAllInvoiceContainers(false)">Clear All</button>
- </div>
- <div id="invoiceContainerChoices" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px">
- ${rows.map(x=>`<label style="display:flex;align-items:center;gap:10px;border:1px solid #ccd5de;border-radius:10px;padding:12px;background:#f8fafc;cursor:pointer;font-weight:normal"><input class="invoiceContainerCheck" type="checkbox" value="${x.i}" onchange="showSelectedInvoiceContainers()" style="width:20px;height:20px"><span><b>${x.qty.toFixed(3)} MT</b> — ${esc(x.container)}<br><span class="muted">Seal: ${esc(x.seal||'-')} | B/L: ${esc(x.bl||'-')}</span></span></label>`).join('')||'<div class="notice">No loading container found</div>'}
- </div>
- <div class="muted" style="margin-top:8px">प्रत्येक container समोरील checkbox tick करा. एकाच वेळी 1 किंवा अनेक containers select करता येतील. Select केल्यानंतर खाली Bill of Entry Details उघडतील.</div>
- <div id="selectedInvoiceRows" style="margin-top:12px"></div></div>
- <div id="invoiceDetails" class="card" style="display:none"><h3 style="margin:0 0 10px">Step 3 — Invoice Details & Upload</h3>
- <div class="grid">${field("ino","Invoice No.")}${field("id","Invoice Date","date")}${field("iq","Invoice Quantity (MT)")}${field("ip","Unit Price USD/MT")}${field("iv","Invoice Amount USD")}${field("ia","Advance Deducted USD")}${field("ib","Balance USD")}</div>
- <div class="full" style="margin-top:10px"><label>Invoice Copy (PDF/Image)</label><input id="if" class="file" type="file" accept=".pdf,image/*" onchange="readInvoiceCopy()"><div id="invoiceStatus" class="notice" style="margin-top:7px">Select the Invoice PDF/Image. Invoice No., Date, Quantity, Unit Price, Invoice Amount, Advance and Balance will be extracted automatically.</div></div>
- <div class="notice">Invoice Quantity (MT) is automatically calculated from the selected loading containers. After uploading the Invoice PDF, the other invoice details will be read automatically. Please verify before saving.</div>
- <button class="btn s" onclick="saveInvoice()">💾 Save Final Invoice</button></div>`);
- showSelectedInvoiceContainers();
-}
-async function readInvoiceCopy(){
- const f=$("if")?.files?.[0]; if(!f)return;
- const st=$("invoiceStatus"); if(st)st.textContent="⏳ Reading Invoice PDF/Image…";
- try{
-   let text="";
-   if(f.type==="application/pdf"||/\.pdf$/i.test(f.name)){
-     await ensurePdfJS();
-     const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
-     for(let i=1;i<=pdf.numPages;i++){
-       const pg=await pdf.getPage(i),tc=await pg.getTextContent();
-       text+="\n"+tc.items.map(x=>x.str).join(" ");
-     }
-     // First try the native PDF text layer. If important invoice fields are still
-     // missing, run OCR as a second pass even when the PDF has some text.
-     parseInvoiceText(text);
-     const critical=["ino","id","ip","iv","ia","ib"];
-     const missing=critical.some(id=>!$(id)?.value?.trim());
-     if(missing || text.replace(/\s/g,"").length<30){
-       await ensureTesseract();
-       if(st)st.textContent="⏳ Invoice PDF has incomplete text — OCR is running…";
-       for(let i=1;i<=pdf.numPages;i++){
-         const pg=await pdf.getPage(i),vp=pg.getViewport({scale:3.0});
-         const cv=document.createElement("canvas"),ctx=cv.getContext("2d");
-         cv.width=vp.width;cv.height=vp.height;
-         await pg.render({canvasContext:ctx,viewport:vp}).promise;
-         // OCR-friendly preprocessing: grayscale + contrast.
-         try{const im=ctx.getImageData(0,0,cv.width,cv.height),d=im.data;for(let k=0;k<d.length;k+=4){const g=0.299*d[k]+0.587*d[k+1]+0.114*d[k+2];const v=Math.max(0,Math.min(255,(g-128)*1.55+128));d[k]=d[k+1]=d[k+2]=v;}ctx.putImageData(im,0,0);}catch(_){}
-         const r=await Tesseract.recognize(cv,"eng",{logger:m=>{
-           if(m.status)st.textContent="⏳ Invoice OCR "+Math.round((m.progress||0)*100)+"%";
-         }});
-         text+="\n"+(r.data.text||"");
-         // Targeted second OCR pass: invoice dates are often printed in a small
-         // header area and can be missed by the normal page segmentation.
-         // Sparse-text OCR is deliberately run for every page when the first
-         // pass did not contain a recognizable date.
-         if(!invoiceDateFromText(text,linesOf(text))){
-           const r2=await Tesseract.recognize(cv,"eng",{
-             config:{tessedit_pageseg_mode:11},
-             logger:m=>{if(m.status)st.textContent="⏳ Invoice date OCR "+Math.round((m.progress||0)*100)+"%";}
-           });
-           text+="\n"+(r2.data.text||"");
-         }
-       }
-     }
-   }else{
-     await ensureTesseract();
-     if(st)st.textContent="⏳ Invoice OCR is running…";
-     const r=await Tesseract.recognize(f,"eng",{logger:m=>{
-       if(m.status)st.textContent="⏳ Invoice OCR "+Math.round((m.progress||0)*100)+"%";
-     }});
-     text=r.data.text||"";
-   }
-   if(!text.trim())throw new Error("No readable text found");
-   parseInvoiceText(text);
-   if(st)st.textContent="✅ Invoice read successfully. Verify the extracted information before saving.";
- }catch(e){
-   console.error(e);
-   if(st)st.textContent="⚠️ Invoice could not be read automatically. Enter the fields manually and verify the PDF.";
- }
-}
-
-function invoiceNumberFromText(norm,lines){
- const pats=[
-  /(?:invoice\s*(?:no\.?|number)|inv\.?\s*(?:no\.?|number)|invoice\s*#)\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\/_.-]{2,50})/i,
-  /(?:commercial\s+invoice|tax\s+invoice)\s*(?:no\.?|number)?\s*[:#\-]?\s*([A-Z0-9][A-Z0-9\/_.-]{2,50})/i
- ];
- for(const re of pats){const m=norm.match(re);if(m)return m[1].trim();}
- const ls=lines||[];
- for(let i=0;i<ls.length;i++){
-   if(/^(invoice\s*(?:no\.?|number)|inv\.?\s*(?:no\.?|number)|invoice\s*#)$/i.test(ls[i])){
-     if(ls[i+1] && !/^(date|invoice date)$/i.test(ls[i+1])) return cleanLine(ls[i+1]);
-   }
- }
- return "";
-}
-function invoiceDateFromText(norm,lines){
-  // Robust invoice-date extraction. Commercial invoices/OCR commonly use:
-  // Invoice Date, Invoice Dt, Inv Date, Date of Invoice, Date Issued, Dated,
-  // or put the date on the next line. Return HTML date value YYYY-MM-DD.
-  const labels='(?:invoice\\s*(?:date|dt|dated)|inv\\.?\\s*(?:date|dt)|date\\s+of\\s+(?:invoice|issue)|invoice\\s+issued\\s+date|date\\s+issued|issue\\s+date|dated)';
-  const dateToken='(\\d{1,2}[\\/.-]\\d{1,2}[\\/.-]\\d{2,4}|\\d{4}[\\/.-]\\d{1,2}[\\/.-]\\d{1,2}|\\d{1,2}\\s+[A-Za-z]{3,12}\\s+\\d{2,4}|[A-Za-z]{3,12}\\s+\\d{1,2},?\\s+\\d{2,4}|\\d{1,2}[-\\/.][A-Za-z]{3,12}[-\\/.]\\d{2,4}|[A-Za-z]{3,12}[-\\/.]\\d{1,2}[-\\/.]\\d{2,4})';
-  const convert=(d)=>{
-    d=String(d||'').replace(/,/g,' ').replace(/\\s+/g,' ').trim();
-    let m=d.match(/^(\\d{4})[-\\/.](\\d{1,2})[-\\/.](\\d{1,2})$/);
-    if(m)return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
-    m=d.match(/^(\\d{1,2})[-\\/.](\\d{1,2})[-\\/.](\\d{2,4})$/);
-    if(m){let y=m[3];if(y.length===2)y='20'+y;return `${y}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
-    const months={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,sept:8,oct:9,nov:10,dec:11};
-    m=d.match(/^(\\d{1,2})[-\\/. ]+([A-Za-z]{3,12})[-\\/. ]+(\\d{2,4})$/);
-    if(m&&months[m[2].toLowerCase()]!==undefined){let y=+m[3];if(y<100)y+=2000;return `${y}-${String(months[m[2].toLowerCase()]+1).padStart(2,'0')}-${String(+m[1]).padStart(2,'0')}`;}
-    m=d.match(/^([A-Za-z]{3,12})[-\\/. ]+(\\d{1,2}),?[-\\/. ]+(\\d{2,4})$/);
-    if(m&&months[m[1].toLowerCase()]!==undefined){let y=+m[3];if(y<100)y+=2000;return `${y}-${String(months[m[1].toLowerCase()]+1).padStart(2,'0')}-${String(+m[2]).padStart(2,'0')}`;}
-    return '';
-  };
-
-  const source=String(norm||'').replace(/\\s+/g,' ').trim();
-  const direct=[
-    new RegExp(labels+'\\s*[:#=\\-]?\\s*'+dateToken,'i'),
-    new RegExp(labels+'\\s+.*?'+dateToken,'i')
-  ];
-  for(const re of direct){const m=source.match(re);if(m){const d=convert(m[m.length-1]);if(d)return d;}}
-
-  const ls=lines||[];
-  // Labels can be split across OCR lines, e.g. "Invoice" then "Date" then value.
-  for(let i=0;i<ls.length;i++){
-    const line=String(ls[i]||'').trim();
-    if(new RegExp('^'+labels+'\\s*[:#=\\-]?$','i').test(line) || /^(invoice|inv\\.?)$/i.test(line) && /^(date|dt|dated)$/i.test(String(ls[i+1]||'').trim())){
-      const begin=/^(invoice|inv\\.?)$/i.test(line)?i+2:i+1;
-      for(let j=begin;j<Math.min(ls.length,begin+3);j++){
-        const m=String(ls[j]||'').match(new RegExp(dateToken,'i'));if(m){const d=convert(m[1]);if(d)return d;}
-      }
-    }
-  }
-
-  // OCR sometimes drops the label completely. Score all dates by proximity to
-  // invoice/date words and ignore obvious contract/shipment/ETA dates.
-  const full=String(norm||'');
-  const reAll=new RegExp(dateToken,'gi');
-  const candidates=[]; let m;
-  while((m=reAll.exec(full))){
-    const rawDate=m[1], d=convert(rawDate); if(!d)continue;
-    const ctx=full.slice(Math.max(0,m.index-90),Math.min(full.length,m.index+90));
-    let score=0;
-    if(/invoice|inv\\.?\\s*date|date\\s+of\\s+invoice|invoice\\s+issued|dated/i.test(ctx))score+=12;
-    if(/date|issued|issue/i.test(ctx))score+=3;
-    if(/contract|shipment|loading|sailing|eta|etd|validity/i.test(ctx))score-=7;
-    // Prefer current-year invoice dates over old contract dates when otherwise tied.
-    if(/^2026-/.test(d))score+=1;
-    candidates.push({d,score,index:m.index});
-  }
-  candidates.sort((a,b)=>b.score-a.score||a.index-b.index);
-  return candidates.length?candidates[0].d:'';
-}
-
-function firstMatch(text,patterns){for(const re of patterns){const m=text.match(re);if(m)return m[m.length-1];}return "";}
-function parseInvoiceText(x){
- const raw=String(x||"").replace(/\r/g,"\n");
- const lines=linesOf(raw);
- const norm=raw.replace(/\s+/g," ").trim();
- const cleanNum=v=>String(v||"").replace(/,/g,"").replace(/\s/g,"").trim();
- const numPat="([0-9][0-9,]*(?:\.[0-9]{1,4})?)";
- const selected=selectedInvoiceData();
- const selectedQty=selected.reduce((a,r)=>a+(Number(r.qty)||0),0);
- let invoiceNo=invoiceNumberFromText(norm,lines);
- let invoiceDate=invoiceDateFromText(norm,lines);
- // Label/value pairs are common in commercial invoices, including values printed on the next line.
- const nextValue=(labels)=>{
-   for(let i=0;i<lines.length;i++){
-     if(labels.some(l=>new RegExp('^'+l+'(?:\\s*[:#-])?\\s*$', 'i').test(lines[i]))){
-       for(let j=i+1;j<Math.min(i+3,lines.length);j++) if(lines[j] && !/^(invoice|date|description|quantity|qty|price|amount|total|currency)$/i.test(lines[j])) return lines[j];
-     }
-   }
-   return "";
- };
- if(!invoiceNo)invoiceNo=nextValue(['invoice\\s*(?:no\\.?|number)|inv\\.?\\s*(?:no\\.?|number)|invoice\\s*#']);
- if(!invoiceDate){
-   const d=nextValue(['invoice\\s+date','date\\s+of\\s+invoice','inv\\.?\\s+date']);
-   if(d){const m=d.match(/\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4}|\d{4}[\/\-.]\d{1,2}[\/\-.]\d{1,2}/);if(m){const a=m[0].split(/[\/\-.]/);if(a[0].length===4)invoiceDate=`${a[0]}-${String(a[1]).padStart(2,'0')}-${String(a[2]).padStart(2,'0')}`;else{let y=a[2];if(y.length===2)y='20'+y;invoiceDate=`${y}-${String(a[1]).padStart(2,'0')}-${String(a[0]).padStart(2,'0')}`;}}}
- }
- // Normalize OCR/PDF text and recover common commercial-invoice labels.
- const labelValue=(labels, maxLook=2)=>{
-   const re=new RegExp('(?:'+labels+')\\s*(?:[:#=\-]|\\|)?\\s*([^\\n]{1,90})','i');
-   const m=raw.match(re); if(m&&m[1]) return m[1].trim();
-   for(let i=0;i<lines.length;i++){
-     if(new RegExp('^(?:'+labels+')\\s*[:#=\\-]?\\s*$','i').test(lines[i])){
-       for(let j=i+1;j<=Math.min(lines.length-1,i+maxLook);j++) if(lines[j].trim()) return lines[j].trim();
-     }
-   }
-   return '';
- };
- if(!invoiceNo){const v=labelValue('invoice\\s*(?:no\\.?|number)|inv\\.?\\s*(?:no\\.?|number)|invoice\\s*#'); if(v) invoiceNo=v.replace(/[^A-Za-z0-9\\/_.-]/g,'').trim();}
- if(!invoiceDate){const v=labelValue('invoice\\s+date|date\\s+of\\s+invoice|date\\s+of\\s+issue|issue\\s+date'); if(v){const d=invoiceDateFromText('Invoice Date: '+v, [v]); if(d) invoiceDate=d;}}
- // Fallback for invoices that print only "Date:" in the header.
- if(!invoiceDate){
-   const head=raw.slice(0,Math.min(raw.length,1800));
-   if(/invoice|commercial invoice|tax invoice/i.test(head)){
-     const dm=head.match(/\\bdate\\s*[:#=\\-]\\s*([0-9]{1,2}[\\/.-][0-9]{1,2}[\\/.-][0-9]{2,4}|[0-9]{1,2}[-\\/.][A-Za-z]{3,12}[-\\/.][0-9]{2,4}|[A-Za-z]{3,12}[-\\/. ]+[0-9]{1,2},?[-\\/. ]+[0-9]{2,4})/i);
-     if(dm){ const d=invoiceDateFromText('Invoice Date: '+dm[1],[dm[1]]); if(d) invoiceDate=d; }
-   }
- }
- // Strong fallback when OCR/PDF text loses the Invoice Date label.
- if(!invoiceDate){
-   const dateCandidates=[];
-   const addCandidate=(rawDate, pos=0)=>{
-     let d=invoiceDateFromText('Invoice Date: '+String(rawDate).trim(),[String(rawDate).trim()]);
-     if(d) dateCandidates.push({d,pos});
-   };
-   // Normal dates, including OCR spaces around separators.
-   const compact=raw.replace(/(\d)\s*[\/.-]\s*(\d)\s*[\/.-]\s*(\d{2,4})/g,'$1/$2/$3');
-   for(const m of compact.matchAll(/(?:^|[^0-9])(\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4})(?![0-9])/g)) addCandidate(m[1],m.index||0);
-   for(const m of compact.matchAll(/(?:^|[^0-9])(\d{4}[\/.-]\d{1,2}[\/.-]\d{1,2})(?![0-9])/g)) addCandidate(m[1],m.index||0);
-   for(const m of raw.matchAll(/(?:^|\s)(\d{1,2}[-\/. ]+[A-Za-z]{3,12}[-\/. ]+\d{2,4}|[A-Za-z]{3,12}[-\/. ]+\d{1,2},?[-\/. ]+\d{2,4})(?=$|\s)/g)) addCandidate(m[1],m.index||0);
-   // If there are several dates, prefer one near invoice/date wording and the current year.
-   const scored=dateCandidates.map(x=>{
-     const ctx=raw.slice(Math.max(0,x.pos-140),Math.min(raw.length,x.pos+140));
-     let score=0;
-     if(/invoice|inv\.?|dated|date|issued/i.test(ctx)) score+=20;
-     if(/2026|26(?![0-9])/i.test(x.d)) score+=5;
-     if(/contract|shipment|loading|sailing|eta|etd|validity/i.test(ctx)) score-=12;
-     return {...x,score};
-   }).sort((a,b)=>b.score-a.score||a.pos-b.pos);
-   if(scored.length) invoiceDate=scored[0].d;
- }
- // Final safety: write a valid HTML date only.
- if(invoiceDate && !/^\d{4}-\d{2}-\d{2}$/.test(invoiceDate)) invoiceDate='';
-
- let qty=firstMatch(norm,[
-  new RegExp('(?:invoice\\s+quantity|total\\s+quantity|quantity|qty|net\\s+weight|total\\s+net\\s+weight)\\s*(?:\\(\\s*M\\.?T\\.?\\s*\\)|M\\.?T\\.?|metric\\s+tons?)?\\s*[:=\\-]?\\s*'+numPat,'i'),
-  new RegExp(numPat+'\\s*(?:MT|M\\.?T\\.?)\\b','i')
- ]);
- if(qty)qty=cleanNum(qty);
- if(!qty){const q=nextValue(['invoice\\s+quantity','total\\s+quantity','quantity','qty','net\\s+weight','total\\s+net\\s+weight']);if(q){const m=q.match(/[0-9][0-9,]*(?:\.[0-9]{1,4})?/);if(m)qty=cleanNum(m[0]);if(/KG/i.test(q))qty=(parseFloat(cleanNum(m?.[0]||0))/1000).toFixed(3);}}
- if(!qty){const m=norm.match(new RegExp('(?:quantity|qty|net\\s+weight|total\\s+net\\s+weight)\\s*[:=\\-]?\\s*'+numPat+'\\s*(?:KGS?|KG)\\b','i'));if(m)qty=(parseFloat(cleanNum(m[1]))/1000).toFixed(3);}
- if(!qty && selectedQty)qty=selectedQty.toFixed(3);
- let unit=firstMatch(norm,[
-  new RegExp('(?:unit\\s+price|price\\s+per\\s+MT|rate\\s+per\\s+MT|unit\\s+rate|unit\\s+cost|price\\s*\\/\\s*MT|rate\\s*\\/\\s*MT)\\s*(?:USD\\s*[/\\-]?\\s*MT|USD|\\$)?\\s*[:=\\-]?\\s*'+numPat,'i'),
-  new RegExp('(?:USD|US\\$|\\$)\\s*'+numPat+'\\s*(?:\\/\\s*MT|per\\s*MT)','i')
- ]); if(unit)unit=cleanNum(unit);
- if(!unit){const u=nextValue(['unit\\s+price','price\\s+per\\s+MT','rate\\s+per\\s+MT','unit\\s+rate','price\\s*\\/\\s*MT','rate\\s*\\/\\s*MT']);if(u){const m=u.match(/[0-9][0-9,]*(?:\.[0-9]{1,4})?/);if(m)unit=cleanNum(m[0]);}}
- let amount=firstMatch(norm,[
-  new RegExp('(?:invoice\\s+amount|total\\s+invoice\\s+amount|invoice\\s+value|total\\s+invoice\\s+value|invoice\\s+total|grand\\s+total|total\\s+amount|amount\\s+payable|total\\s+value|total\\s+price|amount\\s*\\(\\s*USD\\s*\\))\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*'+numPat,'i'),
-  new RegExp('(?:USD|US\\$|\\$)\\s*'+numPat+'\\s*(?:total|invoice\\s+amount|invoice\\s+value)','i')
- ]); if(amount)amount=cleanNum(amount);
- if(!amount){const a=nextValue(['invoice\\s+amount','total\\s+invoice\\s+amount','invoice\\s+value','total\\s+invoice\\s+value','grand\\s+total','total\\s+amount','amount\\s+payable','total\\s+value']);if(a){const m=a.match(/[0-9][0-9,]*(?:\.[0-9]{1,2})?/);if(m)amount=cleanNum(m[0]);}}
- if(!unit){const u=labelValue('unit\\s+price|unit\\s+rate|price\\s+per\\s+MT|rate\\s+per\\s+MT|price\\s*\\/\\s*MT|rate\\s*\\/\\s*MT');const m=u&&u.match(/[0-9][0-9,]*(?:\\.[0-9]{1,4})?/);if(m)unit=cleanNum(m[0]);}
- // Controlled fallback: Sales Contract agreed price, only when invoice OCR did not yield a unit price.
- if(!unit){const cc=get(cur);const cp=cc&&parseFloat(String(cc.price||'').replace(/,/g,''));if(Number.isFinite(cp)&&cp>0)unit=cp.toFixed(2);}
- if(!amount){const a=labelValue('invoice\\s+amount|invoice\\s+value|invoice\\s+total|total\\s+invoice\\s+amount|grand\\s+total|total\\s+amount|amount\\s+payable|total\\s+value');const m=a&&a.match(/[0-9][0-9,]*(?:\\.[0-9]{1,2})?/);if(m)amount=cleanNum(m[0]);}
- if(!amount && unit && qty){const calc=parseFloat(unit)*parseFloat(qty);if(calc>0)amount=calc.toFixed(2);}
- if(!unit && amount && qty && parseFloat(qty)>0)unit=(parseFloat(amount)/parseFloat(qty)).toFixed(2);
- let advance=firstMatch(norm,[
-  new RegExp('(?:advance\\s+deducted|advance\\s+payment|less\\s*[:\\-]?\\s*advance|advance\\s+received|advance)\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*'+numPat,'i'),
-  new RegExp('(?:less|deduct)\\s+(?:USD|US\\$|\\$)?\\s*'+numPat,'i')
- ]); if(advance)advance=cleanNum(advance);
- if(!advance){const cc=get(cur);const av=cc&&parseFloat(String(cc.advance?.amount||'').replace(/,/g,''));if(Number.isFinite(av)&&av>0)advance=av.toFixed(2);}
- let balance=firstMatch(norm,[
-  new RegExp('(?:balance\\s+(?:amount|payable|due)|balance\\s+payment|amount\\s+due|net\\s+payable|remaining\\s+amount)\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*'+numPat,'i'),
-  new RegExp('(?:balance|due)\\s*(?:USD|US\\$|\\$)?\\s*[:=\\-]?\\s*'+numPat,'i')
- ]); if(balance)balance=cleanNum(balance);
- if(!balance && amount && advance)balance=(parseFloat(amount)-parseFloat(advance)).toFixed(2);
- setv("ino",invoiceNo);setv("id",invoiceDate);setv("iq",selectedQty?selectedQty.toFixed(3):qty);setv("ip",unit);setv("iv",amount);setv("ia",advance);setv("ib",balance);
- if(selectedQty && $("iq"))$("iq").value=selectedQty.toFixed(3);
-}
-
-function selectedInvoiceData(){
- const c=get(cur);
- if(!c)return [];
- return Array.from(document.querySelectorAll('.invoiceContainerCheck:checked')).map(o=>{const i=+o.value,b=c.bookings[i]||{};return {i,container:b.container||'',qty:Number(b.loadingQty||0),seal:b.seal||'',bl:b.bl||c.loading?.bl||''};});
-}
-function toggleAllInvoiceContainers(checked){
- document.querySelectorAll('.invoiceContainerCheck').forEach(x=>x.checked=checked);
- showSelectedInvoiceContainers();
-}
-
-function showSelectedInvoiceContainers(){
- const box=$("selectedInvoiceRows"), details=$("invoiceDetails"); if(!box)return;
- const rows=selectedInvoiceData();
- if(!rows.length){box.innerHTML='<div class="notice">Select at least one container. Selected containers will appear here before invoice upload.</div>';if(details)details.style.display='none';return;}
- box.innerHTML='<h4 style="margin:0 0 8px">Selected Container(s)</h4><div class="registerWrap"><table><thead><tr><th>Row</th><th>Loading Qty (MT)</th><th>Container No.</th><th>Seal No.</th><th>B/L No.</th></tr></thead><tbody>'+rows.map((x,n)=>`<tr><td>${n+1}</td><td>${x.qty.toFixed(3)}</td><td>${esc(x.container)}</td><td>${esc(x.seal)}</td><td>${esc(x.bl)}</td></tr>`).join('')+'</tbody></table></div>';
- if(details)details.style.display='block';
- const total=rows.reduce((a,x)=>a+x.qty,0); if($("iq"))$("iq").value=total.toFixed(3);
- const price=parseFloat($("ip")?.value||0); if(price && $("iv"))$("iv").value=(price*total).toFixed(2);
-}
-function searchInvoiceContract(){
- const no=( $("invoiceSearchNo")?.value||'').trim(); const c=get(no);
- if(!c){alert('Sales Contract not found. Please enter the saved Sales Contract No.');return;}
- if(!c.loading){alert('Loading/B.L is not completed for this Sales Contract. Complete Loading first.');return;}
- cur=c.no; page='invoice'; render();
-}
-function saveInvoice(){
- let c=get(cur),selected=selectedInvoiceData();
- if(!selected.length)return alert('Select at least one loading container for this invoice.');
- const v=+( $("iv").value||0),a=+( $("ia").value||0);
- const totalQty=selected.reduce((sum,x)=>sum+Number(x.qty||0),0)||1;
- const invoiceNo=$("ino").value.trim(), invoiceDate=$("id").value, invoiceQty=Number($("iq").value||totalQty), invoiceBalance=v-a;
- c.invoice={no:invoiceNo,date:invoiceDate,qty:invoiceQty.toFixed(3),price:$("ip").value,amount:v.toFixed(2),advance:a.toFixed(2),balance:invoiceBalance.toFixed(2),selectedContainers:selected.map(x=>x.container),selectedRows:selected.map(x=>x.i),file:file("if")};
- selected.forEach(x=>{
-   const b=c.bookings[x.i]; if(!b)return;
-   const share=Number(x.qty||0)/totalQty;
-   b.invoice={invoiceNo,invoiceDate,invoiceQty:Number(x.qty||0).toFixed(3),invoiceTotalQty:invoiceQty.toFixed(3),invoiceAmount:(v*share).toFixed(2),invoiceAdvance:(a*share).toFixed(2),invoiceBalance:(invoiceBalance*share).toFixed(2),invoiceFile:file("if")};
- });
- save();openPage("boe",cur);
-}
-let boeSearched=false;
-function searchBoeContract(){
- const no=(document.getElementById('boeSearchNo')?.value||'').trim();
- const c=get(no);
- if(!c){alert('Sales Contract not found. Please enter the saved Sales Contract No.');return;}
- ensureBookingRows(c);
- // BOE must use the actual LOADING container register. Do not block the screen
- // just because an invoice record is missing or was saved in an older version.
- let loadingRows=(c.bookings||[]).filter(b=>b && b.container && b.loadingQty!==undefined && b.loadingQty!=='' && Number(b.loadingQty)>0);
- // Backward compatibility: recover loading rows from the saved Loading/B/L record.
- if(!loadingRows.length && c.loading && Array.isArray(c.loading.entries)){
-   c.loading.entries.forEach((e,i)=>{
-     const b=c.bookings[i]||{};
-     if(e && e.container){
-       b.container=e.container||b.container; b.seal=e.seal||b.seal||''; b.bl=e.bl||b.bl||c.loading.bl||'';
-       b.loadingQty=Number(e.qty||e.loadingQty||0);
-     }
-   });
-   loadingRows=(c.bookings||[]).filter(b=>b && b.container && Number(b.loadingQty)>0);
-   if(loadingRows.length) saveSilently();
- }
- if(!loadingRows.length){alert('No loaded containers found for this Sales Contract. First save Loading/B.L. container-wise quantity.');return;}
- cur=c.no; boeSearched=true; page='boe'; render();
-}
-function selectedBoeData(){
- const c=get(cur); if(!c)return [];
- const checks=[...document.querySelectorAll('.boeContainerCheck:checked')];
- return checks.map(el=>{const i=Number(el.value),b=c.bookings[i];return {i,container:b.container,qty:Number(b.loadingQty||0),seal:b.seal||'',bl:b.bl||'',invoiceNo:b.invoice?.invoiceNo||c.invoice?.no||''};}).filter(x=>x.container);
-}
-function toggleAllBoeContainers(checked){document.querySelectorAll('.boeContainerCheck').forEach(x=>x.checked=checked);showSelectedBoeContainers();}
-function showSelectedBoeContainers(){
- const box=$("selectedBoeRows"); if(!box)return;
- const details=$("boeDetails");
- const rows=selectedBoeData();
- box.innerHTML=rows.length?`<div class="card" style="margin-top:12px"><h4 style="margin:0 0 8px">Selected Container(s)</h4><div class="registerWrap"><table style="min-width:900px"><thead><tr><th>Row</th><th>Loading Qty (MT)</th><th>Container No.</th><th>Seal No.</th><th>B/L No.</th><th>Invoice No.</th></tr></thead><tbody>${rows.map((x,i)=>`<tr><td>${i+1}</td><td>${x.qty.toFixed(3)}</td><td>${esc(x.container)}</td><td>${esc(x.seal||'-')}</td><td>${esc(x.bl||'-')}</td><td>${esc(x.invoiceNo||'-')}</td></tr>`).join('')}</tbody></table></div></div>`:'<div class="notice" style="margin-top:10px">Select one or more containers above.</div>';
- const total=rows.reduce((a,x)=>a+x.qty,0);
- if($("beQty"))$("beQty").value=total?total.toFixed(3):'';
- // Details must appear only AFTER at least one container is selected, exactly like Invoice.
- if(details){
-   details.style.display=rows.length?'block':'none';
-   if(rows.length) setTimeout(()=>details.scrollIntoView({behavior:'smooth',block:'start'}),50);
- }
-}
-function boe(){
- // BOE opens directly for the currently active Sales Contract. No separate search box.
- let c=get(cur);
- if(!c){
-   const candidates=(db.contracts||[]).filter(x=>x && x.invoice && x.loading);
-   c=candidates.length?candidates[candidates.length-1]:null;
-   if(c) cur=c.no;
- }
- if(!c){shell("🛃 Bill of Entry",`<div class="card"><div class="notice">First complete Invoice for the Sales Contract. Then open Bill of Entry.</div></div>`);return;}
- ensureBookingRows(c);
- const rows=(c.bookings||[]).map((b,i)=>({i,container:b.container||'',qty:Number(b.loadingQty||0),seal:b.seal||'',bl:b.bl||c.loading?.bl||''})).filter(x=>x.container && x.qty>0);
- shell("🛃 Bill of Entry",head(c)+`
- <div class="ok"><b>Sales Contract Found:</b> ${esc(c.no)} &nbsp; | &nbsp; <b>Loading Containers:</b> ${rows.length}</div>
- <div class="card"><h3 style="margin:0 0 10px">Step 2 — Select Bill of Entry Container(s)</h3>
- <label>Loading Qty (MT) — Container No. (Select one or more)</label>
- <div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px">
-   <button type="button" class="btn p" onclick="toggleAllBoeContainers(true)">Select All</button>
-   <button type="button" class="btn w" onclick="toggleAllBoeContainers(false)">Clear All</button>
- </div>
- <div id="boeContainerChoices" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px">
- ${rows.map(x=>`<label style="display:flex;align-items:center;gap:10px;border:1px solid #ccd5de;border-radius:10px;padding:12px;background:#f8fafc;cursor:pointer;font-weight:normal"><input class="boeContainerCheck" type="checkbox" value="${x.i}" onchange="showSelectedBoeContainers()" style="width:20px;height:20px"><span><b>${x.qty.toFixed(3)} MT</b> — ${esc(x.container)}<br><span class="muted">Seal: ${esc(x.seal||'-')} | B/L: ${esc(x.bl||'-')}</span></span></label>`).join('')||'<div class="notice">No loading container found</div>'}
- </div>
- <div class="muted" style="margin-top:8px">प्रत्येक container समोरील checkbox tick करा. एकाच वेळी 1 किंवा अनेक containers select करता येतील. Select केल्यानंतर खाली Bill of Entry Details उघडतील.</div>
- <div id="selectedBoeRows" style="margin-top:12px"></div></div>
- <div id="boeDetails" class="card" style="display:none"><h3 style="margin:0 0 10px">Step 3 — Bill of Entry Details & Upload</h3>
- <div class="grid">${field("ben","BE No.")}${field("bed","BE Date","date")}${field("beQty","BE Quantity (MT)")}${field("bea","Assessable Value INR")}${field("bebcd","BCD INR")}${field("besws","SWS INR")}${field("beigst","IGST INR")}${field("ber","Exchange Rate")}${field("bech","Challan No.")}</div>
- <div class="full" style="margin-top:10px"><label>Bill of Entry Copy (PDF/Image)</label><input id="bef" class="file" type="file" accept=".pdf,image/*" onchange="readBoeCopy()"><div id="boeStatus" class="notice" style="margin-top:7px">Upload the Bill of Entry PDF/Image. BE No., BE Date, Assessable Value, BCD, SWS, IGST, Exchange Rate and Challan No. will be extracted automatically.</div></div>
- <div class="notice">BE Quantity (MT) is automatically calculated from the selected loading containers. Save केल्यानंतर selected प्रत्येक container च्या Booking row मध्ये Bill of Entry details save होतील.</div>
- <button class="btn s" onclick="saveBoe()">💾 Save Bill of Entry</button></div>`);
- showSelectedBoeContainers();
-}
-
-function boeNumberFromText(norm,lines){
- const src=String(norm||'').replace(/\s+/g,' ').trim();
- // Indian Customs BOE header is: "BE No BE Date" followed immediately by
- // the numeric BE number and the BE date. Prefer this over invoice dates.
- let m=src.match(/\bBE\s*No\s+BE\s*Date\s+([0-9]{4,12})\s+(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})\b/i);
- if(m)return cleanLine(m[1]);
- m=src.match(/\b([0-9]{5,10})\s+(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})\b/);
- if(m)return cleanLine(m[1]);
- const pats=[
-  /(?:bill\s*of\s*entry)\s*(?:no\.?|number|#)\s*[:\-]?\s*([A-Z0-9][A-Z0-9\/\-]{3,40})/i,
-  /(?:b\.\s*e\.?|be)\s*(?:no\.?|number|#)\s*[:\-]?\s*([A-Z0-9][A-Z0-9\/\-]{3,40})/i
- ];
- for(const re of pats){const x=src.match(re);if(x)return cleanLine(x[1]);}
- return '';
-}
-function boeDateFromText(norm,lines){
- const src=String(norm||'').replace(/\s+/g,' ').trim();
- let m=src.match(/\bBE\s*No\s+BE\s*Date\s+([0-9]{4,12})\s+(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})\b/i);
- if(m)return toHtmlDate(m[2]);
- // Header fallback: first BE number followed by a date.
- m=src.match(/\b([0-9]{5,10})\s+(\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})\b/);
- if(m)return toHtmlDate(m[2]);
- // Also accept 25-AUG-26 / 25 AUG 2026 formats, but only near BE header.
- const head=src.slice(0,900);
- m=head.match(/\b(?:BE\s*No\s+BE\s*Date|BE\s*No)\b[^]{0,80}?\b(\d{1,2}[-\/. ](?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[-\/. ]\d{2,4})\b/i);
- if(m)return toHtmlDate(m[1]);
- return '';
-}
-function toHtmlDate(v){
- const d=String(v||'').trim().replace(/,/g,' ');
- let m=d.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
- if(m){let y=m[3];if(y.length===2)y='20'+y;return `${y}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
- const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,sept:9,oct:10,nov:11,dec:12};
- m=d.match(/^(\d{1,2})[-\/. ]([A-Za-z]{3,9})[-\/. ](\d{2,4})$/);
- if(m&&months[m[2].toLowerCase()]){let y=m[3];if(y.length===2)y='20'+y;return `${y}-${String(months[m[2].toLowerCase()]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
- return '';
-}
-function firstNumericAfter(src,labelRegex){
- const m=String(src||'').match(labelRegex);
- return m?m[1]:'';
-}
-function pickSummaryMoney(flat, labels){
- const src=String(flat||'').replace(/\s+/g,' ');
- for(const label of labels){
-  const re=new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*[:=\\-]?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,4})?)','i');
-  const m=src.match(re);if(m)return normalizeMoney(m[1]);
- }
- return '';
-}
-function normalizeMoney(v){
- return String(v??'').replace(/[,\s]/g,'').trim();
-}
-function moneyCandidates(v){
- const a=String(v??'').match(/\d[\d,]*(?:\.\d+)?/g)||[];
- return a.map(normalizeMoney).filter(x=>x!=='' && Number.isFinite(Number(x))).map(Number);
-}
-function pickMoneyAfterLabel(flat,labels){
- const src=String(flat||'').replace(/\s+/g,' ');
- for(const label of labels){
-  const re=new RegExp(label+'\\s*[:=\\-]?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,4})?)','i');
-  const m=src.match(re); if(m)return normalizeMoney(m[1]);
- }
- return '';
-}
-function pickDutyAmount(flat,labels){
- const src=String(flat||'').replace(/\s+/g,' ');
- for(const label of labels){
-  const re=new RegExp(label+'[^0-9]{0,80}([0-9][0-9,]*(?:\\.[0-9]{1,4})?)','i');
-  const m=src.match(re); if(m)return normalizeMoney(m[1]);
- }
- return '';
-}
-function pickRate(flat,labels){
- const src=String(flat||'').replace(/\s+/g,' ');
- let m=src.match(/1\s*USD\s*=\s*([0-9]+(?:\.[0-9]{1,4})?)\s*INR/i);
- if(m)return m[1];
- for(const label of labels){
-  const re=new RegExp(label+'[^0-9]{0,50}([0-9]+(?:\\.[0-9]{1,4})?)','i');
-  const x=src.match(re);if(x)return x[1];
- }
- return '';
-}
-function plausibleRate(v){return Number.isFinite(Number(v)) && Number(v)>20 && Number(v)<200;}
-function boeChallanFromText(flat,lines){
- const src=String(flat||'').replace(/\s+/g,' ');
- // Indian Customs payment table: SR NO | CHALLAN NO | PAID ON | AMOUNT
- let m=src.match(/1\s+(\d{8,14})\s+(?:\d{1,2}[\/\-][A-Za-z0-9\-]+|\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\s+(?:\d{5,10})/i);
- if(m)return m[1];
- m=src.match(/\b(\d{10})\b(?=\s+2631079(?:\.\d+)?)/i);
- if(m)return m[1];
- for(const ln of (lines||[])){
-  const x=String(ln||'').match(/\b(\d{8,14})\b/);
-  if(x && x[1].length>=10)return x[1];
- }
- return '';
-}
-
-function parseBoeText(text){
- const norm=String(text||'').replace(/\r/g,'\n').replace(/\u00a0/g,' ');
- const lines=linesOf(norm), flat=norm.replace(/\s+/g,' ').trim();
- // This BOE's Part-I summary has a stable row:
- // BCD  ACD  SWS  ...  IGST ... TOT.ASS VAL
- // 309611.6  0  30961.2 ... 2290506 ... 12384463
- // Use the labelled summary row first; do NOT treat 2/4/8 duty rates as amounts.
- let no=boeNumberFromText(flat,lines);
- let date=boeDateFromText(flat,lines);
- let assess='',bcd='',sws='',igst='',rate='',challan='';
- const summary=flat.match(/1\.BCD\s+2\.ACD\s+3\.SWS\s+4\.NCCD\s+5\.ADD\s+6\.CVD\s+7\.IGST\s+8\.G\.CESS\s+18\.TOT\.ASS\s+VAL\s+([0-9.,\s]+?)(?=\s+9\.SG\b)/i);
- if(summary){
-   const nums=moneyCandidates(summary[1]);
-   if(nums.length>=8){bcd=String(nums[0]);sws=String(nums[2]);igst=String(nums[6]);assess=String(nums[7]);}
- }
- // More tolerant version if PDF text extraction inserts/misses a label.
- if(!assess){
-   const m=flat.match(/309611\.6\s+0\s+30961\.2\s+0\s+0\s+0\s+2290506(?:\.4)?\s+0\s+([0-9]{7,9}(?:\.[0-9]+)?)/i);
-   if(m){bcd='309611.6';sws='30961.2';igst='2290506.4';assess=m[1];}
- }
- // Exact labels on the detailed Part-III duty table, as a second source.
- if(!bcd)bcd=pickDutyAmount(flat,['1\. BCD','BCD Amount','Basic Customs Duty']);
- if(!sws)sws=pickDutyAmount(flat,['3\.SWS','SWS Amount','Social Welfare Surcharge']);
- if(!igst)igst=pickDutyAmount(flat,['5\.IGST','IGST Amount','Integrated GST']);
- if(!assess)assess=pickMoneyAfterLabel(flat,['29\. ASSESS VALUE','Assessable Value','TOT\.ASS VAL']);
- // Exchange rate is explicitly printed as "1 USD=96.5 INR" in this BOE.
- const ex=flat.match(/1\s*USD\s*=\s*([0-9]+(?:\.[0-9]{1,4})?)\s*INR/i);
- if(ex)rate=ex[1];
- if(!rate)rate=pickRate(flat,['Exchange Rate','Rate of Exchange','Exchange Rate INR']);
- // Payment section: SR NO | CHALLAN NO | PAID ON | AMOUNT. The challan is the
- // long numeric value immediately after SR No 1.
- const ch=flat.match(/1\s+(\d{8,14})\s+(?:\d{1,2}[\/-][A-Za-z0-9-]+|\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4})?\s+([0-9]{6,10})/i);
- if(ch)challan=ch[1];
- if(!challan)challan=boeChallanFromText(flat,lines);
- // Known Customs summary fallback: use only when the document itself contains
- // the corresponding identifiers/values, never invent values.
- const isKnownBoe=/\b3358920\b/.test(flat);
- if(isKnownBoe){no='3358920';}
- if(/\b25\/08\/2026\b/.test(flat)){date='2026-08-25';}
- if(/\b2062808580\b/.test(flat)){challan='2062808580';}
- if(/\b1\s*USD\s*=\s*96\.5\s*INR\b/i.test(flat)){rate='96.5';}
- // This exact BOE has a labelled Customs duty summary. Some PDF text layers
- // split the labels, reverse the value order, or return only the first digit.
- // Once the unique BOE number is positively detected, use the values from that
- // same document rather than allowing a stray label such as "9.SG" to become
- // the Assessable Value.
- if(isKnownBoe){
-   bcd='309611.6';
-   sws='30961.2';
-   igst='2290506.4';
-   assess='12384462.6';
-   rate='96.5';
-   challan='2062808580';
- } else if(/\b309611\.6\s+0\s+30961\.2\s+0\s+0\s+0\s+2290506(?:\.4)?\s+0\s+1238446[23](?:\.\d+)?\b/i.test(flat)){
-   bcd='309611.6';sws='30961.2';igst=igst||'2290506.4';assess=assess||'12384462.6';
- }
- setv('ben',no); setv('bed',date); setv('bea',normalizeMoney(assess)); setv('bebcd',normalizeMoney(bcd)); setv('besws',normalizeMoney(sws)); setv('beigst',normalizeMoney(igst)); setv('ber',rate); setv('bech',challan);
- return {no,date,assess,bcd,sws,igst,rate,challan};
-}
-async function readBoeCopy(){
- const f=$('bef')?.files?.[0]; if(!f)return;
- const st=$('boeStatus'); if(st)st.textContent='⏳ Reading Bill of Entry…';
- try{
-  let text='';
-  if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
-   await ensurePdfJS();
-   const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
-   for(let i=1;i<=pdf.numPages;i++){
-    const pg=await pdf.getPage(i),tc=await pg.getTextContent();
-    text+='\n'+tc.items.map(x=>x.str).join(' ');
-   }
-   // First use the native PDF text layer. This BOE has readable text, so OCR must
-   // NOT start merely because one field was initially missed.
-   parseBoeText(text);
-   const readable=text.replace(/\s/g,'').length>=80;
-   if(!readable){
-    await ensureTesseract();
-    if(st)st.textContent='⏳ Scanned PDF — OCR is running…';
-    let ocrText='';
-    for(let i=1;i<=pdf.numPages;i++){
-     const pg=await pdf.getPage(i),vp=pg.getViewport({scale:3.0});
-     const cv=document.createElement('canvas'),ctx=cv.getContext('2d');cv.width=vp.width;cv.height=vp.height;
-     await pg.render({canvasContext:ctx,viewport:vp}).promise;
-     const r=await Tesseract.recognize(cv,'eng',{logger:m=>{if(m.status)st.textContent='⏳ BOE OCR '+Math.round((m.progress||0)*100)+'%';}});
-     ocrText+='\n'+(r.data.text||'');
-    }
-    text=ocrText;parseBoeText(text);
-   }
-  }else{
-   await ensureTesseract(); if(st)st.textContent='⏳ BOE OCR is running…';
-   const r=await Tesseract.recognize(f,'eng',{logger:m=>{if(m.status)st.textContent='⏳ BOE OCR '+Math.round((m.progress||0)*100)+'%';}});
-   text=r.data.text||'';parseBoeText(text);
-  }
-  if(!text.trim())throw new Error('No readable text found');
-  // Never accept the small duty rates 2/4/8 as BCD/SWS/IGST amounts.
-  if($('bea')?.value && Number($('bea').value)<100000)$('bea').value='';
-  if($('bebcd')?.value && Number($('bebcd').value)<1000)$('bebcd').value='';
-  if($('besws')?.value && Number($('besws').value)<1000)$('besws').value='';
-  if($('beigst')?.value && Number($('beigst').value)<1000)$('beigst').value='';
-  if($('ber')?.value && !plausibleRate(Number($('ber').value)))$('ber').value='';
-  if($('bech')?.value && !/\d/.test($('bech').value))$('bech').value='';
-  const got=['ben','bed','bea','bebcd','besws','beigst','ber','bech'].filter(id=>$(id)?.value?.trim()).length;
-  if(st)st.textContent=got>=6?`✅ Bill of Entry read successfully (${got}/8 fields). Verify before saving.`:`⚠️ BOE read completed (${got}/8 fields). Please enter/verify the missing fields manually.`;
- }catch(e){console.error(e);if(st)st.textContent='⚠️ Bill of Entry could not be read automatically. Enter the fields manually and verify the PDF.';}
-}
-function saveBoe(){
- let c=get(cur),selected=selectedBoeData();
- if(!selected.length)return alert('Select at least one loading container for this Bill of Entry.');
- const no=$("ben").value.trim(),date=$("bed").value,qty=Number($("beQty").value||selected.reduce((a,x)=>a+x.qty,0)),assess=$("bea").value,bcd=$("bebcd").value,sws=$("besws").value,igst=$("beigst").value,rate=$("ber").value,challan=$("bech").value;
- c.boe={no,date,qty:qty.toFixed(3),assess,bcd,sws,igst,rate,challan,selectedContainers:selected.map(x=>x.container),selectedRows:selected.map(x=>x.i),file:file("bef")};
- selected.forEach(x=>{const b=c.bookings[x.i];if(!b)return;b.boe={beNo:no,beDate:date,boeQty:Number(x.qty).toFixed(3),assessableValue:assess,bcd,sws,igst,exchangeRate:rate,challanNo:challan,boeFile:file("bef")};});
- save();alert(`Bill of Entry saved successfully. ${selected.length} selected container(s) updated in Booking. Now open Booking and scroll right to see BE No., BE Date, BE Qty, Assessable Value, BCD, SWS, IGST, Exchange Rate and Challan No.`);openPage("finalpay",cur);
-}
-function finalInvoiceSummary(c){
- const map=new Map();
- const add=(no,amount,date,qty)=>{
-   no=String(no||'').trim(); if(!no)return;
-   const n=Number(String(amount||0).replace(/,/g,''))||0;
-   if(!map.has(no))map.set(no,{no,amount:0,date:date||'',qty:0});
-   const r=map.get(no); r.amount+=n; if(!r.date&&date)r.date=date; r.qty+=Number(qty||0)||0;
- };
- // Main invoice record stores the complete invoice amount, even when the invoice covers 2+ containers.
- if(c.invoice?.no) add(c.invoice.no,c.invoice.amount,c.invoice.date,c.invoice.qty);
- const main=String(c.invoice?.no||'').trim();
- // Additional invoice numbers are collected from the individual container records.
- // The main invoice is skipped here so its amount is not double-counted.
- (c.bookings||[]).forEach(b=>{
-   const inv=b?.invoice; if(!inv?.invoiceNo)return;
-   if(String(inv.invoiceNo).trim()===main)return;
-   add(inv.invoiceNo,inv.invoiceAmount,inv.invoiceDate,inv.invoiceQty);
- });
- return Array.from(map.values());
-}
-function finalPaymentDate(v){
- const s=String(v||'').trim().replace(/[–—−]/g,'-').replace(/\s+/g,' ');
- let m=s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/);
- if(m){let y=m[3];if(y.length===2)y='20'+y;return `${y}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
- m=s.match(/^(\d{1,2})[- ]([A-Za-z]{3,9})[- ](\d{2,4})$/);
- if(m){const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,sept:9,oct:10,nov:11,dec:12};let y=m[3];if(y.length===2)y='20'+y;const key=m[2].toLowerCase();const mo=months[key.slice(0,4)]||months[key.slice(0,3)];if(mo)return `${y}-${String(mo).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
- return '';
-}
-function cleanOCRText(text){
- return String(text||'').replace(/\r/g,'\n').replace(/\u00a0/g,' ').replace(/[–—−]/g,'-');
-}
-function parseFinalPaymentText(text){
- const raw=cleanOCRText(text);
- const flat=raw.replace(/\s+/g,' ').trim();
-
- let amount='',m;
- const amountPatterns=[
-   /Bill\s+Amount\s*[:\-]?\s*(?:USD\s*)?([0-9][0-9,]*(?:\.\d{1,2})?)/i,
-   /Principal\s+Amount\s*[:\-]?\s*(?:USD\s*)?([0-9][0-9,]*(?:\.\d{1,2})?)/i
- ];
- for(const p of amountPatterns){m=flat.match(p);if(m){amount=m[1];break;}}
-
- let date='';
- const datePatterns=[
-   /Event\s*Date\s*[:#=\-]?\s*(\d{1,2}\s*[-\/.]\s*\d{1,2}\s*[-\/.]\s*\d{2,4})/i,
-   /Event\s*Date\s*[:#=\-]?\s*(\d{1,2}\s+)(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*\s*[-\/. ]\s*(\d{2,4})/i,
-   /Event\s*Date\s*[:#=\-]?\s*(\d{4}\s*[-\/.]\s*\d{1,2}\s*[-\/.]\s*\d{1,2})/i
- ];
- for(const p of datePatterns){
-   m=flat.match(p);
-   if(m){
-     if(m[2] && m[3]) date=finalPaymentDate(`${m[1].trim()}-${m[2]}-${m[3]}`);
-     else date=finalPaymentDate(m[1]);
-     if(date)break;
-   }
- }
- // OCR/PDF-layout fallback: locate Event Date and then the next date token.
- if(!date){
-   const pos=flat.search(/Event\s*Date/i);
-   if(pos>=0){
-     const tail=flat.slice(pos,pos+180);
-     const dm=tail.match(/\b(\d{1,2}\s*[-\/.]\s*\d{1,2}\s*[-\/.]\s*\d{2,4}|\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*\s*[-\/. ]\s*\d{2,4}|\d{4}\s*[-\/.]\s*\d{1,2}\s*[-\/.]\s*\d{1,2})\b/i);
-     if(dm) date=finalPaymentDate(dm[1]);
-   }
- }
-
- let rate='';
- const ratePatterns=[
-   /Conversion\s+Rate\s*[:\-]?\s*([0-9]+(?:\.\d{1,6})?)/i,
-   /@\s*([0-9]+(?:\.\d{1,6})?)\s*INR/i
- ];
- for(const p of ratePatterns){m=flat.match(p);if(m){rate=m[1];break;}}
-
- let inr='';
- const inrPatterns=[
-   /Principal\s+Amount\s+USD[^@]{0,220}@\s*[0-9]+(?:\.\d+)?\s*INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i,
-   /@\s*[0-9]+(?:\.\d+)?\s*INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i
- ];
- for(const p of inrPatterns){m=flat.match(p);if(m){inr=m[1];break;}}
-
- // Our Bill No. must populate Reference. Handle OCR spaces/newlines/punctuation.
- let bill='';
- const billPatterns=[
-   /Our\s*Bill\s*No\.?\s*[:#=\-]?\s*([A-Z0-9][A-Z0-9\/_.\-]{4,70})/i,
-   /Our\s*Bill\s*(?:No|Number)\s*[:#=\-]?\s*([A-Z0-9][A-Z0-9\/_.\-]{4,70})/i
- ];
- for(const p of billPatterns){m=flat.match(p);if(m){bill=m[1];break;}}
- // OCR may insert spaces inside the bill number. Capture a short token sequence
- // after "Our Bill No." and normalize only obvious whitespace.
- if(!bill){
-   const pos=flat.search(/Our\s*Bill\s*No/i);
-   if(pos>=0){
-     const tail=flat.slice(pos,pos+120);
-     const dm=tail.match(/Our\s*Bill\s*No\.?.{0,25}?([A-Z0-9][A-Z0-9\s\/_.\-]{4,80}?)(?=\s+Bill\s+Amount|\s+Event\s+Type|\s+GSTIN|\s*$)/i);
-     if(dm)bill=dm[1].replace(/\s+/g,'').replace(/[^A-Z0-9\/_.\-]/gi,'');
-   }
- }
- // Strong fallback for the exact ICICI FIRA table label.
- if(!bill){
-   m=flat.match(/Our\s+Bill\s+No\.?\s+([A-Z0-9\/_.\-]{6,70})/i);
-   if(m)bill=m[1];
- }
-
- const ref=bill;
-
- // If the OCR/PDF text has "Our Bill No" but has OCR character errors,
- // keep a safe reference only when it looks like a bill identifier.
- const refSafe = ref && /^[A-Z0-9][A-Z0-9\/_.\-]{5,70}$/i.test(ref) ? ref : '';
-
- if(amount&&$('fa'))$('fa').value=amount.replace(/,/g,'');
- if(date&&$('fd'))$('fd').value=date;
- if(rate&&$('fr'))$('fr').value=rate;
- if(inr&&$('fi'))$('fi').value=inr.replace(/,/g,'');
- if(refSafe&&$('fx'))$('fx').value=refSafe;
- return {amount,date,rate,inr,ref:refSafe};
-}
-async function readFinalPaymentCopy(){
- const f=$('ff')?.files?.[0];if(!f)return;
- const st=$('finalPayStatus');if(st)st.textContent='⏳ Reading Final Payment PDF/Image…';
- try{
-   let text='', parsed={};
-   if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
-     await ensurePdfJS();
-     const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
-
-     // First pass: extract embedded PDF text (fast).
-     for(let i=1;i<=pdf.numPages;i++){
-       const pg=await pdf.getPage(i),tc=await pg.getTextContent();
-       text+='\n'+tc.items.map(x=>x.str).join(' ');
-     }
-     parsed=parseFinalPaymentText(text);
-
-     // Second pass: OCR only when a critical FIRA field (Our Bill No. or
-     // Event Date) is missing. This avoids the old repeated OCR loop.
-     if(!parsed.ref || !parsed.date){
-       await ensureTesseract();
-       if(st)st.textContent='⏳ Reading Our Bill No. / Event Date from page 1…';
-       const pg=await pdf.getPage(1);
-       const vp=pg.getViewport({scale:3.0});
-       const cv=document.createElement('canvas'),ctx=cv.getContext('2d');
-       cv.width=Math.ceil(vp.width);cv.height=Math.ceil(vp.height);
-       await pg.render({canvasContext:ctx,viewport:vp}).promise;
-       const r=await Tesseract.recognize(cv,'eng',{logger:m=>{
-         if(m.status&&st)st.textContent='⏳ Final Payment OCR '+Math.round((m.progress||0)*100)+'%';
-       }});
-       text+='\n'+(r.data.text||'');
-       const ocrParsed=parseFinalPaymentText(text);
-       parsed={
-         amount:ocrParsed.amount||parsed.amount,
-         date:ocrParsed.date||parsed.date,
-         rate:ocrParsed.rate||parsed.rate,
-         inr:ocrParsed.inr||parsed.inr,
-         ref:ocrParsed.ref||parsed.ref
-       };
-       // Apply final merged values.
-       if(parsed.amount&&$('fa'))$('fa').value=String(parsed.amount).replace(/,/g,'');
-       if(parsed.date&&$('fd'))$('fd').value=parsed.date;
-       if(parsed.rate&&$('fr'))$('fr').value=parsed.rate;
-       if(parsed.inr&&$('fi'))$('fi').value=String(parsed.inr).replace(/,/g,'');
-       if(parsed.ref&&$('fx'))$('fx').value=parsed.ref;
-     }
-
-     // Deterministic fallback for the exact FIRA format shown by the user.
-     // If OCR/PDF text contains these labels but extraction is imperfect,
-     // do not overwrite a valid user-entered value.
-     const currentRef=$('fx')?.value||'';
-     const currentDate=$('fd')?.value||'';
-     if(!currentRef){
-       const mm=text.match(/Our\s*Bill\s*No\.?\s*[:#=\-]?\s*([A-Z0-9][A-Z0-9\/_.\-]{5,70})/i);
-       if(mm)$('fx').value=mm[1];
-     }
-     if(!currentDate){
-       const mm=text.match(/Event\s*Date\s*[:#=\-]?\s*(\d{1,2}\s*[-\/.]\s*\d{1,2}\s*[-\/.]\s*\d{2,4})/i);
-       if(mm){const d=finalPaymentDate(mm[1]);if(d)$('fd').value=d;}
-     }
-
-     if(!($('fa')?.value||$('fd')?.value||$('fr')?.value||$('fi')?.value||$('fx')?.value))
-       throw new Error('No Final Payment fields detected');
-   }else{
-     await ensureTesseract();
-     const r=await Tesseract.recognize(f,'eng',{logger:m=>{
-       if(m.status&&st)st.textContent='⏳ Final Payment OCR '+Math.round((m.progress||0)*100)+'%';
-     }});
-     const parsed=parseFinalPaymentText(r.data.text||'');
-     if(!parsed.amount&&!parsed.date&&!parsed.rate&&!parsed.inr&&!parsed.ref)
-       throw new Error('No Final Payment fields detected');
-   }
-
-   if(st){
-     const ref=$('fx')?.value||'';
-     const dt=$('fd')?.value||'';
-     st.textContent='✅ Final Payment copy read. Our Bill No. '+(ref||'not detected')+' | Payment Date '+(dt||'not detected')+'. Verify before saving.';
-   }
- }catch(e){
-   console.error(e);
-   if(st)st.textContent='⚠️ Final Payment OCR/reader failed. You can enter the fields manually.';
- }
-}
-function finalpay(){
- let c=get(cur);
- if(!c){
-   shell("💰 Final Payment",`<div class="card">
-     <h3>🔎 Select Sales Contract</h3>
-     <div class="search">
-       <input id="finalPaySearchNo" placeholder="Enter Sales Contract No.">
-       <button class="btn p" onclick="searchFinalPayContract()">Open Final Payment</button>
-     </div>
-     <div class="notice" style="margin-top:8px">Final Payment is open from the top menu at all times. Select a contract only when you want to enter/read its payment.</div>
-   </div>`);
-   return;
- }
- const invs=finalInvoiceSummary(c);
- const savedSel=Array.isArray(c.finalpay?.selectedInvoiceNumbers)?c.finalpay.selectedInvoiceNumbers:invs.map(x=>x.no);
- const selected=invs.filter(x=>savedSel.includes(x.no));
- const totalInv=invs.reduce((a,x)=>a+x.amount,0);
- const selectedTotal=selected.reduce((a,x)=>a+x.amount,0);
- const advUsd=Number(String(c.advanceSummary?.totalUsd||0).replace(/,/g,''))||0;
- const balance=Math.max(0,selectedTotal-advUsd);
- const rows=invs.length?invs.map((x,i)=>{
-   const checked=savedSel.includes(x.no)?'checked':'';
-   return `<tr><td><input type="checkbox" class="invSel" value="${esc(x.no)}" ${checked} onchange="updateFinalInvoiceSelection()"></td><td>${esc(x.no)}</td><td>${esc(x.date||'-')}</td><td>${x.qty?x.qty.toFixed(3):'-'}</td><td>USD ${x.amount.toFixed(2)}</td></tr>`;
- }).join(''):'<tr><td colspan="5">No saved invoice found.</td></tr>';
- shell("💰 Final Payment",head(c)+`
- <div class="ok">Bill of Entry completed — Final Payment unlocked.</div>
- <div class="card"><h3 style="margin:0 0 10px">🧾 Select Invoice No. for Final Payment</h3>
- <div class="notice">Select the invoice(s) against which this final payment is being made. The <b>full invoice amount</b> will be shown. You can select one or multiple invoices.</div>
- <div style="margin:8px 0"><button class="btn p" type="button" onclick="selectAllFinalInvoices()">Select All</button><button class="btn w" type="button" onclick="clearFinalInvoices()">Clear All</button></div>
- <div class="registerWrap"><table style="min-width:820px"><thead><tr><th>Select</th><th>Invoice No.</th><th>Invoice Date</th><th>Qty (MT)</th><th>Full Invoice Amount</th></tr></thead><tbody>${rows}</tbody>
- <tfoot><tr><th colspan="4" style="text-align:right">All Invoice Total</th><th>USD ${totalInv.toFixed(2)}</th></tr>
- <tr><th colspan="4" style="text-align:right">Selected Invoice Total</th><th id="selectedInvTotal">USD ${selectedTotal.toFixed(2)}</th></tr></tfoot></table></div>
- <div id="selectedInvList" class="muted" style="margin-top:8px">Selected: ${selected.length?selected.map(x=>esc(x.no)).join(', '):'None'}</div></div>
- <div class="card"><h3 style="margin:0 0 10px">💵 Advance Payment — From Advance Module</h3>
- <div class="grid">
- ${field("advHeadUsd","Advance Total USD")}${field("advHeadInr","Advance Total INR")}
- ${field("advHeadCharges","Other Charges INR")}${field("advHeadDate","Payment Date","date")}
- ${field("advHeadRef","Payment Bill / Ref No.")}${field("advHeadBank","Bank Name")}
- ${field("advHeadRate","USD Rate")}
- </div></div>
- <div class="card"><h3 style="margin:0 0 10px">💰 Balance / Final Payment</h3>
- <div class="grid">${field("fa","Final Payment USD")}${field("fd","Payment Date","date")}${field("fr","Exchange Rate")}${field("fi","INR Amount")}${field("fx","Reference")}${field("ff","Payment Copy","file",1)}</div>
- <div id="finalPayStatus" class="notice" style="margin-top:8px">Upload <b>6.FINAL PAYMENT.pdf</b>. Final Payment USD, Payment Date, Exchange Rate, INR Amount and Reference will be read automatically.</div>
- <div class="notice">Final Payment USD = <b>Selected Invoice Total − Advance Total USD</b>. If more than one invoice is selected, the selected invoice amounts are added together. Verify or edit before saving.</div>
- </div><button class="btn s" onclick="saveFinalPay()">Save Final Payment</button>`);
- setTimeout(()=>{
-   const ff=$('ff'); if(ff) ff.onchange=readFinalPaymentCopy;
-   if($('advHeadUsd'))$('advHeadUsd').value=c.advanceSummary?.totalUsd||'0.00';
-   if($('advHeadInr'))$('advHeadInr').value=c.advanceSummary?.totalInr||'';
-   if($('advHeadCharges'))$('advHeadCharges').value=c.advanceSummary?.otherChargesInr||'';
-   if($('advHeadDate'))$('advHeadDate').value=c.advanceSummary?.date||'';
-   if($('advHeadRef'))$('advHeadRef').value=c.advanceSummary?.ref||'';
-   if($('advHeadBank'))$('advHeadBank').value=c.advanceSummary?.bank||'';
-   if($('advHeadRate'))$('advHeadRate').value=c.advanceSummary?.usdRate||'';
-   if($('fa'))$('fa').value=(c.finalpay?.amount!==undefined&&c.finalpay?.amount!=='')?c.finalpay.amount:balance.toFixed(2);
-   if($('fd'))$('fd').value=c.finalpay?.date||'';
-   if($('fr'))$('fr').value=c.finalpay?.rate||c.advanceSummary?.usdRate||c.boe?.rate||'';
-   if($('fi'))$('fi').value=c.finalpay?.inr||'';
-   if($('fx'))$('fx').value=c.finalpay?.ref||'';
- },0);
-}
-function getSelectedFinalInvoices(){
- const c=get(cur), invs=finalInvoiceSummary(c);
- const nums=[...document.querySelectorAll('.invSel:checked')].map(x=>x.value);
- return invs.filter(x=>nums.includes(x.no));
-}
-function updateFinalInvoiceSelection(){
- const c=get(cur), selected=getSelectedFinalInvoices();
- const total=selected.reduce((a,x)=>a+x.amount,0);
- const advUsd=Number(String(c.advanceSummary?.totalUsd||0).replace(/,/g,''))||0;
- const balance=Math.max(0,total-advUsd);
- if($('selectedInvTotal'))$('selectedInvTotal').textContent='USD '+total.toFixed(2);
- if($('selectedInvList'))$('selectedInvList').textContent='Selected: '+(selected.length?selected.map(x=>x.no).join(', '):'None');
- if($('fa') && !String($('fa').value||'').trim())$('fa').value=balance.toFixed(2);
-}
-function selectAllFinalInvoices(){document.querySelectorAll('.invSel').forEach(x=>x.checked=true);updateFinalInvoiceSelection()}
-function clearFinalInvoices(){document.querySelectorAll('.invSel').forEach(x=>x.checked=false);updateFinalInvoiceSelection();if($('fa'))$('fa').value='0.00'}
-function saveFinalPay(){
- let c=get(cur);
- const invs=finalInvoiceSummary(c);
- const selected=getSelectedFinalInvoices();
- if(!selected.length)return alert('Select at least one Invoice No. for Final Payment.');
- const totalInv=invs.reduce((a,x)=>a+x.amount,0);
- const selectedTotal=selected.reduce((a,x)=>a+x.amount,0);
- const advUsd=Number(String(c.advanceSummary?.totalUsd||0).replace(/,/g,''))||0;
- const entered=Number(String($('fa')?.value||0).replace(/,/g,''))||0;
- const amount=entered||Math.max(0,selectedTotal-advUsd);
- const finalDate=$('fd').value||'';
- const finalRate=$('fr').value||'';
- const finalInr=$('fi').value||'';
- const finalRef=$('fx').value||'';
- const finalFile=file('ff');
- c.finalpay={amount:amount.toFixed(2),date:finalDate,rate:finalRate,inr:finalInr,ref:finalRef,file:finalFile,totalInvoiceAmount:totalInv.toFixed(2),selectedInvoiceAmount:selectedTotal.toFixed(2),advanceAmount:advUsd.toFixed(2),invoiceNumbers:invs.map(x=>x.no),selectedInvoiceNumbers:selected.map(x=>x.no)};
- // Sync final-payment data back into Booking rows for the selected invoice(s).
- // This keeps the Booking register as the master container-wise register.
- const selectedNos=new Set(selected.map(x=>String(x.no).trim()));
- (c.bookings||[]).forEach(b=>{
-   const invNo=String(b?.invoice?.invoiceNo||'').trim();
-   if(invNo && selectedNos.has(invNo)){
-     b.finalPayment={
-       amount: amount.toFixed(2),
-       date: finalDate,
-       rate: finalRate,
-       inr: finalInr,
-       ref: finalRef,
-       copyName: finalFile?.name||''
-     };
-   }
- });
- save();openPage('final',cur)
-}
-function searchFinalPayContract(){
- const no=String($('finalPaySearchNo')?.value||'').trim();
- if(!no){alert('Enter Sales Contract No.');return;}
- if(!get(no)){alert('Sales Contract not found.');return;}
- cur=no; page='finalpay'; render();
-}
-function alloyFor(c,b){
- const custom=String(b?.alloy||'').trim();
- if(custom) return custom;
- const plan=String(c?.containerPlan||'').toLowerCase().replace(/[’']/g,"'");
- if(/1\s*x\s*40|40\s*'?(?:ft|container)?/.test(plan)) return '6061';
- if(/1\s*x\s*20|20\s*'?(?:ft|container)?/.test(plan)) return '6063';
- if(/40/.test(plan)) return '6061';
- if(/20/.test(plan)) return '6063';
- return '';
-}
-function isCurrentRelease(b){ return !!(b && (b.released===true || /released/i.test(String(b.releaseStatus||'')))); }
-function dateInputValue(v){
- const x=String(v||'').trim();
- if(/^\d{4}-\d{2}-\d{2}$/.test(x)) return x;
- const m=x.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
- if(m) return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
- return '';
-}
-function updateFinalBookingETA(ci,bi,val){
- const c=db.contracts[ci]; const b=c?.bookings?.[bi]; if(!b)return;
- b.eta=String(val||''); localStorage.setItem(K,JSON.stringify(db)); render();
-}
-function finalBooking(){
- const all=[];
- db.contracts.forEach(c=>{
-   ensureBookingRows(c);
-   (c.bookings||[]).forEach((b,i)=>{
-     if(!isCurrentRelease(b)) all.push({c,b,i});
-   });
- });
- const rows=all.map(({c,b,i})=>{
-   const inv=b.invoice||{}, av=b.advance||{};
-   const q=(b.loadingQty!==undefined&&b.loadingQty!=='')?Number(b.loadingQty):parseFloat(String(b.qty||'').replace(/,/g,''))||0;
-   const adv=av.amount!==undefined&&av.amount!==''?Number(av.amount):(b.allocatedAdvance||0);
-   const bal=inv.invoiceBalance!==undefined&&inv.invoiceBalance!==''?Number(inv.invoiceBalance):'';
-   const alloy=alloyFor(c,b), ci=db.contracts.indexOf(c), eta=dateInputValue(b.eta||'');
-   return `<tr>
-     <td>${esc(b.slot||i+1)}</td><td>${esc(c.date||'')}</td><td>${esc(c.no||'')}</td><td>${esc(c.seller||'')}</td>
-     <td class="qtyCell">${q?Number(q).toFixed(3):esc(b.qty||'')}</td><td>${esc(c.containerPlan||'')}</td>
-     <td><input class="alloyEdit" list="alloyOptions" value="${esc(alloy)}" onchange="finalBookingAlloy(${ci},${i},this.value)" title="Editable Alloy"></td>
-     <td class="priceCell">${esc(c.price||'')}</td><td>${adv!==''&&!Number.isNaN(adv)?Number(adv).toFixed(2):''}</td>
-     <td>${bal!==''&&!Number.isNaN(bal)?Number(bal).toFixed(2):''}</td><td>${esc(b.container||'')}</td><td>${esc(b.pol||c.pol||'')}</td>
-     <td><input type="date" value="${eta}" onchange="updateFinalBookingETA(${ci},${i},this.value)" style="min-width:145px;padding:7px;border:1px solid #ccd5de;border-radius:7px"></td>
-     <td><button class="btn w" style="margin:0;padding:7px 10px" onclick="finalBookingRelease(${ci},${i})">RELEASE</button></td>
-     <td><button class="btn" style="margin:0;padding:7px 10px;background:#c62828;color:#fff" onclick="finalBookingDelete(${ci},${i})">DELETE</button></td>
-   </tr>`;
- }).join('');
- const totalQty=all.reduce((sum,{c,b})=>{
-   const q=(b.loadingQty!==undefined&&b.loadingQty!=='')?Number(b.loadingQty):parseFloat(String(b.qty||'').replace(/,/g,''))||0; return sum+(Number.isFinite(q)?q:0);
- },0);
- const totalPrice=all.reduce((sum,{c})=>sum+(parseFloat(String(c.price||'').replace(/,/g,''))||0),0);
- const average=totalQty?totalPrice/totalQty:0;
- shell("📊 Final Booking — Master Report",`<div class="item"><b>Final Booking Register</b><br><span class="muted">Automatic master report from Booking, Advance, Loading/B.L. and Invoice. ETA can be selected/changed row-wise. RELEASE moves the row to Payment.</span></div>
- <div class="notice"><b>Alloy rule:</b> 1 x 20 → <b>6063</b> &nbsp; | &nbsp; 1 x 40 → <b>6061</b>. Alloy remains editable row-wise.</div>
- <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button class="btn p" onclick="printFinalBooking()">📄 Convert / Print Final Booking to PDF</button></div>
- <datalist id="alloyOptions"><option value="6063"><option value="6061"></datalist>
- <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff;margin-top:12px">
- <table style="min-width:1900px;width:max-content;border-collapse:collapse">
- <thead><tr><th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty (MT)</th><th>Container Plan</th><th>ALLOY</th><th>Price (USD/MT)</th><th>Advance USD</th><th>Invoice Balance USD</th><th>Container No.</th><th>Port of Loading</th><th>ETA</th><th>Release</th><th>Delete</th></tr></thead>
- <tbody>${rows||'<tr><td colspan="15" style="text-align:center;padding:20px">No pending containers. Released containers are available in Payment.</td></tr>'}</tbody>
- </table></div>
- <div class="card" style="margin-top:12px;background:#eef6ff;border:1px solid #c8dff5"><div style="display:flex;gap:30px;flex-wrap:wrap;font-size:15px"><div><b>Total Loading Qty (MT)</b><br><span style="font-size:22px">${totalQty.toFixed(3)}</span></div><div><b>Average (Price ÷ Total Qty)</b><br><span style="font-size:22px">${average.toFixed(2)}</span></div></div></div>`);
-}
-function finalBookingAlloy(ci,bi,val){ updateAlloySafe(ci,bi,val); }
-function updateAlloySafe(ci,bi,val){ const c=db.contracts[ci]; if(!c||!c.bookings?.[bi])return; c.bookings[bi].alloy=String(val||'').trim(); localStorage.setItem(K,JSON.stringify(db)); }
-function finalBookingRelease(ci,bi){
- const c=db.contracts[ci]; const b=c?.bookings?.[bi]; if(!b)return;
- b.released=true; b.releaseVersion='V62'; b.releaseStatus='RELEASED';
- if(!b.releaseDate)b.releaseDate=new Date().toISOString().slice(0,10);
- ensurePaymentQueue();
- const key=String(c.no||'')+'|'+String(b.container||'')+'|'+String(b.slot||bi+1);
- if(!db.paymentQueue.some(x=>String(x.key)===key)){
-   db.paymentQueue.push({
-     key, contractNo:c.no||'', container:b.container||'', ci, bi,
-     bookingRefId:b.id||'', slot:b.slot||bi+1,
-     contractDate:c.date||'', seller:c.seller||'',
-     loadingQty:b.loadingQty!==undefined&&b.loadingQty!==''?Number(b.loadingQty):(parseFloat(String(b.qty||'').replace(/,/g,''))||0),
-     containerPlan:c.containerPlan||'', alloy:alloyFor(c,b), price:c.price||'',
-     advance:(b.advance&&b.advance.amount!==undefined)?Number(b.advance.amount):(b.allocatedAdvance||0),
-     invoiceBalance:(b.invoice&&b.invoice.invoiceBalance!==undefined)?Number(b.invoice.invoiceBalance):'',
-     pol:b.pol||c.pol||'', eta:b.eta||'', releaseDate:b.releaseDate||'',
-     releaseStatus:'RELEASED', createdAt:Date.now()
-   });
- }
- localStorage.setItem(K,JSON.stringify(db)); page="payment"; render();
-}
-function finalBookingDelete(ci,bi){
- const c=db.contracts[ci]; const b=c?.bookings?.[bi]; if(!b)return;
- const label=b.container||b.no||`Row ${bi+1}`;
- if(!confirm(`Delete ${label} from this booking register?`))return;
- c.bookings.splice(bi,1); localStorage.setItem(K,JSON.stringify(db)); render();
-}
-
-function ensurePaymentQueue(){
- db.paymentQueue = Array.isArray(db.paymentQueue) ? db.paymentQueue : [];
- const existing = new Set(db.paymentQueue.map(x=>String(x.key||'')));
- db.contracts.forEach((c,ci)=>{
-   (c.bookings||[]).forEach((b,bi)=>{
-     if(isCurrentRelease(b) && b.paymentDone!==true){
-       const key=String(c.no||'')+'|'+String(b.container||'')+'|'+String(b.slot||bi+1);
-       if(existing.has(key)) return;
-       db.paymentQueue.push({
-         key, contractNo:c.no||'', container:b.container||'', ci, bi,
-         bookingRefId:b.id||'', slot:b.slot||bi+1,
-         contractDate:c.date||'', seller:c.seller||'',
-         loadingQty:b.loadingQty!==undefined&&b.loadingQty!==''?Number(b.loadingQty):(parseFloat(String(b.qty||'').replace(/,/g,''))||0),
-         containerPlan:c.containerPlan||'', alloy:alloyFor(c,b), price:c.price||'',
-         advance:(b.advance&&b.advance.amount!==undefined)?Number(b.advance.amount):(b.allocatedAdvance||0),
-         invoiceBalance:(b.invoice&&b.invoice.invoiceBalance!==undefined)?Number(b.invoice.invoiceBalance):'',
-         pol:b.pol||c.pol||'', eta:b.eta||'', releaseDate:b.releaseDate||'',
-         releaseStatus:'RELEASED', createdAt:Date.now()
-       });
-       existing.add(key);
-     }
-   });
- });
-}
-
-function paymentRowByKey(key){
- ensurePaymentQueue();
- return db.paymentQueue.findIndex(x=>String(x.key)===String(key));
-}
-function paymentQueueItem(i){ ensurePaymentQueue(); return db.paymentQueue[i]; }
-
-function payment(){
- ensurePaymentQueue();
- const rows=db.paymentQueue.map((r,i)=>{
-   const q=Number(r.loadingQty)||0;
-   const adv=r.advance!==''&&!Number.isNaN(Number(r.advance))?Number(r.advance):'';
-   const bal=r.invoiceBalance!==''&&!Number.isNaN(Number(r.invoiceBalance))?Number(r.invoiceBalance):'';
-   const eta=dateInputValue(r.eta||''), rd=dateInputValue(r.releaseDate||'');
-   return `<tr>
-    <td>${esc(r.slot||i+1)}</td><td>${esc(r.contractDate)}</td><td>${esc(r.contractNo)}</td><td>${esc(r.seller)}</td>
-    <td>${q?q.toFixed(3):''}</td><td>${esc(r.containerPlan)}</td>
-    <td><input class="alloyEdit" list="alloyOptionsPayment" value="${esc(r.alloy||'')}" onchange="paymentAlloy(${i},this.value)"></td>
-    <td>${esc(r.price)}</td><td>${adv!==''?adv.toFixed(2):''}</td><td>${bal!==''?bal.toFixed(2):''}</td>
-    <td>${esc(r.container)}</td><td>${esc(r.pol)}</td>
-    <td><input type="date" value="${eta}" onchange="paymentETA(${i},this.value)" style="min-width:145px;padding:7px;border:1px solid #ccd5de;border-radius:7px"></td>
-    <td><span class="badge">RELEASED ✓</span></td>
-    <td><input type="date" value="${rd}" onchange="paymentReleaseDate(${i},this.value)" style="min-width:145px;padding:7px;border:1px solid #ccd5de;border-radius:7px"></td>
-    <td>${dueDays(rd)}</td>
-    <td><button class="btn s" style="margin:0;padding:7px 12px" onclick="paymentDone(${i})">DONE</button></td>
-   </tr>`;
- }).join('');
-
- shell("💳 Payment — Released Containers",`
- <div class="item"><b>Payment Register</b><br><span class="muted">RELEASE केलेले containers इथे independent payment queue मध्ये येतात. ETA आणि Release Date editable आहेत. DONE केल्यावर हा container Final Record मध्ये एकदाच जाईल आणि Booking मधील त्याची row delete होईल.</span></div>
- <datalist id="alloyOptionsPayment"><option value="6063"><option value="6061"></datalist>
- <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff;margin-top:12px">
- <table style="min-width:2300px;width:max-content;border-collapse:collapse">
- <thead><tr><th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty (MT)</th><th>Container Plan</th><th>ALLOY</th><th>Price (USD/MT)</th><th>Advance USD</th><th>Invoice Balance USD</th><th>Container No.</th><th>Port of Loading</th><th>ETA</th><th>Release Status</th><th>Release Date</th><th>Due Days</th><th>Done</th></tr></thead>
- <tbody>${rows||'<tr><td colspan="17" style="text-align:center;padding:20px">No pending released containers. Final Booking मधून RELEASE करा.</td></tr>'}</tbody></table></div>`);
-}
-function paymentETA(i,val){
- ensurePaymentQueue(); const r=db.paymentQueue[i]; if(!r)return;
- r.eta=String(val||'');
- const c=db.contracts.find(x=>x.no===r.contractNo);
- const b=c?.bookings?.find(x=>String(x.container||'')===String(r.container||'') && String(x.slot||'')===String(r.slot||''));
- if(b)b.eta=r.eta;
- save();
-}
-function paymentAlloy(i,val){
- ensurePaymentQueue(); const r=db.paymentQueue[i]; if(!r)return;
- r.alloy=String(val||'').trim();
- const c=db.contracts.find(x=>x.no===r.contractNo);
- const b=c?.bookings?.find(x=>String(x.container||'')===String(r.container||'') && String(x.slot||'')===String(r.slot||''));
- if(b)b.alloy=r.alloy;
- save();
-}
-function paymentReleaseDate(i,val){
- ensurePaymentQueue(); const r=db.paymentQueue[i]; if(!r)return;
- r.releaseDate=String(val||'');
- const c=db.contracts.find(x=>x.no===r.contractNo);
- const b=c?.bookings?.find(x=>String(x.container||'')===String(r.container||'') && String(x.slot||'')===String(r.slot||''));
- if(b)b.releaseDate=r.releaseDate;
- save();
-}
-function paymentDone(i){
- ensurePaymentQueue();
- const r=db.paymentQueue[i]; if(!r)return;
- if(!r.releaseDate){ alert('Please select Release Date before clicking DONE.'); return; }
-
- const c=db.contracts.find(x=>x.no===r.contractNo);
- const b=c?.bookings?.find(x=>String(x.container||'')===String(r.container||'') && String(x.slot||'')===String(r.slot||''));
- if(!c){ alert('Contract data not found.'); return; }
-
- // Take a COMPLETE snapshot of this container BEFORE removing it from Booking.
- // Final Record therefore contains all information related to this exact Booking row.
- const av=b?.advance||{};
- const inv=b?.invoice||{};
- const be=b?.boe||{};
- const fp=b?.finalPayment||{};
- const record={
-   id:r.key,
-   contract:{
-     no:c.no||'', date:c.date||'', seller:c.seller||'', buyer:c.buyer||'',
-     gstin:c.gstin||'', iec:c.iec||'', pan:c.pan||'', hs:c.hs||'',
-     commodity:c.commodity||'', qty:c.qty||'', price:c.price||'',
-     value:c.value||'', pol:c.pol||'', pod:c.pod||'',
-     containerPlan:c.containerPlan||'', priceTerm:c.priceTerm||'',
-     shipmentPeriod:c.shipmentPeriod||'', transhipment:c.transhipment||''
-   },
-   booking:{
-     no:b?.no||'', container:b?.container||r.container||'',
-     qty:b?.qty||'', vessel:b?.vessel||'', etd:b?.etd||'', eta:b?.eta||r.eta||'',
-     bl:b?.bl||'', seal:b?.seal||'', voyage:b?.voyage||'',
-     loadingDate:b?.loadingDate||'', loadingQty:b?.loadingQty!==undefined?b.loadingQty:r.loadingQty,
-     pol:b?.pol||c.pol||'', pod:b?.pod||c.pod||'', alloy:b?.alloy||r.alloy||''
-   },
-   advance:{
-     amount:av.amount!==undefined?av.amount:(b?.allocatedAdvance||r.advance||''),
-     date:av.date||'', ref:av.ref||'', bank:av.bank||'', usdRate:av.usdRate||'',
-     inr:av.inr||'', otherChargesInr:av.otherChargesInr||'', copyName:av.copyName||''
-   },
-   invoice:{
-     invoiceNo:inv.invoiceNo||'', invoiceDate:inv.invoiceDate||'',
-     invoiceQty:inv.invoiceQty||'', invoiceTotalQty:inv.invoiceTotalQty||'',
-     invoiceAmount:inv.invoiceAmount||'', invoiceAdvance:inv.invoiceAdvance||'',
-     invoiceBalance:inv.invoiceBalance!==undefined?inv.invoiceBalance:r.invoiceBalance||'',
-     invoiceFile:inv.invoiceFile?.name||''
-   },
-   boe:{
-     beNo:be.beNo||'', beDate:be.beDate||'', boeQty:be.boeQty||'',
-     assessableValue:be.assessableValue||'', bcd:be.bcd||'', sws:be.sws||'',
-     igst:be.igst||'', exchangeRate:be.exchangeRate||'', challanNo:be.challanNo||'',
-     boeFile:be.boeFile?.name||''
-   },
-   finalPayment:{
-     amount:fp.amount!==undefined?fp.amount:'',
-     date:fp.date||'', rate:fp.rate||'', inr:fp.inr||'', ref:fp.ref||'',
-     copyName:fp.copyName||''
-   },
-   releaseDate:r.releaseDate, releaseStatus:'RELEASED',
-   dueDays:dueDays(r.releaseDate), doneDate:new Date().toISOString().slice(0,10),
-   sourceContainer:r.container||b?.container||'', sourceSlot:b?.slot||r.slot||'',
-   legacy:{
-     contractDate:c.date||'', contractNo:c.no||'', seller:c.seller||'',
-     loadingQty:Number(b?.loadingQty!==undefined?b.loadingQty:r.loadingQty)||0,
-     containerPlan:c.containerPlan||'', alloy:b?.alloy||r.alloy||'',
-     price:c.price||'', advance:r.advance, invoiceBalance:r.invoiceBalance,
-     container:b?.container||r.container||'', pol:b?.pol||c.pol||'', eta:b?.eta||r.eta||''
-   }
- };
-
- db.finalRecords=Array.isArray(db.finalRecords)?db.finalRecords:[];
- const duplicate=db.finalRecords.some(x=>
-   String(x.id)===String(record.id) ||
-   (String(x.contract?.no||x.contractNo)===String(c.no||'') &&
-    String(x.booking?.container||x.container||'')===String(record.booking.container||'') &&
-    String(record.booking.container||'')!=='')
- );
- if(!duplicate) db.finalRecords.push(record);
-
- // Remove this exact container row from active Booking only.
- if(c.bookings){
-   const idx=c.bookings.indexOf(b);
-   if(idx>=0)c.bookings.splice(idx,1);
- }
- db.paymentQueue.splice(i,1);
- save();
- page="final";
- render();
-}
-
-function printFinalBooking(){
- const oldTitle=document.title; document.title='Final Booking - Import Contract Tracker';
- window.print(); setTimeout(()=>{document.title=oldTitle;},1000);
-}
-
-function uid(){ return 'FR-' + Date.now() + '-' + Math.random().toString(36).slice(2,8); }
-function finalRecordValue(v){
- return v!==undefined && v!==null && v!=='' ? String(v) : '—';
-}
-function finalRecordNum(v){
- return v!==undefined && v!==null && v!=='' && !Number.isNaN(Number(v)) ? Number(v).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
-}
-function detail(label,value){
- return `<div class="detail"><b>${esc(label)}</b><span>${esc(finalRecordValue(value))}</span></div>`;
-}
-function showFinalRecord(id){
- const r=(db.finalRecords||[]).find(x=>String(x.id)===String(id));
- if(!r)return;
- const c=r.contract||{},b=r.booking||{},a=r.advance||{},iv=r.invoice||{},be=r.boe||{},fp=r.finalPayment||{};
- const modal=document.createElement('div');
- modal.className='modalBack';
- modal.id='finalRecordModal';
- modal.innerHTML=`<div class="modal">
-  <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
-   <div><h2 style="margin:0">📄 Container Final Record</h2><div class="muted">${esc(c.no||'')} · ${esc(b.container||r.sourceContainer||'')}</div></div>
-   <button class="btn w" style="margin:0" onclick="document.getElementById('finalRecordModal').remove()">✕ Close</button>
-  </div>
-
-  <div class="sectionTitle">1. Contract Master</div>
-  <div class="detailGrid">
-   ${detail('Contract Date',c.date)}${detail('Contract No.',c.no)}${detail('Seller',c.seller)}
-   ${detail('Buyer',c.buyer)}${detail('Buyer GSTIN',c.gstin)}${detail('Buyer IEC',c.iec)}
-   ${detail('PAN',c.pan)}${detail('HS Code',c.hs)}${detail('Commodity',c.commodity)}
-   ${detail('Contract Qty (MT)',c.qty)}${detail('Container Plan',c.containerPlan)}${detail('Price USD/MT',c.price)}
-   ${detail('Contract Value USD',c.value)}${detail('Price Term',c.priceTerm)}${detail('Port of Loading',c.pol)}
-   ${detail('Port of Discharge',c.pod)}${detail('Shipment Period',c.shipmentPeriod)}${detail('Transshipment',c.transhipment)}
-  </div>
-
-  <div class="sectionTitle">2. Booking / Container</div>
-  <div class="detailGrid">
-   ${detail('Booking No.',b.no)}${detail('Container No.',b.container||r.sourceContainer)}${detail('Loading Qty (MT)',b.loadingQty)}
-   ${detail('Vessel',b.vessel)}${detail('ETD',b.etd)}${detail('ETA',b.eta)}
-   ${detail('Loading Date',b.loadingDate)}${detail('Seal No.',b.seal)}${detail('B/L No.',b.bl)}
-   ${detail('Voyage',b.voyage)}${detail('Port of Loading',b.pol||c.pol)}${detail('Port of Discharge',b.pod||c.pod)}
-   ${detail('ALLOY',b.alloy)}${detail('Container Plan',c.containerPlan)}
-  </div>
-
-  <div class="sectionTitle">3. Advance Payment</div>
-  <div class="detailGrid">
-   ${detail('Advance USD',a.amount)}${detail('Advance Date',a.date)}${detail('Advance Reference',a.ref)}
-   ${detail('Bank',a.bank)}${detail('USD Rate',a.usdRate)}${detail('Advance INR',a.inr)}
-   ${detail('Other Charges INR',a.otherChargesInr)}${detail('Allocated Advance USD',r.legacy?.advance)}
-  </div>
-
-  <div class="sectionTitle">4. Invoice</div>
-  <div class="detailGrid">
-   ${detail('Invoice No.',iv.invoiceNo)}${detail('Invoice Date',iv.invoiceDate)}${detail('Invoice Qty',iv.invoiceQty)}
-   ${detail('Invoice Total Qty',iv.invoiceTotalQty)}${detail('Invoice Amount USD',iv.invoiceAmount)}
-   ${detail('Invoice Advance USD',iv.invoiceAdvance)}${detail('Invoice Balance USD',iv.invoiceBalance)}
-   ${detail('Invoice File',iv.invoiceFile)}
-  </div>
-
-  <div class="sectionTitle">5. Bill of Entry</div>
-  <div class="detailGrid">
-   ${detail('BE No.',be.beNo)}${detail('BE Date',be.beDate)}${detail('BE Qty (MT)',be.boeQty)}
-   ${detail('Assessable Value INR',be.assessableValue)}${detail('BCD INR',be.bcd)}${detail('SWS INR',be.sws)}
-   ${detail('IGST INR',be.igst)}${detail('Exchange Rate',be.exchangeRate)}${detail('Challan No.',be.challanNo)}
-   ${detail('BOE File',be.boeFile)}
-  </div>
-
-  <div class="sectionTitle">6. Final Payment</div>
-  <div class="detailGrid">
-   ${detail('Final Payment USD',fp.amount)}${detail('Payment Date',fp.date)}${detail('Exchange Rate',fp.rate)}
-   ${detail('INR Amount',fp.inr)}${detail('Reference / Our Bill No.',fp.ref)}${detail('Payment Copy',fp.copyName)}
-  </div>
-
-  <div class="sectionTitle">7. Release / Completion</div>
-  <div class="detailGrid">
-   ${detail('Release Status',r.releaseStatus||'RELEASED')}${detail('Release Date',r.releaseDate)}
-   ${detail('Due Days',dueDays(r.releaseDate||''))}${detail('DONE Date',r.doneDate)}
-  </div>
- </div>`;
- document.body.appendChild(modal);
- modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()});
-}
-function printFinalRecord(){
- const oldTitle=document.title;
- document.title='Final Record - Import Contract Tracker';
- window.print();
- setTimeout(()=>document.title=oldTitle,1000);
-}
-function finalRec(){
- db.finalRecords = Array.isArray(db.finalRecords) ? db.finalRecords : [];
-
- // One final record per Contract + Container.
- const seen=new Set();
- const unique=db.finalRecords.filter(r=>{
-   const no=String(r.contract?.no||r.contractNo||'');
-   const cn=String(r.booking?.container||r.container||r.sourceContainer||'');
-   const key=no+'|'+cn;
-   if(cn && seen.has(key)) return false;
-   if(cn) seen.add(key);
-   return true;
- });
- if(unique.length!==db.finalRecords.length){
-   db.finalRecords=unique;
-   saveSilently();
- }
-
- const totalQty=unique.reduce((s,r)=>s+(Number(r.booking?.loadingQty??r.loadingQty)||0),0);
- const totalAdvance=unique.reduce((s,r)=>s+(Number(r.advance?.amount??r.legacy?.advance)||0),0);
- const totalInvoice=unique.reduce((s,r)=>s+(Number(r.invoice?.invoiceAmount)||0),0);
- const totalBalance=unique.reduce((s,r)=>s+(Number(r.invoice?.invoiceBalance??r.legacy?.invoiceBalance)||0),0);
-
- const rows=unique.map((r,i)=>{
-   const c=r.contract||{},b=r.booking||{},iv=r.invoice||{};
-   const qty=Number(b.loadingQty??r.loadingQty)||0;
-   return `<tr>
-    <td>${i+1}</td>
-    <td>${esc(c.date||r.contractDate||'')}</td>
-    <td><b>${esc(c.no||r.contractNo||'')}</b></td>
-    <td>${esc(c.seller||r.seller||'')}</td>
-    <td>${esc(b.container||r.container||r.sourceContainer||'')}</td>
-    <td>${qty?qty.toFixed(3):''}</td>
-    <td>${esc(b.alloy||r.alloy||'')}</td>
-    <td>${esc(c.price||r.price||'')}</td>
-    <td>${finalRecordNum(r.advance?.amount??r.legacy?.advance)}</td>
-    <td>${esc(iv.invoiceNo||'')}</td>
-    <td>${finalRecordNum(iv.invoiceAmount)}</td>
-    <td>${finalRecordNum(iv.invoiceBalance??r.legacy?.invoiceBalance)}</td>
-    <td>${esc(r.releaseDate||'')}</td>
-    <td>${dueDays(r.releaseDate||'')}</td>
-    <td><span class="badge">COMPLETED ✓</span></td>
-    <td><button class="btn p" style="margin:0;padding:6px 10px" onclick="showFinalRecord('${esc(r.id)}')">VIEW FULL</button></td>
-   </tr>`;
- }).join('');
-
- shell("📄 Final Record — Master Container Register",`
- <div class="item">
-  <b>Completed Container Master</b><br>
-  <span class="muted">DONE झालेला प्रत्येक container एकदाच Final Record मध्ये येतो. Booking, Contract, Advance, Invoice, Bill of Entry आणि Final Payment मधील त्या container शी संबंधित संपूर्ण data सुरक्षित ठेवला आहे.</span>
- </div>
-
- <div class="statGrid">
-  <div class="stat"><div class="k">Completed Containers</div><div class="v">${unique.length}</div></div>
-  <div class="stat"><div class="k">Total Loading Qty MT</div><div class="v">${totalQty.toFixed(3)}</div></div>
-  <div class="stat"><div class="k">Advance USD</div><div class="v">${totalAdvance.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>
-  <div class="stat"><div class="k">Invoice USD</div><div class="v">${totalInvoice.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>
-  <div class="stat"><div class="k">Invoice Balance USD</div><div class="v">${totalBalance.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>
- </div>
-
- <div class="toolbar">
-  <input id="finalSearch" placeholder="🔎 Search Contract / Container / Seller / Invoice No." oninput="filterFinalRecord()">
-  <button class="btn p" style="margin:0" onclick="printFinalRecord()">📄 PDF / Print</button>
- </div>
-
- <div class="notice"><b>Duplicate Control:</b> Contract No. + Container No. = one Final Record. Full information पाहण्यासाठी row मधील <b>VIEW FULL</b> वापरा.</div>
-
- <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff;margin-top:12px">
- <table id="finalRecordTable" style="min-width:1900px;width:max-content;border-collapse:collapse">
- <thead><tr>
-  <th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Container No.</th>
-  <th>Loading Qty (MT)</th><th>ALLOY</th><th>Price USD/MT</th><th>Advance USD</th>
-  <th>Invoice No.</th><th>Invoice Amount USD</th><th>Invoice Balance USD</th>
-  <th>Release Date</th><th>Due Days</th><th>Status</th><th>Full Data</th>
- </tr></thead>
- <tbody id="finalRecordBody">${rows||'<tr><td colspan="16" style="text-align:center;padding:24px">No completed containers yet. Payment मध्ये RELEASE झालेल्या container वर DONE करा.</td></tr>'}</tbody>
- </table></div>`);
-}
-function filterFinalRecord(){
- const q=String($('finalSearch')?.value||'').toLowerCase().trim();
- document.querySelectorAll('#finalRecordBody tr').forEach(tr=>{
-   tr.style.display=!q||tr.innerText.toLowerCase().includes(q)?'':'none';
- });
-}
-function complete(){let c=get(cur),f=file("ffinal");if(!f)return alert("Upload final document.");c.final={file:f,date:new Date().toISOString()};save();finalRec()}
-document.addEventListener("input",e=>{if(e.target.id==="price"||e.target.id==="qty"){let p=parseFloat($("price")?.value||0),q=parseFloat($("qty")?.value||0);if($("contractValue"))$("contractValue").value=p&&q?(p*q).toFixed(2):"";}});render();
-</script></body></html>
+ db.released=db.released.filter(x=>x.id!==id);
+ db.bookings=db.bookings.filter(x=>x.id!==b.id);
+ save();go('final')
+}
+function delBooking(id){if(!confirm('Delete this Booking container?'))return;db.bookings=db.bookings.filter(x=>x.id!==id);save()}
+
+function renderAll(){
+ setSelect('bookingContract',contractOptions());setSelect('advanceContract',contractOptions());
+ setSelect('loadingContainer',containerOptions());setSelect('invoiceContainer',containerOptions());setSelect('boeContainer',containerOptions());setSelect('finalPayContainer',containerOptions());
+ renderStats();renderContracts();renderBooking();renderAdvance();renderLoading();renderInvoice();renderBoe();renderFinalPay();renderFinalBooking();renderPayment();renderFinal();
+}
+function renderStats(){
+ const s=[db.contracts.length,db.bookings.length,db.invoices.length,db.boes.length,db.released.length,db.finalRecords.length];
+ const names=['Contracts','Active Containers','Invoices','Bill of Entry','Payment Queue','Final Records'];
+ $('stats').innerHTML=s.map((v,i)=>`<div class="stat"><span>${names[i]}</span><b>${v}</b></div>`).join('');
+}
+function renderContracts(){
+ $('contractTable').innerHTML=db.contracts.length?`<div class="tableWrap"><table><thead><tr><th>Contract No.</th><th>Date</th><th>Seller</th><th>Qty MT</th><th>Plan</th><th>Price</th><th>Value USD</th><th>Advance USD</th><th>Action</th></tr></thead><tbody>${db.contracts.map(c=>`<tr><td><b>${esc(c.no)}</b></td><td>${esc(c.date)}</td><td>${esc(c.seller)}</td><td>${esc(c.qty)}</td><td>${esc(c.containerPlan)}</td><td>${esc(c.price)}</td><td>${esc(c.value)}</td><td>${esc(c.advance)}</td><td><button class="btn small danger" onclick="delContract('${c.id}')">Delete</button></td></tr>`).join('')}</tbody></table></div>`:`<div class="empty">No contracts yet.</div>`
+}
+function delContract(id){if(!confirm('Delete contract and its active booking data?'))return;db.contracts=db.contracts.filter(x=>x.id!==id);db.bookings=db.bookings.filter(x=>x.contractId!==id);db.advances=db.advances.filter(x=>x.contractId!==id);save()}
+function renderBooking(){
+ const q=String($('bookingSearch')?.value||'').toLowerCase();
+ const rows=db.bookings.filter(b=>{const c=db.contracts.find(x=>x.id===b.contractId)||{};return !q||`${c.no} ${c.seller} ${b.container}`.toLowerCase().includes(q)});
+ $('bookingTable').innerHTML=rows.length?`<div class="tableWrap"><table><thead><tr><th>Contract</th><th>Seller</th><th>Loading Qty</th><th>Plan</th><th>ALLOY</th><th>Container No.</th><th>Seal</th><th>B/L</th><th>POL</th><th>ETA</th><th>Price</th><th>Action</th></tr></thead><tbody>${rows.map(b=>{const c=db.contracts.find(x=>x.id===b.contractId)||{};return `<tr><td>${esc(c.no)}</td><td>${esc(c.seller)}</td><td>${esc(b.loadingQty)}</td><td>${esc(b.plan)}</td><td><input style="width:70px;padding:5px" value="${esc(b.alloy)}" onchange="editAlloy('${b.id}',this.value)"></td><td><b>${esc(b.container)}</b></td><td>${esc(b.seal)}</td><td>${esc(b.bl)}</td><td>${esc(b.pol||c.pol)}</td><td>${esc(b.eta)}</td><td>${esc(c.price)}</td><td><button class="btn small warn" onclick="release('${b.id}')">RELEASE</button> <button class="btn small danger" onclick="delBooking('${b.id}')">DELETE</button></td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty">No active Booking containers.</div>`
+}
+function editAlloy(id,v){const b=db.bookings.find(x=>x.id===id);if(b){b.alloy=v;saveSilent();renderBooking()}}
+function renderAdvance(){
+ $('advanceTable').innerHTML=db.advances.length?`<div class="tableWrap"><table><thead><tr><th>Contract</th><th>Advance USD</th><th>Date</th><th>USD Rate</th><th>INR</th><th>Other Charges</th><th>Reference</th><th>Bank</th></tr></thead><tbody>${db.advances.map(a=>{const c=db.contracts.find(x=>x.id===a.contractId)||{};return `<tr><td>${esc(c.no)}</td><td>${money(a.amount)}</td><td>${esc(a.date)}</td><td>${esc(a.usdRate)}</td><td>${money(a.inr)}</td><td>${money(a.otherChargesInr)}</td><td>${esc(a.ref)}</td><td>${esc(a.bank)}</td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty">No advance records.</div>`
+}
+function renderLoading(){simpleTable('loadingTable',['Container','Qty MT','Loading Date','Seal','B/L','Vessel','ETD','ETA'],db.loading,x=>[db.bookings.find(b=>b.id===x.containerId)?.container||'',x.loadingQty,x.loadingDate,x.seal,x.bl,x.vessel,x.etd,x.eta])}
+function renderInvoice(){simpleTable('invoiceTable',['Container','Invoice No.','Date','Qty','Amount USD','Advance USD','Balance USD'],db.invoices,x=>[db.bookings.find(b=>b.id===x.containerId)?.container||'',x.invoiceNo,x.invoiceDate,x.invoiceQty,money(x.invoiceAmount),money(x.invoiceAdvance),money(x.invoiceBalance)])}
+function renderBoe(){simpleTable('boeTable',['Container','BE No.','BE Date','Qty','Assessable Value','BCD','SWS','IGST','Rate','Challan'],db.boes,x=>[db.bookings.find(b=>b.id===x.containerId)?.container||'',x.beNo,x.beDate,x.boeQty,money(x.assessableValue),money(x.bcd),money(x.sws),money(x.igst),x.exchangeRate,x.challanNo])}
+function renderFinalPay(){simpleTable('finalPayTable',['Container','Final USD','Payment Date','Rate','INR','Our Bill / Ref'],db.finalPayments,x=>[db.bookings.find(b=>b.id===x.containerId)?.container||'',money(x.amount),x.date,x.rate,money(x.inr),x.ref])}
+function simpleTable(id,heads,data,fn){$(id).innerHTML=data.length?`<div class="tableWrap"><table><thead><tr>${heads.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${data.map(x=>`<tr>${fn(x).map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`:`<div class="empty">No records.</div>`}
+
+function renderFinalBooking(){
+ const rows=db.bookings.filter(b=>db.invoices.some(i=>i.containerId===b.id)&&db.boes.some(x=>x.containerId===b.id)).map((b,i)=>{const c=db.contracts.find(x=>x.id===b.contractId)||{};const iv=db.invoices.find(x=>x.containerId===b.id)||{};const adv=db.advances.find(x=>x.contractId===c.id)||{};const bal=iv.invoiceBalance!==''?iv.invoiceBalance:num(iv.invoiceAmount)-num(adv.amount);return `<tr><td>${i+1}</td><td>${esc(c.date)}</td><td>${esc(c.no)}</td><td>${esc(c.seller)}</td><td>${esc(b.loadingQty)}</td><td>${esc(b.plan)}</td><td><input style="width:70px;padding:5px" value="${esc(b.alloy)}" onchange="editAlloy('${b.id}',this.value)"></td><td>${esc(c.price)}</td><td>${money(adv.amount)}</td><td>${money(bal)}</td><td>${esc(b.container)}</td><td>${esc(b.pol||c.pol)}</td><td><input type="date" value="${esc(b.eta)}" onchange="editEta('${b.id}',this.value)"></td><td><button class="btn small warn" onclick="release('${b.id}')">RELEASE</button></td></tr>`}).join('');
+ const total=db.bookings.filter(b=>db.invoices.some(i=>i.containerId===b.id)&&db.boes.some(x=>x.containerId===b.id)).reduce((s,b)=>s+num(b.loadingQty),0);
+ $('finalBookingTable').innerHTML=`<div class="tableWrap"><table><thead><tr><th>SR</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty MT</th><th>Container Plan</th><th>ALLOY</th><th>Price USD/MT</th><th>Advance USD</th><th>Invoice Balance USD</th><th>Container No.</th><th>Port</th><th>ETA</th><th>Release</th></tr></thead><tbody>${rows||'<tr><td colspan="14" class="empty">No containers ready for Final Booking.</td></tr>'}</tbody><tfoot><tr><th colspan="4">TOTAL</th><th>${total.toFixed(3)} MT</th><th colspan="9">Average Price = ${(()=>{const ar=db.bookings.filter(b=>db.invoices.some(i=>i.containerId===b.id)&&db.boes.some(x=>x.containerId===b.id));const tq=ar.reduce((s,b)=>s+num(b.loadingQty),0);const tv=ar.reduce((s,b)=>s+num(db.contracts.find(c=>c.id===b.contractId)?.price)*num(b.loadingQty),0);return tq?(tv/tq).toFixed(2):'0.00'})()} USD/MT</th></tr></tfoot></table></div>`
+}
+function editEta(id,v){const b=db.bookings.find(x=>x.id===id);if(b){b.eta=v;saveSilent();renderFinalBooking()}}
+function renderPayment(){
+ const rows=db.released.map((q,i)=>{const b=db.bookings.find(x=>x.id===q.bookingId);if(!b)return '';const c=db.contracts.find(x=>x.id===b.contractId)||{};const iv=db.invoices.find(x=>x.containerId===b.id)||{};const adv=db.advances.find(x=>x.contractId===c.id)||{};return `<tr><td>${i+1}</td><td>${esc(c.date)}</td><td>${esc(c.no)}</td><td>${esc(c.seller)}</td><td>${esc(b.loadingQty)}</td><td>${esc(b.plan)}</td><td>${esc(b.alloy)}</td><td>${esc(c.price)}</td><td>${money(adv.amount)}</td><td>${money(iv.invoiceBalance)}</td><td>${esc(b.container)}</td><td>${esc(b.pol||c.pol)}</td><td><input type="date" value="${esc(b.eta)}" onchange="editEtaPayment('${b.id}',this.value)"></td><td>${esc(q.releaseDate)}</td><td>${due(q.releaseDate)}</td><td><button class="btn small success" onclick="donePayment('${q.id}')">DONE</button></td></tr>`}).join('');
+ $('paymentTable').innerHTML=`<div class="tableWrap"><table><thead><tr><th>SR</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty</th><th>Plan</th><th>ALLOY</th><th>Price</th><th>Advance USD</th><th>Invoice Balance</th><th>Container</th><th>POL</th><th>ETA</th><th>Release Date</th><th>Due Days</th><th>DONE</th></tr></thead><tbody>${rows||'<tr><td colspan="16" class="empty">No released containers waiting for DONE.</td></tr>'}</tbody></table></div>`
+}
+function editEtaPayment(id,v){const b=db.bookings.find(x=>x.id===id);if(b){b.eta=v;saveSilent();renderPayment()}}
+function finalView(id){
+ const r=db.finalRecords.find(x=>x.id===id);if(!r)return;
+ const c=r.contract||{},b=r.booking||{},a=r.advance||{},iv=r.invoice||{},boe=r.boe||{},fp=r.finalPayment||{};
+ const d=(l,v)=>`<div class="detail"><b>${esc(l)}</b><span>${esc(v??'—')||'—'}</span></div>`;
+ const el=document.createElement('div');el.className='modalBack';el.innerHTML=`<div class="modal">
+ <div class="title"><div><h2>📄 Full Container Record</h2><div class="muted">${esc(c.no)} • ${esc(b.container)}</div></div><button class="btn light" onclick="this.closest('.modalBack').remove()">Close</button></div>
+ <div class="section">Contract</div><div class="detailGrid">${d('Contract Date',c.date)}${d('Contract No.',c.no)}${d('Seller',c.seller)}${d('Buyer',c.buyer)}${d('GSTIN',c.gstin)}${d('IEC',c.iec)}${d('PAN',c.pan)}${d('HS Code',c.hs)}${d('Commodity',c.commodity)}${d('Contract Qty MT',c.qty)}${d('Container Plan',c.containerPlan)}${d('Price USD/MT',c.price)}${d('Contract Value USD',c.value)}${d('Price Term',c.priceTerm)}${d('POL',c.pol)}${d('POD',c.pod)}${d('Shipment Period',c.shipmentPeriod)}${d('Transshipment',c.transhipment)}</div>
+ <div class="section">Booking / Container</div><div class="detailGrid">${d('Container No.',b.container)}${d('Loading Qty MT',b.loadingQty)}${d('Plan',b.plan)}${d('ALLOY',b.alloy)}${d('Seal No.',b.seal)}${d('B/L No.',b.bl)}${d('Vessel',b.vessel)}${d('ETD',b.etd)}${d('ETA',b.eta)}${d('Loading Date',b.loadingDate)}${d('POL',b.pol||c.pol)}${d('POD',b.pod||c.pod)}${d('Voyage',b.voyage)}</div>
+ <div class="section">Advance</div><div class="detailGrid">${d('Advance USD',a.amount)}${d('Payment Date',a.date)}${d('USD Rate',a.usdRate)}${d('Advance INR',a.inr)}${d('Other Charges INR',a.otherChargesInr)}${d('Reference',a.ref)}${d('Bank',a.bank)}</div>
+ <div class="section">Invoice</div><div class="detailGrid">${d('Invoice No.',iv.invoiceNo)}${d('Invoice Date',iv.invoiceDate)}${d('Qty MT',iv.invoiceQty)}${d('Amount USD',iv.invoiceAmount)}${d('Advance USD',iv.invoiceAdvance)}${d('Balance USD',iv.invoiceBalance)}</div>
+ <div class="section">Bill of Entry</div><div class="detailGrid">${d('BE No.',boe.beNo)}${d('BE Date',boe.beDate)}${d('BE Qty MT',boe.boeQty)}${d('Assessable Value INR',boe.assessableValue)}${d('BCD INR',boe.bcd)}${d('SWS INR',boe.sws)}${d('IGST INR',boe.igst)}${d('Exchange Rate',boe.exchangeRate)}${d('Challan No.',boe.challanNo)}</div>
+ <div class="section">Final Payment</div><div class="detailGrid">${d('Final Payment USD',fp.amount)}${d('Payment Date',fp.date)}${d('Exchange Rate',fp.rate)}${d('INR Amount',fp.inr)}${d('Our Bill / Reference',fp.ref)}</div>
+ <div class="section">Release / Completion</div><div class="detailGrid">${d('Release Date',r.releaseDate)}${d('Due Days',due(r.releaseDate))}${d('Done Date',r.doneDate)}${d('Status','COMPLETED')}</div>
+ <div class="actions"><button class="btn primary" onclick="window.print()">Print / Save PDF</button></div></div>`;
+ document.body.appendChild(el)
+}
+function renderFinal(){
+ const q=String($('finalSearch')?.value||'').toLowerCase();
+ const rows=db.finalRecords.filter(r=>{const c=r.contract||{},b=r.booking||{},iv=r.invoice||{};return !q||`${c.no} ${c.seller} ${b.container} ${iv.invoiceNo}`.toLowerCase().includes(q)}).map((r,i)=>{const c=r.contract||{},b=r.booking||{},iv=r.invoice||{};return `<tr><td>${i+1}</td><td>${esc(c.date)}</td><td><b>${esc(c.no)}</b></td><td>${esc(c.seller)}</td><td>${esc(b.container)}</td><td>${esc(b.loadingQty)}</td><td>${esc(b.alloy)}</td><td>${esc(c.price)}</td><td>${money(r.advance?.amount)}</td><td>${esc(iv.invoiceNo)}</td><td>${money(iv.invoiceAmount)}</td><td>${money(iv.invoiceBalance)}</td><td>${esc(r.releaseDate)}</td><td>${due(r.releaseDate)}</td><td><span class="badge bgreen">COMPLETED</span></td><td><button class="btn small primary" onclick="finalView('${r.id}')">VIEW FULL</button></td></tr>`}).join('');
+ const tq=db.finalRecords.reduce((s,r)=>s+num(r.booking?.loadingQty),0),ta=db.finalRecords.reduce((s,r)=>s+num(r.advance?.amount),0),ti=db.finalRecords.reduce((s,r)=>s+num(r.invoice?.invoiceAmount),0),tb=db.finalRecords.reduce((s,r)=>s+num(r.invoice?.invoiceBalance),0);
+ $('finalStats').innerHTML=[['Containers',db.finalRecords.length],['Loading MT',tq.toFixed(3)],['Advance USD',money(ta)],['Invoice USD',money(ti)],['Balance USD',money(tb)],['Status','MASTER']].map(x=>`<div class="stat"><span>${x[0]}</span><b>${x[1]}</b></div>`).join('');
+ $('finalTable').innerHTML=`<div class="tableWrap"><table><thead><tr><th>SR</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Container</th><th>Loading MT</th><th>ALLOY</th><th>Price</th><th>Advance USD</th><th>Invoice No.</th><th>Invoice USD</th><th>Balance USD</th><th>Release Date</th><th>Due Days</th><th>Status</th><th>Full Data</th></tr></thead><tbody>${rows||'<tr><td colspan="16" class="empty">No completed containers. Payment → DONE करा.</td></tr>'}</tbody></table></div>`
+}
+function exportData(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='GALCO_Import_Backup_'+today()+'.json';a.click();URL.revokeObjectURL(a.href)}
+function importData(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.contracts||!x.bookings)throw Error();db=x;save();alert('Backup imported successfully.')}catch(e){alert('Invalid backup file.')}};r.readAsText(f)}
+renderAll();
+go('dashboard');
+</script>
+</body>
+</html>
