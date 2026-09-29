@@ -1,13 +1,25 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Import Contract Tracker</title>
+<title>GALCO Import Contract Tracker — Professional Master</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f3f6fa;font-family:Arial;color:#1d2a35}header{background:#123f68;color:white;text-align:center;padding:18px 10px;position:sticky;top:0;z-index:5}header h1{margin:0;font-size:22px}header p{margin:7px 0;font-size:14px}
+*{box-sizing:border-box}body{margin:0;background:#f3f6fa;font-family:Arial;color:#1d2a35}header{background:#123f68;color:white;text-align:center;padding:18px 10px;position:sticky;top:0;z-index:5}header h1{margin:0;font-size:22px}header{box-shadow:0 2px 12px #0002}header p{margin:7px 0;font-size:14px}
 nav{display:flex;overflow:auto;gap:7px;background:white;padding:8px;position:sticky;top:86px;z-index:4}nav button{border:0;border-radius:10px;padding:10px 13px;font-weight:bold;white-space:nowrap}nav .on{background:#123f68;color:#fff}nav .lock{opacity:1}nav button{cursor:pointer}nav{z-index:20}
 main{width:98vw;max-width:none;margin:0 auto;padding:14px}.page{display:none}.page.on{display:block}.card{background:#fff;padding:15px;border-radius:15px;margin-bottom:12px;box-shadow:0 2px 10px #0001}h2{margin:0 0 13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{display:block;font-size:12px;font-weight:bold;color:#5b6875;margin-bottom:5px}input,select,textarea{width:100%;padding:11px;border:1px solid #ccd5de;border-radius:10px;font-size:14px}textarea{min-height:80px}.btn{border:0;border-radius:10px;padding:11px 14px;font-weight:bold;margin:6px 4px 0 0}.p{background:#123f68;color:white}.s{background:#16844d;color:white}.w{background:#d88900;color:white}.file{border-style:dashed}.item{border:1px solid #dde4eb;border-radius:10px;padding:12px;margin:9px 0}.muted{font-size:12px;color:#6d7882}.ok{background:#e1f6ea;color:#155d39;padding:10px;border-radius:9px;margin:8px 0}.notice{background:#fff5d8;padding:10px;border-radius:9px;font-size:13px}.search{display:flex;gap:7px}.search input{flex:1}table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #ddd;text-align:left;font-size:13px}table thead th{background:#eef3f7;white-space:nowrap;border-bottom:2px solid #cbd5df}table tbody tr:hover{background:#f8fafc}table tbody td{white-space:nowrap}.registerWrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.registerWrap table{min-width:max-content}.alloyEdit{min-width:85px;width:85px;padding:7px!important;border:1px solid #ccd5de;border-radius:7px}.badge{padding:5px 8px;border-radius:15px;background:#d9f4e5;color:#14613c;font-size:11px;font-weight:bold}
+.statGrid{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:10px;margin:10px 0}
+.stat{background:#fff;border:1px solid #dbe4ec;border-radius:12px;padding:13px;box-shadow:0 2px 7px #0000000a}
+.stat .k{font-size:11px;color:#687684;font-weight:bold;text-transform:uppercase}.stat .v{font-size:20px;font-weight:800;margin-top:5px;color:#123f68}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}.toolbar input{max-width:330px}
+.modalBack{position:fixed;inset:0;background:#0008;z-index:100;display:flex;align-items:center;justify-content:center;padding:18px}
+.modal{background:#fff;width:min(1100px,96vw);max-height:90vh;overflow:auto;border-radius:16px;padding:18px;box-shadow:0 20px 60px #0006}
+.detailGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.detail{border:1px solid #e0e6ec;border-radius:9px;padding:9px;background:#fafcfe}.detail b{display:block;font-size:11px;color:#6a7784}.detail span{display:block;margin-top:3px;font-size:13px;word-break:break-word}
+.sectionTitle{margin:16px 0 8px;padding:8px 10px;background:#eef4f8;border-left:4px solid #123f68;border-radius:6px;font-weight:800}
+@media(max-width:900px){.statGrid{grid-template-columns:repeat(2,1fr)}.detailGrid{grid-template-columns:1fr 1fr}}
+@media(max-width:650px){.statGrid{grid-template-columns:1fr 1fr}.detailGrid{grid-template-columns:1fr}}
+
 @media(max-width:650px){main{width:100%;padding:8px}.grid{grid-template-columns:1fr}.full{grid-column:auto}}
 
-@media print{body{background:#fff!important}header,nav,.btn,.notice,.item>span,.card:first-child button{display:none!important}main{width:100%!important;padding:0!important}.card{box-shadow:none!important;border:0!important;padding:0!important}.registerWrap{overflow:visible!important;border:0!important}table{font-size:9px!important;min-width:0!important;width:100%!important}th,td{padding:4px!important;border:1px solid #999!important}.alloyEdit,input[type=date]{border:0!important;padding:0!important;background:transparent!important;appearance:none}.card[style*="eef6ff"]{display:block!important;margin-top:10px!important}.card[style*="eef6ff"] span{font-size:14px!important}}
+@media print{body{background:#fff!important}header h1{font-size:16px!important}header p{font-size:9px!important}header,nav,.btn,.notice,.item>span,.card:first-child button{display:none!important}main{width:100%!important;padding:0!important}.card{box-shadow:none!important;border:0!important;padding:0!important}.registerWrap{overflow:visible!important;border:0!important}table{font-size:9px!important;min-width:0!important;width:100%!important}th,td{padding:4px!important;border:1px solid #999!important}.alloyEdit,input[type=date]{border:0!important;padding:0!important;background:transparent!important;appearance:none}.card[style*="eef6ff"]{display:block!important;margin-top:10px!important}.card[style*="eef6ff"] span{font-size:14px!important}}
 </style></head>
 <body>
 <header><h1>📦 Import Contract Tracker</h1><p>Contract → Booking → Advance → Loading/B/L → Invoice → BOE → Final Payment → Payment → Final Booking → Final Record</p></header>
@@ -2037,10 +2049,95 @@ function printFinalBooking(){
 }
 
 function uid(){ return 'FR-' + Date.now() + '-' + Math.random().toString(36).slice(2,8); }
+function finalRecordValue(v){
+ return v!==undefined && v!==null && v!=='' ? String(v) : '—';
+}
+function finalRecordNum(v){
+ return v!==undefined && v!==null && v!=='' && !Number.isNaN(Number(v)) ? Number(v).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+}
+function detail(label,value){
+ return `<div class="detail"><b>${esc(label)}</b><span>${esc(finalRecordValue(value))}</span></div>`;
+}
+function showFinalRecord(id){
+ const r=(db.finalRecords||[]).find(x=>String(x.id)===String(id));
+ if(!r)return;
+ const c=r.contract||{},b=r.booking||{},a=r.advance||{},iv=r.invoice||{},be=r.boe||{},fp=r.finalPayment||{};
+ const modal=document.createElement('div');
+ modal.className='modalBack';
+ modal.id='finalRecordModal';
+ modal.innerHTML=`<div class="modal">
+  <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+   <div><h2 style="margin:0">📄 Container Final Record</h2><div class="muted">${esc(c.no||'')} · ${esc(b.container||r.sourceContainer||'')}</div></div>
+   <button class="btn w" style="margin:0" onclick="document.getElementById('finalRecordModal').remove()">✕ Close</button>
+  </div>
+
+  <div class="sectionTitle">1. Contract Master</div>
+  <div class="detailGrid">
+   ${detail('Contract Date',c.date)}${detail('Contract No.',c.no)}${detail('Seller',c.seller)}
+   ${detail('Buyer',c.buyer)}${detail('Buyer GSTIN',c.gstin)}${detail('Buyer IEC',c.iec)}
+   ${detail('PAN',c.pan)}${detail('HS Code',c.hs)}${detail('Commodity',c.commodity)}
+   ${detail('Contract Qty (MT)',c.qty)}${detail('Container Plan',c.containerPlan)}${detail('Price USD/MT',c.price)}
+   ${detail('Contract Value USD',c.value)}${detail('Price Term',c.priceTerm)}${detail('Port of Loading',c.pol)}
+   ${detail('Port of Discharge',c.pod)}${detail('Shipment Period',c.shipmentPeriod)}${detail('Transshipment',c.transhipment)}
+  </div>
+
+  <div class="sectionTitle">2. Booking / Container</div>
+  <div class="detailGrid">
+   ${detail('Booking No.',b.no)}${detail('Container No.',b.container||r.sourceContainer)}${detail('Loading Qty (MT)',b.loadingQty)}
+   ${detail('Vessel',b.vessel)}${detail('ETD',b.etd)}${detail('ETA',b.eta)}
+   ${detail('Loading Date',b.loadingDate)}${detail('Seal No.',b.seal)}${detail('B/L No.',b.bl)}
+   ${detail('Voyage',b.voyage)}${detail('Port of Loading',b.pol||c.pol)}${detail('Port of Discharge',b.pod||c.pod)}
+   ${detail('ALLOY',b.alloy)}${detail('Container Plan',c.containerPlan)}
+  </div>
+
+  <div class="sectionTitle">3. Advance Payment</div>
+  <div class="detailGrid">
+   ${detail('Advance USD',a.amount)}${detail('Advance Date',a.date)}${detail('Advance Reference',a.ref)}
+   ${detail('Bank',a.bank)}${detail('USD Rate',a.usdRate)}${detail('Advance INR',a.inr)}
+   ${detail('Other Charges INR',a.otherChargesInr)}${detail('Allocated Advance USD',r.legacy?.advance)}
+  </div>
+
+  <div class="sectionTitle">4. Invoice</div>
+  <div class="detailGrid">
+   ${detail('Invoice No.',iv.invoiceNo)}${detail('Invoice Date',iv.invoiceDate)}${detail('Invoice Qty',iv.invoiceQty)}
+   ${detail('Invoice Total Qty',iv.invoiceTotalQty)}${detail('Invoice Amount USD',iv.invoiceAmount)}
+   ${detail('Invoice Advance USD',iv.invoiceAdvance)}${detail('Invoice Balance USD',iv.invoiceBalance)}
+   ${detail('Invoice File',iv.invoiceFile)}
+  </div>
+
+  <div class="sectionTitle">5. Bill of Entry</div>
+  <div class="detailGrid">
+   ${detail('BE No.',be.beNo)}${detail('BE Date',be.beDate)}${detail('BE Qty (MT)',be.boeQty)}
+   ${detail('Assessable Value INR',be.assessableValue)}${detail('BCD INR',be.bcd)}${detail('SWS INR',be.sws)}
+   ${detail('IGST INR',be.igst)}${detail('Exchange Rate',be.exchangeRate)}${detail('Challan No.',be.challanNo)}
+   ${detail('BOE File',be.boeFile)}
+  </div>
+
+  <div class="sectionTitle">6. Final Payment</div>
+  <div class="detailGrid">
+   ${detail('Final Payment USD',fp.amount)}${detail('Payment Date',fp.date)}${detail('Exchange Rate',fp.rate)}
+   ${detail('INR Amount',fp.inr)}${detail('Reference / Our Bill No.',fp.ref)}${detail('Payment Copy',fp.copyName)}
+  </div>
+
+  <div class="sectionTitle">7. Release / Completion</div>
+  <div class="detailGrid">
+   ${detail('Release Status',r.releaseStatus||'RELEASED')}${detail('Release Date',r.releaseDate)}
+   ${detail('Due Days',dueDays(r.releaseDate||''))}${detail('DONE Date',r.doneDate)}
+  </div>
+ </div>`;
+ document.body.appendChild(modal);
+ modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()});
+}
+function printFinalRecord(){
+ const oldTitle=document.title;
+ document.title='Final Record - Import Contract Tracker';
+ window.print();
+ setTimeout(()=>document.title=oldTitle,1000);
+}
 function finalRec(){
  db.finalRecords = Array.isArray(db.finalRecords) ? db.finalRecords : [];
 
- // Keep one final record per Contract + Container.
+ // One final record per Contract + Container.
  const seen=new Set();
  const unique=db.finalRecords.filter(r=>{
    const no=String(r.contract?.no||r.contractNo||'');
@@ -2050,52 +2147,76 @@ function finalRec(){
    if(cn) seen.add(key);
    return true;
  });
- db.finalRecords=unique;
+ if(unique.length!==db.finalRecords.length){
+   db.finalRecords=unique;
+   saveSilently();
+ }
 
- const val=(r,k,legacy='')=>{
-   const v=r?.[k];
-   return v!==undefined && v!==null && v!=='' ? v : legacy;
- };
- const num=v=>v!=='' && v!==undefined && !Number.isNaN(Number(v)) ? Number(v).toFixed(2) : '';
+ const totalQty=unique.reduce((s,r)=>s+(Number(r.booking?.loadingQty??r.loadingQty)||0),0);
+ const totalAdvance=unique.reduce((s,r)=>s+(Number(r.advance?.amount??r.legacy?.advance)||0),0);
+ const totalInvoice=unique.reduce((s,r)=>s+(Number(r.invoice?.invoiceAmount)||0),0);
+ const totalBalance=unique.reduce((s,r)=>s+(Number(r.invoice?.invoiceBalance??r.legacy?.invoiceBalance)||0),0);
+
  const rows=unique.map((r,i)=>{
-   const c=r.contract||{}, b=r.booking||{}, av=r.advance||{}, inv=r.invoice||{}, be=r.boe||{}, fp=r.finalPayment||{};
-   const qty=Number(b.loadingQty!==undefined?b.loadingQty:(r.loadingQty||0))||0;
-   const adv=av.amount!==undefined&&av.amount!==''?av.amount:(r.advance??'');
-   const bal=inv.invoiceBalance!==undefined&&inv.invoiceBalance!==''?inv.invoiceBalance:(r.invoiceBalance??'');
+   const c=r.contract||{},b=r.booking||{},iv=r.invoice||{};
+   const qty=Number(b.loadingQty??r.loadingQty)||0;
    return `<tr>
     <td>${i+1}</td>
-    <td>${esc(c.date||r.contractDate||'')}</td><td>${esc(c.no||r.contractNo||'')}</td><td>${esc(c.seller||r.seller||'')}</td>
-    <td>${esc(c.buyer||'')}</td><td>${esc(c.commodity||'')}</td><td>${esc(c.qty||'')}</td><td>${esc(c.containerPlan||r.containerPlan||'')}</td>
-    <td>${esc(b.no||'')}</td><td>${qty?qty.toFixed(3):''}</td><td>${esc(b.container||r.container||r.sourceContainer||'')}</td>
-    <td>${esc(b.seal||'')}</td><td>${esc(b.bl||'')}</td><td>${esc(b.vessel||'')}</td><td>${esc(b.etd||'')}</td>
-    <td>${esc(b.loadingDate||'')}</td><td>${esc(b.eta||r.eta||'')}</td><td>${esc(b.pol||c.pol||r.pol||'')}</td><td>${esc(b.pod||c.pod||'')}</td>
-    <td>${esc(b.alloy||r.alloy||'')}</td><td>${esc(c.price||r.price||'')}</td>
-    <td>${num(adv)}</td><td>${esc(av.date||'')}</td><td>${esc(av.ref||'')}</td><td>${esc(av.bank||'')}</td><td>${esc(av.usdRate||'')}</td><td>${esc(av.inr||'')}</td>
-    <td>${esc(inv.invoiceNo||'')}</td><td>${esc(inv.invoiceDate||'')}</td><td>${esc(inv.invoiceQty||'')}</td><td>${esc(inv.invoiceAmount||'')}</td><td>${esc(inv.invoiceAdvance||'')}</td><td>${num(bal)}</td>
-    <td>${esc(be.beNo||'')}</td><td>${esc(be.beDate||'')}</td><td>${esc(be.boeQty||'')}</td><td>${esc(be.assessableValue||'')}</td><td>${esc(be.bcd||'')}</td><td>${esc(be.sws||'')}</td><td>${esc(be.igst||'')}</td><td>${esc(be.exchangeRate||'')}</td><td>${esc(be.challanNo||'')}</td>
-    <td>${esc(fp.amount||'')}</td><td>${esc(fp.date||'')}</td><td>${esc(fp.rate||'')}</td><td>${esc(fp.inr||'')}</td><td>${esc(fp.ref||'')}</td>
-    <td>${esc(r.releaseDate||'')}</td><td>${dueDays(r.releaseDate||'')}</td><td>${esc(r.doneDate||'')}</td>
+    <td>${esc(c.date||r.contractDate||'')}</td>
+    <td><b>${esc(c.no||r.contractNo||'')}</b></td>
+    <td>${esc(c.seller||r.seller||'')}</td>
+    <td>${esc(b.container||r.container||r.sourceContainer||'')}</td>
+    <td>${qty?qty.toFixed(3):''}</td>
+    <td>${esc(b.alloy||r.alloy||'')}</td>
+    <td>${esc(c.price||r.price||'')}</td>
+    <td>${finalRecordNum(r.advance?.amount??r.legacy?.advance)}</td>
+    <td>${esc(iv.invoiceNo||'')}</td>
+    <td>${finalRecordNum(iv.invoiceAmount)}</td>
+    <td>${finalRecordNum(iv.invoiceBalance??r.legacy?.invoiceBalance)}</td>
+    <td>${esc(r.releaseDate||'')}</td>
+    <td>${dueDays(r.releaseDate||'')}</td>
+    <td><span class="badge">COMPLETED ✓</span></td>
+    <td><button class="btn p" style="margin:0;padding:6px 10px" onclick="showFinalRecord('${esc(r.id)}')">VIEW FULL</button></td>
    </tr>`;
  }).join('');
 
- save();
- shell("📄 Final Record — Complete Container Master",`
- <div class="item"><b>Final Record Register</b><br>
- <span class="muted">प्रत्येक container साठी Booking मधील संबंधित Contract + Booking + Advance + Invoice + Bill of Entry + Final Payment + Release information एकाच row मध्ये आहे. DONE झाल्यानंतर ही row Final Record मध्ये कायम राहते आणि Booking मधून तीच container row काढली जाते.</span></div>
- <div class="notice"><b>Duplicate Control:</b> Contract No. + Container No. या combination वर एकच Final Record ठेवला जातो.</div>
+ shell("📄 Final Record — Master Container Register",`
+ <div class="item">
+  <b>Completed Container Master</b><br>
+  <span class="muted">DONE झालेला प्रत्येक container एकदाच Final Record मध्ये येतो. Booking, Contract, Advance, Invoice, Bill of Entry आणि Final Payment मधील त्या container शी संबंधित संपूर्ण data सुरक्षित ठेवला आहे.</span>
+ </div>
+
+ <div class="statGrid">
+  <div class="stat"><div class="k">Completed Containers</div><div class="v">${unique.length}</div></div>
+  <div class="stat"><div class="k">Total Loading Qty MT</div><div class="v">${totalQty.toFixed(3)}</div></div>
+  <div class="stat"><div class="k">Advance USD</div><div class="v">${totalAdvance.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>
+  <div class="stat"><div class="k">Invoice USD</div><div class="v">${totalInvoice.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>
+  <div class="stat"><div class="k">Invoice Balance USD</div><div class="v">${totalBalance.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</div></div>
+ </div>
+
+ <div class="toolbar">
+  <input id="finalSearch" placeholder="🔎 Search Contract / Container / Seller / Invoice No." oninput="filterFinalRecord()">
+  <button class="btn p" style="margin:0" onclick="printFinalRecord()">📄 PDF / Print</button>
+ </div>
+
+ <div class="notice"><b>Duplicate Control:</b> Contract No. + Container No. = one Final Record. Full information पाहण्यासाठी row मधील <b>VIEW FULL</b> वापरा.</div>
+
  <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff;margin-top:12px">
- <table style="min-width:5200px;width:max-content;border-collapse:collapse">
+ <table id="finalRecordTable" style="min-width:1900px;width:max-content;border-collapse:collapse">
  <thead><tr>
- <th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Buyer</th><th>Commodity</th><th>Contract Qty</th><th>Container Plan</th>
- <th>Booking No.</th><th>Loading Qty (MT)</th><th>Container No.</th><th>Seal No.</th><th>B/L No.</th><th>Vessel</th><th>ETD</th><th>Loading Date</th><th>ETA</th><th>Port of Loading</th><th>Port of Discharge</th><th>ALLOY</th><th>Price USD/MT</th>
- <th>Advance USD</th><th>Advance Date</th><th>Advance Ref</th><th>Bank</th><th>USD Rate</th><th>Advance INR</th>
- <th>Invoice No.</th><th>Invoice Date</th><th>Invoice Qty</th><th>Invoice Amount USD</th><th>Invoice Advance USD</th><th>Invoice Balance USD</th>
- <th>BE No.</th><th>BE Date</th><th>BE Qty</th><th>Assessable Value INR</th><th>BCD INR</th><th>SWS INR</th><th>IGST INR</th><th>Exchange Rate</th><th>Challan No.</th>
- <th>Final Payment USD</th><th>Final Payment Date</th><th>Final Rate</th><th>Final INR</th><th>Our Bill No.</th>
- <th>Release Date</th><th>Due Days</th><th>Done Date</th>
+  <th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Container No.</th>
+  <th>Loading Qty (MT)</th><th>ALLOY</th><th>Price USD/MT</th><th>Advance USD</th>
+  <th>Invoice No.</th><th>Invoice Amount USD</th><th>Invoice Balance USD</th>
+  <th>Release Date</th><th>Due Days</th><th>Status</th><th>Full Data</th>
  </tr></thead>
- <tbody>${rows||'<tr><td colspan="50" style="text-align:center;padding:20px">No completed containers yet. Payment मध्ये RELEASE झालेल्या container वर DONE करा.</td></tr>'}</tbody>
+ <tbody id="finalRecordBody">${rows||'<tr><td colspan="16" style="text-align:center;padding:24px">No completed containers yet. Payment मध्ये RELEASE झालेल्या container वर DONE करा.</td></tr>'}</tbody>
  </table></div>`);
+}
+function filterFinalRecord(){
+ const q=String($('finalSearch')?.value||'').toLowerCase().trim();
+ document.querySelectorAll('#finalRecordBody tr').forEach(tr=>{
+   tr.style.display=!q||tr.innerText.toLowerCase().includes(q)?'':'none';
+ });
 }
 function complete(){let c=get(cur),f=file("ffinal");if(!f)return alert("Upload final document.");c.final={file:f,date:new Date().toISOString()};save();finalRec()}
 document.addEventListener("input",e=>{if(e.target.id==="price"||e.target.id==="qty"){let p=parseFloat($("price")?.value||0),q=parseFloat($("qty")?.value||0);if($("contractValue"))$("contractValue").value=p&&q?(p*q).toFixed(2):"";}});render();
