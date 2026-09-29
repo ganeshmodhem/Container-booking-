@@ -12,7 +12,7 @@ main{width:98vw;max-width:none;margin:0 auto;padding:14px}.page{display:none}.pa
 <nav id="nav"></nav><main id="main"></main>
 <script>
 const K="IMPORT_TRACKER_V2";let db=JSON.parse(localStorage.getItem(K)||'{"contracts":[]}'),cur="";
-const stages=[["home","🏠 Contract"],["booking","🚢 Booking"],["advance","💵 Advance"],["loading","📦 Loading/B/L"],["invoice","🧾 Invoice"],["boe","🛃 Bill of Entry"],["finalpay","💰 Final Payment"],["finalbooking","📊 Final Booking"],["final","📄 Final Record"]];
+const stages=[["home","🏠 Contract"],["booking","🚢 Booking"],["advance","💵 Advance"],["loading","📦 Loading/B/L"],["invoice","🧾 Invoice"],["boe","🛃 Bill of Entry"],["finalpay","💰 Final Payment"],["payment","💳 Payment"],["finalbooking","📊 Final Booking"],["final","📄 Final Record"]];
 const $=x=>document.getElementById(x), esc=x=>String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 function file(id){let f=$(id)?.files?.[0];return f?{name:f.name,type:f.type}:null}
 function get(n){return db.contracts.find(x=>x.no.toLowerCase()===String(n||"").trim().toLowerCase())}
@@ -43,7 +43,7 @@ function searchFinalRecordContract(){
  cur=no; page='final'; render();
 }
 function render(){
-nav();if(page==="home")home();else if(page==="booking")booking();else if(page==="advance")advance();else if(page==="loading")loading();else if(page==="invoice")invoice();else if(page==="boe")boe();else if(page==="finalpay")finalpay();else if(page==="finalbooking")finalBooking();else finalRec()
+nav();if(page==="home")home();else if(page==="booking")booking();else if(page==="advance")advance();else if(page==="loading")loading();else if(page==="invoice")invoice();else if(page==="boe")boe();else if(page==="finalpay")finalpay();else if(page==="payment")payment();else if(page==="finalbooking")finalBooking();else finalRec()
 }
 function home(){shell("🔎 Sales Contract",`<div class="search"><input id="q" placeholder="Sales Contract No."><button class="btn p" onclick="search()">Search</button></div><hr><div class="notice">Upload your Sales Contract, then confirm/edit the master information.</div><input id="cf" class="file" type="file" accept=".pdf,image/*"><button class="btn w" onclick="readContract()">🔍 Read Contract</button><div id="ocrStatus" class="notice">Select a PDF/Image and tap Read Contract.</div><div class="grid" style="margin-top:10px">
 ${field("sc","Sales Contract No.")}${field("date","Contract Date","date")}${field("seller","Seller")}${field("buyer","Buyer Name")}${field("gst","Buyer GSTIN")}${field("iec","Buyer IEC No.")}${field("pan","PAN")}${field("hs","HS Code")}${field("commodity","Commodity","",1)}${field("qty","Quantity (MT)")}${field("cp","Container Plan")}${field("price","Price (USD/MT)")}${field("term","Price Term")}<div><label>Contract Value (USD)</label><input id="contractValue" readonly></div>${field("pol","Port of Loading")}${field("pod","Port of Discharge")}${field("ship","Shipment Period")}${field("adv","Advance (USD)")}${field("trans","Transshipment")}${field("partial","Partial Shipment")}${field("remarks","Payment Terms / Remarks","textarea",1)}</div><div class="notice" style="margin-top:10px">
@@ -1811,7 +1811,7 @@ function finalBooking(){
      <td><button class="btn" style="margin:0;padding:7px 10px;background:#c62828;color:#fff" onclick="finalBookingDelete(${ci},${i})">DELETE</button></td>
    </tr>`;
  }).join('');
- shell("📊 Final Booking — Master Report",`<div class="item"><b>Final Booking Register</b><br><span class="muted">This report is automatically linked to every Sales Contract and its Booking / Advance / Invoice data. Changes made in the main Booking register flow into this report automatically.</span></div>
+ shell("📊 Final Booking — Master Report",`<div class="item"><b>Final Booking Register</b><br><span class="muted">This report is automatically linked to every Sales Contract and its Booking / Advance / Invoice data. Changes made in the main Booking register flow into this report automatically. Click RELEASE to move the container to the Payment tab.</span></div>
  <div class="notice"><b>Alloy rule:</b> 1 x 20 → <b>6063</b> &nbsp; | &nbsp; 1 x 40 → <b>6061</b>. Alloy remains editable row-wise.</div>
  <datalist id="alloyOptions"><option value="6063"><option value="6061"></datalist>
  <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff;margin-top:12px">
@@ -1825,7 +1825,7 @@ function finalBookingAlloy(ci,bi,val){ updateAlloySafe(ci,bi,val); }
 function updateAlloySafe(ci,bi,val){ const c=db.contracts[ci]; if(!c||!c.bookings?.[bi])return; c.bookings[bi].alloy=String(val||'').trim(); localStorage.setItem(K,JSON.stringify(db)); }
 function finalBookingRelease(ci,bi){
  const c=db.contracts[ci]; const b=c?.bookings?.[bi]; if(!b)return;
- b.released=true; localStorage.setItem(K,JSON.stringify(db)); render();
+ b.released=true; b.releaseDate=new Date().toISOString().slice(0,10); localStorage.setItem(K,JSON.stringify(db)); page="payment"; render();
 }
 function finalBookingDelete(ci,bi){
  const c=db.contracts[ci]; const b=c?.bookings?.[bi]; if(!b)return;
@@ -1833,6 +1833,39 @@ function finalBookingDelete(ci,bi){
  if(!confirm(`Delete ${label} from this booking register?`))return;
  c.bookings.splice(bi,1); localStorage.setItem(K,JSON.stringify(db)); render();
 }
+function payment(){
+ const rows=[];
+ db.contracts.forEach((c,ci)=>{
+   (c.bookings||[]).forEach((b,bi)=>{
+     if(!b.released) return;
+     const q=(b.loadingQty!==undefined&&b.loadingQty!=='')?Number(b.loadingQty):parseFloat(String(b.qty||'').replace(/,/g,''))||0;
+     const av=b.advance||{}; const inv=b.invoice||{};
+     const adv=av.amount!==undefined&&av.amount!==''?Number(av.amount):(b.allocatedAdvance||0);
+     const bal=inv.invoiceBalance!==undefined&&inv.invoiceBalance!==''?Number(inv.invoiceBalance):'';
+     const plan=String(c.containerPlan||'');
+     const alloy=alloyFor(c,b);
+     rows.push(`<tr>
+       <td>${esc(b.slot||rows.length+1)}</td><td>${esc(c.date||'')}</td><td>${esc(c.no||'')}</td><td>${esc(c.seller||'')}</td>
+       <td>${q?Number(q).toFixed(3):esc(b.qty||'')}</td><td>${esc(plan)}</td>
+       <td><input class="alloyEdit" list="alloyOptionsPayment" value="${esc(alloy)}" onchange="paymentAlloy(${ci},${bi},this.value)"></td>
+       <td>${esc(c.price||'')}</td><td>${adv!==''&&!Number.isNaN(adv)?Number(adv).toFixed(2):''}</td>
+       <td>${bal!==''&&!Number.isNaN(bal)?Number(bal).toFixed(2):''}</td><td>${esc(b.container||'')}</td>
+       <td>${esc(b.pol||c.pol||'')}</td><td>${esc(b.eta||'')}</td>
+       <td><span class="badge">RELEASED ✓</span></td>
+       <td>${esc(b.releaseDate||'')}</td>
+     </tr>`);
+   });
+ });
+ shell("💳 Payment — Released Containers",`<div class="item"><b>Released Container Payment Register</b><br><span class="muted">When RELEASE is clicked in Final Booking, that container moves here automatically. It disappears from Final Booking but remains linked to the original Booking record.</span></div>
+ <div class="notice"><b>ETA:</b> Date is taken automatically from the Booking/Loading data. &nbsp; <b>Alloy:</b> 1 x 20 → 6063 | 1 x 40 → 6061, editable.</div>
+ <datalist id="alloyOptionsPayment"><option value="6063"><option value="6061"></datalist>
+ <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff;margin-top:12px">
+ <table style="min-width:1900px;width:max-content;border-collapse:collapse"><thead><tr>
+ <th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty (MT)</th><th>Container Plan</th><th>ALLOY</th><th>Price (USD/MT)</th><th>Advance USD</th><th>Invoice Balance USD</th><th>Container No.</th><th>Port of Loading</th><th>ETA</th><th>Release Status</th><th>Release Date</th>
+ </tr></thead><tbody>${rows.join('')||'<tr><td colspan="15" style="text-align:center;padding:20px">No released containers yet. Release a container from Final Booking.</td></tr>'}</tbody></table></div>`);
+}
+function paymentAlloy(ci,bi,val){ updateAlloySafe(ci,bi,val); }
+
 function finalRec(){
  let c=get(cur);
  if(!c){
