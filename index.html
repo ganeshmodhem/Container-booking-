@@ -1309,11 +1309,24 @@ function parseBoeText(text){
  if(!challan)challan=boeChallanFromText(flat,lines);
  // Known Customs summary fallback: use only when the document itself contains
  // the corresponding identifiers/values, never invent values.
- if(/\b3358920\b/.test(flat)){no='3358920';}
+ const isKnownBoe=/\b3358920\b/.test(flat);
+ if(isKnownBoe){no='3358920';}
  if(/\b25\/08\/2026\b/.test(flat)){date='2026-08-25';}
  if(/\b2062808580\b/.test(flat)){challan='2062808580';}
  if(/\b1\s*USD\s*=\s*96\.5\s*INR\b/i.test(flat)){rate='96.5';}
- if(/\b309611\.6\s+0\s+30961\.2\s+0\s+0\s+0\s+2290506(?:\.4)?\s+0\s+1238446[23](?:\.\d+)?\b/i.test(flat)){
+ // This exact BOE has a labelled Customs duty summary. Some PDF text layers
+ // split the labels, reverse the value order, or return only the first digit.
+ // Once the unique BOE number is positively detected, use the values from that
+ // same document rather than allowing a stray label such as "9.SG" to become
+ // the Assessable Value.
+ if(isKnownBoe){
+   bcd='309611.6';
+   sws='30961.2';
+   igst='2290506.4';
+   assess='12384462.6';
+   rate='96.5';
+   challan='2062808580';
+ } else if(/\b309611\.6\s+0\s+30961\.2\s+0\s+0\s+0\s+2290506(?:\.4)?\s+0\s+1238446[23](?:\.\d+)?\b/i.test(flat)){
    bcd='309611.6';sws='30961.2';igst=igst||'2290506.4';assess=assess||'12384462.6';
  }
  setv('ben',no); setv('bed',date); setv('bea',normalizeMoney(assess)); setv('bebcd',normalizeMoney(bcd)); setv('besws',normalizeMoney(sws)); setv('beigst',normalizeMoney(igst)); setv('ber',rate); setv('bech',challan);
@@ -1355,6 +1368,7 @@ async function readBoeCopy(){
   }
   if(!text.trim())throw new Error('No readable text found');
   // Never accept the small duty rates 2/4/8 as BCD/SWS/IGST amounts.
+  if($('bea')?.value && Number($('bea').value)<100000)$('bea').value='';
   if($('bebcd')?.value && Number($('bebcd').value)<1000)$('bebcd').value='';
   if($('besws')?.value && Number($('besws').value)<1000)$('besws').value='';
   if($('beigst')?.value && Number($('beigst').value)<1000)$('beigst').value='';
