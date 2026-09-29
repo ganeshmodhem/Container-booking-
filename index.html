@@ -3,16 +3,16 @@
 <title>Import Contract Tracker</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#f3f6fa;font-family:Arial;color:#1d2a35}header{background:#123f68;color:white;text-align:center;padding:18px 10px;position:sticky;top:0;z-index:5}header h1{margin:0;font-size:22px}header p{margin:7px 0;font-size:14px}
-nav{display:flex;overflow:auto;gap:7px;background:white;padding:8px;position:sticky;top:86px;z-index:4}nav button{border:0;border-radius:10px;padding:10px 13px;font-weight:bold;white-space:nowrap}nav .on{background:#123f68;color:#fff}nav .lock{opacity:.55}nav button{cursor:pointer}nav{z-index:20}
-main{width:98vw;max-width:none;margin:0 auto;padding:14px}.page{display:none}.page.on{display:block}.card{background:#fff;padding:15px;border-radius:15px;margin-bottom:12px;box-shadow:0 2px 10px #0001}h2{margin:0 0 13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{display:block;font-size:12px;font-weight:bold;color:#5b6875;margin-bottom:5px}input,select,textarea{width:100%;padding:11px;border:1px solid #ccd5de;border-radius:10px;font-size:14px}textarea{min-height:80px}.btn{border:0;border-radius:10px;padding:11px 14px;font-weight:bold;margin:6px 4px 0 0}.p{background:#123f68;color:white}.s{background:#16844d;color:white}.w{background:#d88900;color:white}.file{border-style:dashed}.item{border:1px solid #dde4eb;border-radius:10px;padding:12px;margin:9px 0}.muted{font-size:12px;color:#6d7882}.ok{background:#e1f6ea;color:#155d39;padding:10px;border-radius:9px;margin:8px 0}.notice{background:#fff5d8;padding:10px;border-radius:9px;font-size:13px}.search{display:flex;gap:7px}.search input{flex:1}table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #ddd;text-align:left;font-size:13px}table thead th{background:#eef3f7;white-space:nowrap;border-bottom:2px solid #cbd5df}table tbody tr:hover{background:#f8fafc}table tbody td{white-space:nowrap}.registerWrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.registerWrap table{min-width:max-content}.badge{padding:5px 8px;border-radius:15px;background:#d9f4e5;color:#14613c;font-size:11px;font-weight:bold}
+nav{display:flex;overflow:auto;gap:7px;background:white;padding:8px;position:sticky;top:86px;z-index:4}nav button{border:0;border-radius:10px;padding:10px 13px;font-weight:bold;white-space:nowrap}nav .on{background:#123f68;color:#fff}nav .lock{opacity:1}nav button{cursor:pointer}nav{z-index:20}
+main{width:98vw;max-width:none;margin:0 auto;padding:14px}.page{display:none}.page.on{display:block}.card{background:#fff;padding:15px;border-radius:15px;margin-bottom:12px;box-shadow:0 2px 10px #0001}h2{margin:0 0 13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{display:block;font-size:12px;font-weight:bold;color:#5b6875;margin-bottom:5px}input,select,textarea{width:100%;padding:11px;border:1px solid #ccd5de;border-radius:10px;font-size:14px}textarea{min-height:80px}.btn{border:0;border-radius:10px;padding:11px 14px;font-weight:bold;margin:6px 4px 0 0}.p{background:#123f68;color:white}.s{background:#16844d;color:white}.w{background:#d88900;color:white}.file{border-style:dashed}.item{border:1px solid #dde4eb;border-radius:10px;padding:12px;margin:9px 0}.muted{font-size:12px;color:#6d7882}.ok{background:#e1f6ea;color:#155d39;padding:10px;border-radius:9px;margin:8px 0}.notice{background:#fff5d8;padding:10px;border-radius:9px;font-size:13px}.search{display:flex;gap:7px}.search input{flex:1}table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #ddd;text-align:left;font-size:13px}table thead th{background:#eef3f7;white-space:nowrap;border-bottom:2px solid #cbd5df}table tbody tr:hover{background:#f8fafc}table tbody td{white-space:nowrap}.registerWrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.registerWrap table{min-width:max-content}.alloyEdit{min-width:85px;width:85px;padding:7px!important;border:1px solid #ccd5de;border-radius:7px}.badge{padding:5px 8px;border-radius:15px;background:#d9f4e5;color:#14613c;font-size:11px;font-weight:bold}
 @media(max-width:650px){main{width:100%;padding:8px}.grid{grid-template-columns:1fr}.full{grid-column:auto}}
 </style></head>
 <body>
-<header><h1>📦 Import Contract Tracker</h1><p>Contract → Booking → Advance → Loading/B/L → Invoice → BOE → Final Payment → Final Record</p></header>
+<header><h1>📦 Import Contract Tracker</h1><p>Contract → Booking → Advance → Loading/B/L → Invoice → BOE → Final Payment → Final Booking → Final Record</p></header>
 <nav id="nav"></nav><main id="main"></main>
 <script>
 const K="IMPORT_TRACKER_V2";let db=JSON.parse(localStorage.getItem(K)||'{"contracts":[]}'),cur="";
-const stages=[["home","🏠 Contract"],["booking","🚢 Booking"],["advance","💵 Advance"],["loading","📦 Loading/B/L"],["invoice","🧾 Invoice"],["boe","🛃 Bill of Entry"],["finalpay","💰 Final Payment"],["final","📄 Final Record"]];
+const stages=[["home","🏠 Contract"],["booking","🚢 Booking"],["advance","💵 Advance"],["loading","📦 Loading/B/L"],["invoice","🧾 Invoice"],["boe","🛃 Bill of Entry"],["finalpay","💰 Final Payment"],["finalbooking","📊 Final Booking"],["final","📄 Final Record"]];
 const $=x=>document.getElementById(x), esc=x=>String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 function file(id){let f=$(id)?.files?.[0];return f?{name:f.name,type:f.type}:null}
 function get(n){return db.contracts.find(x=>x.no.toLowerCase()===String(n||"").trim().toLowerCase())}
@@ -43,7 +43,7 @@ function searchFinalRecordContract(){
  cur=no; page='final'; render();
 }
 function render(){
-nav();if(page==="home")home();else if(page==="booking")booking();else if(page==="advance")advance();else if(page==="loading")loading();else if(page==="invoice")invoice();else if(page==="boe")boe();else if(page==="finalpay")finalpay();else finalRec()
+nav();if(page==="home")home();else if(page==="booking")booking();else if(page==="advance")advance();else if(page==="loading")loading();else if(page==="invoice")invoice();else if(page==="boe")boe();else if(page==="finalpay")finalpay();else if(page==="finalbooking")finalBooking();else finalRec()
 }
 function home(){shell("🔎 Sales Contract",`<div class="search"><input id="q" placeholder="Sales Contract No."><button class="btn p" onclick="search()">Search</button></div><hr><div class="notice">Upload your Sales Contract, then confirm/edit the master information.</div><input id="cf" class="file" type="file" accept=".pdf,image/*"><button class="btn w" onclick="readContract()">🔍 Read Contract</button><div id="ocrStatus" class="notice">Select a PDF/Image and tap Read Contract.</div><div class="grid" style="margin-top:10px">
 ${field("sc","Sales Contract No.")}${field("date","Contract Date","date")}${field("seller","Seller")}${field("buyer","Buyer Name")}${field("gst","Buyer GSTIN")}${field("iec","Buyer IEC No.")}${field("pan","PAN")}${field("hs","HS Code")}${field("commodity","Commodity","",1)}${field("qty","Quantity (MT)")}${field("cp","Container Plan")}${field("price","Price (USD/MT)")}${field("term","Price Term")}<div><label>Contract Value (USD)</label><input id="contractValue" readonly></div>${field("pol","Port of Loading")}${field("pod","Port of Discharge")}${field("ship","Shipment Period")}${field("adv","Advance (USD)")}${field("trans","Transshipment")}${field("partial","Partial Shipment")}${field("remarks","Payment Terms / Remarks","textarea",1)}</div><div class="notice" style="margin-top:10px">
@@ -1764,6 +1764,74 @@ function searchFinalPayContract(){
  if(!no){alert('Enter Sales Contract No.');return;}
  if(!get(no)){alert('Sales Contract not found.');return;}
  cur=no; page='finalpay'; render();
+}
+function finalBooking(){
+ const all=[];
+ db.contracts.forEach(c=>{
+   ensureBookingRows(c);
+   (c.bookings||[]).forEach((b,i)=>all.push({c,b,i}));
+ });
+ const alloyFor=(c,b)=>{
+   if(String(b.alloy||'').trim()) return String(b.alloy).trim();
+   const plan=String(c.containerPlan||'').toLowerCase().replace(/[’']/g,"'");
+   if(/1\s*x\s*40|40\s*'?\s*(?:ft|container)?/.test(plan)) return '6061';
+   if(/1\s*x\s*20|20\s*'?\s*(?:ft|container)?/.test(plan)) return '6063';
+   if(/40/.test(plan)) return '6061';
+   if(/20/.test(plan)) return '6063';
+   return '';
+ };
+ const updateAlloy=(ci,bi,val)=>{
+   const c=db.contracts[ci]; if(!c||!c.bookings||!c.bookings[bi]) return;
+   c.bookings[bi].alloy=val; localStorage.setItem(K,JSON.stringify(db));
+ };
+ const rows=all.map(({c,b,i})=>{
+   const inv=b.invoice||{};
+   const av=b.advance||{};
+   const q=(b.loadingQty!==undefined&&b.loadingQty!=='')?Number(b.loadingQty):parseFloat(String(b.qty||'').replace(/,/g,''))||0;
+   const adv=av.amount!==undefined&&av.amount!==''?Number(av.amount):((b.allocatedAdvance||0));
+   const bal=inv.invoiceBalance!==undefined&&inv.invoiceBalance!==''?Number(inv.invoiceBalance):'';
+   const plan=String(c.containerPlan||'');
+   const alloy=alloyFor(c,b);
+   const ci=db.contracts.indexOf(c);
+   return `<tr>
+     <td>${esc(b.slot||i+1)}</td>
+     <td>${esc(c.date||'')}</td>
+     <td>${esc(c.no||'')}</td>
+     <td>${esc(c.seller||'')}</td>
+     <td>${q?Number(q).toFixed(3):esc(b.qty||'')}</td>
+     <td>${esc(plan)}</td>
+     <td><input class="alloyEdit" list="alloyOptions" value="${esc(alloy)}" onchange="finalBookingAlloy(${ci},${i},this.value)" title="Editable Alloy"></td>
+     <td>${esc(c.price||'')}</td>
+     <td>${adv!==''&&!Number.isNaN(adv)?Number(adv).toFixed(2):''}</td>
+     <td>${bal!==''&&!Number.isNaN(bal)?Number(bal).toFixed(2):''}</td>
+     <td>${esc(b.container||'')}</td>
+     <td>${esc(b.pol||c.pol||'')}</td>
+     <td>${esc(b.eta||'')}</td>
+     <td>${b.released?'<span class="badge">RELEASED ✓</span>':`<button class="btn w" style="margin:0;padding:7px 10px" onclick="finalBookingRelease(${ci},${i})">RELEASE</button>`}</td>
+     <td><button class="btn" style="margin:0;padding:7px 10px;background:#c62828;color:#fff" onclick="finalBookingDelete(${ci},${i})">DELETE</button></td>
+   </tr>`;
+ }).join('');
+ shell("📊 Final Booking — Master Report",`<div class="item"><b>Final Booking Register</b><br><span class="muted">This report is automatically linked to every Sales Contract and its Booking / Advance / Invoice data. Changes made in the main Booking register flow into this report automatically.</span></div>
+ <div class="notice"><b>Alloy rule:</b> 1 x 20 → <b>6063</b> &nbsp; | &nbsp; 1 x 40 → <b>6061</b>. Alloy remains editable row-wise.</div>
+ <datalist id="alloyOptions"><option value="6063"><option value="6061"></datalist>
+ <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff;margin-top:12px">
+ <table style="min-width:1800px;width:max-content;border-collapse:collapse">
+ <thead><tr>
+ <th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty (MT)</th><th>Container Plan</th><th>ALLOY</th><th>Price (USD/MT)</th><th>Advance USD</th><th>Invoice Balance USD</th><th>Container No.</th><th>Port of Loading</th><th>ETA</th><th>Release</th><th>Delete</th>
+ </tr></thead><tbody>${rows||'<tr><td colspan="15" style="text-align:center;padding:20px">No booking records available.</td></tr>'}</tbody>
+ </table></div>`);
+}
+function finalBookingAlloy(ci,bi,val){ updateAlloySafe(ci,bi,val); }
+function updateAlloySafe(ci,bi,val){ const c=db.contracts[ci]; if(!c||!c.bookings?.[bi])return; c.bookings[bi].alloy=String(val||'').trim(); localStorage.setItem(K,JSON.stringify(db)); }
+function finalBookingRelease(ci,bi){
+ const c=db.contracts[ci]; const b=c?.bookings?.[bi]; if(!b)return;
+ b.released=true; localStorage.setItem(K,JSON.stringify(db)); render();
+}
+function finalBookingDelete(ci,bi){
+ const c=db.contracts[ci]; const b=c?.bookings?.[bi]; if(!b)return;
+ const label=b.container||b.no||`Row ${bi+1}`;
+ if(!confirm(`Delete ${label} from this booking register?`))return;
+ c.bookings.splice(bi,1); localStorage.setItem(K,JSON.stringify(db)); render();
 }
 function finalRec(){
  let c=get(cur);
