@@ -1406,18 +1406,93 @@ function finalInvoiceSummary(c){
  });
  return Array.from(map.values());
 }
+function finalPaymentDate(v){
+ const s=String(v||'').trim();
+ let m=s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/);
+ if(m){let y=m[3];if(y.length===2)y='20'+y;return `${y}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
+ m=s.match(/^(\d{1,2})[- ]([A-Za-z]{3,9})[- ](\d{2,4})$/);
+ if(m){const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,sept:9,oct:10,nov:11,dec:12};let y=m[3];if(y.length===2)y='20'+y;const mo=months[m[2].slice(0,4).toLowerCase()]||months[m[2].slice(0,3).toLowerCase()];if(mo)return `${y}-${String(mo).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
+ return '';
+}
+function parseFinalPaymentText(text){
+ const raw=String(text||'').replace(/\r/g,'\n');
+ const flat=raw.replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
+ let amount='',m=flat.match(/Bill\s+Amount\s*[:\-]?\s*USD\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i);
+ if(m)amount=m[1];
+ if(!amount){m=flat.match(/Principal\s+Amount\s*[:\-]?\s*USD\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i);if(m)amount=m[1];}
+ let date='';m=flat.match(/Event\s+Date\s*[:\-]?\s*(\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4})/i);if(m)date=finalPaymentDate(m[1]);
+ if(!date){m=flat.match(/Event\s+Date\s*[:\-]?\s*(\d{1,2}[- ](?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*[- ]\d{2,4})/i);if(m)date=finalPaymentDate(m[1]);}
+ let rate='';m=flat.match(/Conversion\s+Rate\s*[^@]{0,100}@\s*([0-9]+(?:\.\d{1,6})?)\s*INR/i);if(m)rate=m[1];
+ if(!rate){m=flat.match(/@\s*([0-9]+(?:\.\d{1,6})?)\s*INR\s+([0-9][0-9,]*(?:\.\d{1,2})?)/i);if(m)rate=m[1];}
+ let inr='';m=flat.match(/Principal\s+Amount\s+USD[^@]{0,150}@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i);if(m)inr=m[1];
+ if(!inr){m=flat.match(/@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i);if(m)inr=m[1];}
+ let bill='';m=flat.match(/Our\s+Bill\s+No\.?\s*[:\-]?\s*([A-Z0-9][A-Z0-9\/\-]{4,50})/i);if(m)bill=m[1];
+ let tol='';m=flat.match(/TOL\s+Ref\s+No\.?\s*[:\-]?\s*([A-Z0-9][A-Z0-9\/\-]{4,50})/i);if(m)tol=m[1];
+ let ref=[bill,tol].filter(Boolean).join(' / ');
+ const isFira=/FOREIGN\s+IMPORT\s+BILL\s+REALIZATION\s+ADVICE/i.test(flat)||/Bill\s+Received\s+from/i.test(flat);
+ // Exact layout fallback for the uploaded ICICI advice, only when this document is identified as a FIRA.
+ if(isFira){
+   if(!amount){m=flat.match(/Bill\s+Amount\s+USD\s*([0-9,]+(?:\.\d{1,2})?)/i);if(m)amount=m[1];}
+   if(!date){m=flat.match(/Event\s+Date\s+(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i);if(m)date=finalPaymentDate(m[1]);}
+   if(!rate){m=flat.match(/Conversion\s+Rate\s+[^@]*@\s*([0-9]+(?:\.\d+)?)/i);if(m)rate=m[1];}
+   if(!inr){m=flat.match(/@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i);if(m)inr=m[1];}
+ }
+ if(amount&&$('fa'))$('fa').value=amount.replace(/,/g,'');
+ if(date&&$('fd'))$('fd').value=date;
+ if(rate&&$('fr'))$('fr').value=rate;
+ if(inr&&$('fi'))$('fi').value=inr.replace(/,/g,'');
+ if(ref&&$('fx'))$('fx').value=ref;
+ return {amount,date,rate,inr,ref};
+}
+async function readFinalPaymentCopy(){
+ const f=$('ff')?.files?.[0];if(!f)return;
+ const st=$('finalPayStatus');if(st)st.textContent='⏳ Reading Final Payment PDF/Image…';
+ try{
+   let text='';
+   if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
+     await ensurePdfJS();
+     const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+     for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i),tc=await pg.getTextContent();text+='\n'+tc.items.map(x=>x.str).join(' ');}
+     let parsed=parseFinalPaymentText(text);
+     if(!(parsed.amount&&parsed.date&&parsed.rate&&parsed.inr)){
+       await ensureTesseract();if(st)st.textContent='⏳ Final Payment OCR is running…';
+       for(let i=1;i<=pdf.numPages;i++){
+         const pg=await pdf.getPage(i),vp=pg.getViewport({scale:2.4});const cv=document.createElement('canvas'),ctx=cv.getContext('2d');cv.width=vp.width;cv.height=vp.height;
+         await pg.render({canvasContext:ctx,viewport:vp}).promise;
+         const r=await Tesseract.recognize(cv,'eng',{logger:m=>{if(m.status&&st)st.textContent='⏳ Final Payment OCR '+Math.round((m.progress||0)*100)+'%';}});text+='\n'+(r.data.text||'');
+       }
+       parsed=parseFinalPaymentText(text);
+     }
+     if(!parsed.amount&&!parsed.date&&!parsed.rate&&!parsed.inr)throw new Error('No Final Payment fields detected');
+   }else{
+     await ensureTesseract();const r=await Tesseract.recognize(f,'eng',{logger:m=>{if(m.status&&st)st.textContent='⏳ Final Payment OCR '+Math.round((m.progress||0)*100)+'%';}});const parsed=parseFinalPaymentText(r.data.text||'');
+     if(!parsed.amount&&!parsed.date&&!parsed.rate&&!parsed.inr)throw new Error('No Final Payment fields detected');
+   }
+   if(st)st.textContent='✅ Final Payment copy read. Verify the extracted fields before saving.';
+ }catch(e){console.error(e);if(st)st.textContent='⚠️ Final Payment OCR/reader failed. You can enter the fields manually.';}
+}
 function finalpay(){
  let c=get(cur);
  const invs=finalInvoiceSummary(c);
+ const savedSel=Array.isArray(c.finalpay?.selectedInvoiceNumbers)?c.finalpay.selectedInvoiceNumbers:invs.map(x=>x.no);
+ const selected=invs.filter(x=>savedSel.includes(x.no));
  const totalInv=invs.reduce((a,x)=>a+x.amount,0);
+ const selectedTotal=selected.reduce((a,x)=>a+x.amount,0);
  const advUsd=Number(String(c.advanceSummary?.totalUsd||0).replace(/,/g,''))||0;
- const balance=Math.max(0,totalInv-advUsd);
- const rows=invs.length?invs.map(x=>`<tr><td>${esc(x.no)}</td><td>${esc(x.date||'-')}</td><td>${x.qty?x.qty.toFixed(3):'-'}</td><td>USD ${x.amount.toFixed(2)}</td></tr>`).join(''):'<tr><td colspan="4">No saved invoice found.</td></tr>';
+ const balance=Math.max(0,selectedTotal-advUsd);
+ const rows=invs.length?invs.map((x,i)=>{
+   const checked=savedSel.includes(x.no)?'checked':'';
+   return `<tr><td><input type="checkbox" class="invSel" value="${esc(x.no)}" ${checked} onchange="updateFinalInvoiceSelection()"></td><td>${esc(x.no)}</td><td>${esc(x.date||'-')}</td><td>${x.qty?x.qty.toFixed(3):'-'}</td><td>USD ${x.amount.toFixed(2)}</td></tr>`;
+ }).join(''):'<tr><td colspan="5">No saved invoice found.</td></tr>';
  shell("💰 Final Payment",head(c)+`
  <div class="ok">Bill of Entry completed — Final Payment unlocked.</div>
- <div class="card"><h3 style="margin:0 0 10px">🧾 Invoice Summary — Full Invoice Amount</h3>
- <div class="registerWrap"><table style="min-width:720px"><thead><tr><th>Invoice No.</th><th>Invoice Date</th><th>Qty (MT)</th><th>Full Invoice Amount</th></tr></thead><tbody>${rows}</tbody>
- <tfoot><tr><th colspan="3" style="text-align:right">Total Invoice Amount</th><th>USD ${totalInv.toFixed(2)}</th></tr></tfoot></table></div></div>
+ <div class="card"><h3 style="margin:0 0 10px">🧾 Select Invoice No. for Final Payment</h3>
+ <div class="notice">Select the invoice(s) against which this final payment is being made. The <b>full invoice amount</b> will be shown. You can select one or multiple invoices.</div>
+ <div style="margin:8px 0"><button class="btn p" type="button" onclick="selectAllFinalInvoices()">Select All</button><button class="btn w" type="button" onclick="clearFinalInvoices()">Clear All</button></div>
+ <div class="registerWrap"><table style="min-width:820px"><thead><tr><th>Select</th><th>Invoice No.</th><th>Invoice Date</th><th>Qty (MT)</th><th>Full Invoice Amount</th></tr></thead><tbody>${rows}</tbody>
+ <tfoot><tr><th colspan="4" style="text-align:right">All Invoice Total</th><th>USD ${totalInv.toFixed(2)}</th></tr>
+ <tr><th colspan="4" style="text-align:right">Selected Invoice Total</th><th id="selectedInvTotal">USD ${selectedTotal.toFixed(2)}</th></tr></tfoot></table></div>
+ <div id="selectedInvList" class="muted" style="margin-top:8px">Selected: ${selected.length?selected.map(x=>esc(x.no)).join(', '):'None'}</div></div>
  <div class="card"><h3 style="margin:0 0 10px">💵 Advance Payment — From Advance Module</h3>
  <div class="grid">
  ${field("advHeadUsd","Advance Total USD")}${field("advHeadInr","Advance Total INR")}
@@ -1427,9 +1502,11 @@ function finalpay(){
  </div></div>
  <div class="card"><h3 style="margin:0 0 10px">💰 Balance / Final Payment</h3>
  <div class="grid">${field("fa","Final Payment USD")}${field("fd","Payment Date","date")}${field("fr","Exchange Rate")}${field("fi","INR Amount")}${field("fx","Reference")}${field("ff","Payment Copy","file",1)}</div>
- <div class="notice">Final Payment USD = Total Invoice Amount − Advance Total USD. Verify or edit the amount before saving.</div>
+ <div id="finalPayStatus" class="notice" style="margin-top:8px">Upload <b>6.FINAL PAYMENT.pdf</b>. Final Payment USD, Payment Date, Exchange Rate, INR Amount and Reference will be read automatically.</div>
+ <div class="notice">Final Payment USD = <b>Selected Invoice Total − Advance Total USD</b>. If more than one invoice is selected, the selected invoice amounts are added together. Verify or edit before saving.</div>
  </div><button class="btn s" onclick="saveFinalPay()">Save Final Payment</button>`);
  setTimeout(()=>{
+   const ff=$('ff'); if(ff) ff.onchange=readFinalPaymentCopy;
    if($('advHeadUsd'))$('advHeadUsd').value=c.advanceSummary?.totalUsd||'0.00';
    if($('advHeadInr'))$('advHeadInr').value=c.advanceSummary?.totalInr||'';
    if($('advHeadCharges'))$('advHeadCharges').value=c.advanceSummary?.otherChargesInr||'';
@@ -1444,14 +1521,33 @@ function finalpay(){
    if($('fx'))$('fx').value=c.finalpay?.ref||'';
  },0);
 }
+function getSelectedFinalInvoices(){
+ const c=get(cur), invs=finalInvoiceSummary(c);
+ const nums=[...document.querySelectorAll('.invSel:checked')].map(x=>x.value);
+ return invs.filter(x=>nums.includes(x.no));
+}
+function updateFinalInvoiceSelection(){
+ const c=get(cur), selected=getSelectedFinalInvoices();
+ const total=selected.reduce((a,x)=>a+x.amount,0);
+ const advUsd=Number(String(c.advanceSummary?.totalUsd||0).replace(/,/g,''))||0;
+ const balance=Math.max(0,total-advUsd);
+ if($('selectedInvTotal'))$('selectedInvTotal').textContent='USD '+total.toFixed(2);
+ if($('selectedInvList'))$('selectedInvList').textContent='Selected: '+(selected.length?selected.map(x=>x.no).join(', '):'None');
+ if($('fa') && !String($('fa').value||'').trim())$('fa').value=balance.toFixed(2);
+}
+function selectAllFinalInvoices(){document.querySelectorAll('.invSel').forEach(x=>x.checked=true);updateFinalInvoiceSelection()}
+function clearFinalInvoices(){document.querySelectorAll('.invSel').forEach(x=>x.checked=false);updateFinalInvoiceSelection();if($('fa'))$('fa').value='0.00'}
 function saveFinalPay(){
  let c=get(cur);
  const invs=finalInvoiceSummary(c);
+ const selected=getSelectedFinalInvoices();
+ if(!selected.length)return alert('Select at least one Invoice No. for Final Payment.');
  const totalInv=invs.reduce((a,x)=>a+x.amount,0);
+ const selectedTotal=selected.reduce((a,x)=>a+x.amount,0);
  const advUsd=Number(String(c.advanceSummary?.totalUsd||0).replace(/,/g,''))||0;
  const entered=Number(String($('fa')?.value||0).replace(/,/g,''))||0;
- const amount=entered||Math.max(0,totalInv-advUsd);
- c.finalpay={amount:amount.toFixed(2),date:$('fd').value,rate:$('fr').value,inr:$('fi').value,ref:$('fx').value,file:file('ff'),totalInvoiceAmount:totalInv.toFixed(2),advanceAmount:advUsd.toFixed(2),invoiceNumbers:invs.map(x=>x.no)};
+ const amount=entered||Math.max(0,selectedTotal-advUsd);
+ c.finalpay={amount:amount.toFixed(2),date:$('fd').value,rate:$('fr').value,inr:$('fi').value,ref:$('fx').value,file:file('ff'),totalInvoiceAmount:totalInv.toFixed(2),selectedInvoiceAmount:selectedTotal.toFixed(2),advanceAmount:advUsd.toFixed(2),invoiceNumbers:invs.map(x=>x.no),selectedInvoiceNumbers:selected.map(x=>x.no)};
  save();openPage('final',cur)
 }
 function finalRec(){let c=get(cur);shell("📄 Final Record",head(c)+`<div class="ok">Final Payment completed — Final Record unlocked.</div><table><tr><th>Stage</th><th>Record</th></tr><tr><td>Contract</td><td>USD ${esc(c.price)}/MT | ${esc(c.qty)} MT</td></tr><tr><td>Booking</td><td>${c.bookings.length} booking(s)</td></tr><tr><td>Advance</td><td>USD ${esc(c.advance?.amount)}</td></tr><tr><td>Loading/B/L</td><td>${esc(c.loading?.bl)} | ${esc(c.loading?.qty)} MT</td></tr><tr><td>Invoice</td><td>${esc(c.invoice?.no)} | USD ${esc(c.invoice?.amount)}</td></tr><tr><td>Bill of Entry</td><td>${esc(c.boe?.no)} | Assessable INR ${esc(c.boe?.assess)} | BCD INR ${esc(c.boe?.bcd)} | SWS INR ${esc(c.boe?.sws)} | IGST INR ${esc(c.boe?.igst)}</td></tr><tr><td>Final Payment</td><td>USD ${esc(c.finalpay?.amount)} | INR ${esc(c.finalpay?.inr)}</td></tr></table><div class="card"><label>Final Document</label><input id="ffinal" class="file" type="file" accept=".pdf,image/*"><button class="btn s" onclick="complete()">✅ Complete Final Record</button></div>${c.final?'<div class="ok">✅ FINAL RECORD COMPLETED</div>':''}`)}
