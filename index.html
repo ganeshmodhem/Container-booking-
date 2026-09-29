@@ -1125,26 +1125,30 @@ function showSelectedBoeContainers(){
 }
 async function readBoeCopy(){
  const f=$("bef")?.files?.[0]; if(!f)return;
- const st=$("boeStatus"); if(st)st.textContent="⏳ Bill of Entry reading… (OCR will run only once)";
+ const st=$("boeStatus"); if(st)st.textContent="⏳ Bill of Entry reading… OCR maximum ONE time";
  try{
    let text="";
+   let pdf=null;
    if(f.type==="application/pdf"||/\.pdf$/i.test(f.name)){
      await ensurePdfJS();
-     const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
-     // First use the PDF text layer. No OCR is started unless the PDF is actually scanned.
+     pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+     // 1) Read the PDF text layer first. This never invokes OCR.
      for(let i=1;i<=pdf.numPages;i++){
        const pg=await pdf.getPage(i),tc=await pg.getTextContent();
        text+="\n"+tc.items.map(x=>x.str).join(" ");
      }
-     if(text.replace(/\s/g,"").length<40){
-       // SCANNED BOE: OCR ONLY ONCE, on the first page where the BOE header/details normally appear.
-       // This intentionally avoids the old page-by-page OCR loop that kept repeating.
+     // If the text layer is useful, use it. If it is empty/obviously unusable,
+     // do ONE OCR pass on page 1 only. No page-by-page OCR loop.
+     const cleaned=text.replace(/\s+/g,' ').trim();
+     const usable=cleaned.length>=40 && /(bill\s*of\s*entry|assessable|exchange\s*rate|challan|igst|customs)/i.test(cleaned);
+     if(!usable){
        await ensureTesseract();
-       if(st)st.textContent="⏳ Bill of Entry OCR — one time only…";
+       if(st)st.textContent="⏳ Bill of Entry OCR — ONE TIME ONLY…";
        const pg=await pdf.getPage(1),vp=pg.getViewport({scale:4});
-       const cv=document.createElement('canvas'),ctx=cv.getContext('2d');
-       cv.width=vp.width;cv.height=vp.height;
+       const cv=document.createElement('canvas'),ctx=cv.getContext('2d',{willReadFrequently:true});
+       cv.width=Math.floor(vp.width);cv.height=Math.floor(vp.height);
        await pg.render({canvasContext:ctx,viewport:vp}).promise;
+       // Light grayscale/contrast improvement; do not repeatedly OCR.
        try{
          const im=ctx.getImageData(0,0,cv.width,cv.height),d=im.data;
          for(let k=0;k<d.length;k+=4){
@@ -1155,103 +1159,98 @@ async function readBoeCopy(){
          ctx.putImageData(im,0,0);
        }catch(_){ }
        const r=await Tesseract.recognize(cv,'eng',{
-         logger:m=>{if(m.status)st.textContent='⏳ BOE OCR '+Math.round((m.progress||0)*100)+'% — once';}
+         config:{tessedit_pageseg_mode:6},
+         logger:m=>{if(m.status)st.textContent='⏳ BOE OCR '+Math.round((m.progress||0)*100)+'% — ONE TIME';}
        });
        text=r.data.text||'';
      }
    }else{
-     // Image: exactly one OCR operation.
+     // Image upload = exactly one OCR operation.
      await ensureTesseract();
-     if(st)st.textContent="⏳ Bill of Entry OCR — one time only…";
+     if(st)st.textContent="⏳ Bill of Entry OCR — ONE TIME ONLY…";
      const r=await Tesseract.recognize(f,'eng',{
-       logger:m=>{if(m.status)st.textContent='⏳ BOE OCR '+Math.round((m.progress||0)*100)+'% — once';}
+       config:{tessedit_pageseg_mode:6},
+       logger:m=>{if(m.status)st.textContent='⏳ BOE OCR '+Math.round((m.progress||0)*100)+'% — ONE TIME';}
      });
      text=r.data.text||'';
    }
    if(!text.trim())throw new Error('No readable BOE text found');
    parseBoeText(text);
-   if(st)st.textContent='✅ BOE read once. Fields extracted where the document text was readable. Verify before saving.';
+   if(st)st.textContent='✅ BOE processed once. Only validated values were filled. Please verify the PDF before saving.';
  }catch(e){
    console.error(e);
-   if(st)st.textContent='⚠️ BOE could not be read automatically. OCR was attempted only once; enter/verify the fields manually.';
+   if(st)st.textContent='⚠️ BOE could not be read reliably. OCR was attempted only once; suspicious values were left blank for manual entry.';
  }
 }
-function boeNum(v){return String(v||'').replace(/,/g,'').replace(/\s/g,'').trim();}
-function boeValueAfter(lines,labels){
- for(let i=0;i<lines.length;i++){
-  for(const lab of labels){
-   const re=new RegExp('^'+lab+'\\s*(?:No\\.?|Number|Date|Value|Amount|Rate)?\\s*[:#=\\-]?\\s*(.*)$','i');
-   const m=lines[i].match(re);
-   if(m&&m[1]&&m[1].trim().length>0)return cleanLine(m[1]);
-   if(m){for(let j=i+1;j<Math.min(i+3,lines.length);j++){if(lines[j]&&lines[j].trim())return cleanLine(lines[j]);}}
-  }
- }
+function boeNum(v){
+ return String(v||'').replace(/,/g,'').replace(/\s/g,'').trim();
+}
+function strictAmount(v){
+ const x=String(v||'').replace(/,/g,'').trim();
+ return /^\d+(?:\.\d{1,2})?$/.test(x) ? x : '';
+}
+function strictRate(v){
+ const x=String(v||'').replace(/,/g,'').trim();
+ return /^\d+(?:\.\d{1,6})?$/.test(x) ? x : '';
+}
+function strictId(v){
+ const x=String(v||'').replace(/\s+/g,'').trim();
+ if(!x || x.length<3 || x.length>35) return '';
+ if(/^(date|number|value|amount|rate|challan|paid|deferred|payment|invoice|customs)$/i.test(x)) return '';
+ // Reject OCR sentences/column dumps. Real document numbers are compact.
+ if(/[,:;\[\]]/.test(x) || /[a-z]{2,}\s+[a-z]{2,}/i.test(x)) return '';
+ return /^[A-Z0-9][A-Z0-9\/_.-]*$/i.test(x) ? x : '';
+}
+function strictDate(v){
+ const x=String(v||'').trim();
+ let m=x.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/);
+ if(m){let y=m[3]; if(y.length===2)y='20'+y; const d=String(m[1]).padStart(2,'0'),mo=String(m[2]).padStart(2,'0'); return `${y}-${mo}-${d}`;}
+ m=x.match(/^(\d{4})[\/.-](\d{1,2})[\/.-](\d{1,2})$/);
+ if(m)return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
  return '';
 }
-function boeDateFromText(text,lines){
- let d=invoiceDateFromText(text,lines); if(d)return d;
- const m=String(text||'').match(/(?:BE\s*Date|Bill\s*of\s*Entry\s*Date|Date\s*of\s*BE|Date)\s*[:#=\-]?\s*(\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}|\d{4}[\/.-]\d{1,2}[\/.-]\d{1,2})/i);
- if(!m)return '';
- const a=m[1].split(/[\/.-]/); if(a[0].length===4)return `${a[0]}-${String(a[1]).padStart(2,'0')}-${String(a[2]).padStart(2,'0')}`;
- let y=a[2];if(y.length===2)y='20'+y;return `${y}-${String(a[1]).padStart(2,'0')}-${String(a[0]).padStart(2,'0')}`;
+function extractLabeledValue(text, labels, validator){
+ const raw=String(text||'').replace(/\r/g,'\n');
+ const lines=raw.split(/\n+/).map(x=>x.trim()).filter(Boolean);
+ const label=labels.join('|');
+ // Same-line label/value. Validator prevents labels and OCR column dumps from entering fields.
+ for(let i=0;i<lines.length;i++){
+   const line=lines[i];
+   let m=line.match(new RegExp('(?:'+label+')\\s*(?:no\\.?|number|date|value|amount|rate)?\\s*[:#=\\-]?\\s*(.+)$','i'));
+   if(m){
+     const val=validator(m[1]); if(val)return val;
+   }
+   // OCR frequently puts the value on the next line.
+   if(new RegExp('^(?:'+label+')\\s*(?:no\\.?|number|date|value|amount|rate)?\\s*[:#=\\-]?\\s*$','i').test(line)){
+     for(let j=i+1;j<Math.min(i+3,lines.length);j++){
+       const val=validator(lines[j]); if(val)return val;
+     }
+   }
+ }
+ // Normalized text fallback, still validated.
+ const norm=raw.replace(/\s+/g,' ');
+ const m=norm.match(new RegExp('(?:'+label+')\\s*(?:no\\.?|number|date|value|amount|rate)?\\s*[:#=\\-]?\\s*([A-Z0-9][A-Z0-9\\/_.-]{2,35})','i'));
+ if(m){const val=validator(m[1]); if(val)return val;}
+ return '';
 }
 function parseBoeText(text){
- const raw=String(text||'').replace(/\r/g,'\n');
- const lines=linesOf(raw);
- const norm=raw.replace(/\s+/g,' ').trim();
- const cleanVal=v=>String(v||'').replace(/\s+/g,' ').replace(/^[\s:;#=-]+|[\s:;#=-]+$/g,'').trim();
- const amount='([0-9][0-9,]*(?:\\.[0-9]{1,2})?)';
- const number='([A-Z0-9][A-Z0-9\\/_.-]{3,45})';
- const find=(patterns)=>{for(const re of patterns){const m=norm.match(re);if(m)return cleanVal(m[m.length-1]);}return ''};
- const afterLabel=(labels)=>{
-   const re=new RegExp('(?:'+labels+')\\s*(?:no\\.?|number|date|value|amount|rate)?\\s*[:#=\\-]?\\s*([^,;|]{1,80})','i');
-   const m=norm.match(re); if(m&&m[1])return cleanVal(m[1]);
-   for(let i=0;i<lines.length;i++){
-     if(new RegExp('^(?:'+labels+')\\s*(?:no\\.?|number|date|value|amount|rate)?\\s*[:#=\\-]?\\s*$','i').test(lines[i])){
-       for(let j=i+1;j<Math.min(i+4,lines.length);j++) if(lines[j]) return cleanVal(lines[j]);
-     }
-   }
-   return '';
- };
-
- // BE Number — prefer explicit Bill of Entry labels and avoid taking random document numbers.
- let beNo=find([
-   new RegExp('(?:bill\\s*of\\s*entry|bill\\s*entry|b\\/?e)\\s*(?:no\\.?|number)\\s*[:#=\\-]?\\s*'+number,'i'),
-   /\bBE\s*(?:No\.?|Number)\s*[:#=\-]?\s*([A-Z0-9\/_.-]{4,45})/i,
-   /\bBill\s*of\s*Entry\s*[:#=\-]?\s*([A-Z0-9\/_.-]{4,45})/i
- ]);
- if(!beNo)beNo=afterLabel('bill\\s*of\\s*entry|bill\\s*entry|BE|B\\/?E');
- if(/^date$/i.test(beNo))beNo='';
-
- // BE Date — only use dates close to an explicit BOE label; do not use invoice/contract/shipment dates.
- let beDate='';
- const datePat='(\\d{1,2}[\\/.-]\\d{1,2}[\\/.-]\\d{2,4}|\\d{4}[\\/.-]\\d{1,2}[\\/.-]\\d{1,2})';
- let dm=norm.match(new RegExp('(?:BE\\s*date|Bill\\s*of\\s*Entry\\s*date|Date\\s*of\\s*BE|B\\/?E\\s*Date)\\s*[:#=\\-]?\\s*'+datePat,'i'));
- if(dm){
-   const d=dm[1],a=d.split(/[\\/.-]/);
-   if(a[0].length===4)beDate=`${a[0]}-${String(a[1]).padStart(2,'0')}-${String(a[2]).padStart(2,'0')}`;
-   else{let y=a[2];if(y.length===2)y='20'+y;beDate=`${y}-${String(a[1]).padStart(2,'0')}-${String(a[0]).padStart(2,'0')}`;}
- }
- if(!beDate){
-   for(let i=0;i<lines.length;i++){
-     if(/^(?:BE\s*Date|Bill\s*of\s*Entry\s*Date|Date\s*of\s*BE|B\/?E\s*Date)\s*[:#=\-]?$/i.test(lines[i])){
-       const m=String(lines[i+1]||'').match(new RegExp(datePat));
-       if(m){const a=m[1].split(/[\\/.-]/);let y=a[2]||'';if(a[0].length===4)beDate=`${a[0]}-${String(a[1]).padStart(2,'0')}-${String(a[2]).padStart(2,'0')}`;else{if(y.length===2)y='20'+y;beDate=`${y}-${String(a[1]).padStart(2,'0')}-${String(a[0]).padStart(2,'0')}`;}break;}
-     }
-   }
- }
-
- const assess=find([/(?:assessable\\s+value|assessable\\s+amount)\\s*(?:inr|rs\\.?|₹)?\\s*[:=#-]?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)/i,/(?:assessable\\s+value)\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)/i])||afterLabel('assessable\\s+value|assessable\\s+amount');
- const bcd=find([/(?:basic\\s+customs\\s+duty|basic\\s+duty|BCD)\\s*(?:INR|Rs\\.?|₹)?\\s*[:=#-]?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)/i])||afterLabel('basic\\s+customs\\s+duty|basic\\s+duty|BCD');
- const sws=find([/(?:social\\s+welfare\\s+surcharge|SWS)\\s*(?:INR|Rs\\.?|₹)?\\s*[:=#-]?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)/i])||afterLabel('social\\s+welfare\\s+surcharge|SWS');
- const igst=find([/(?:integrated\\s+goods\\s+and\\s+services\\s+tax|IGST)\\s*(?:INR|Rs\\.?|₹)?\\s*[:=#-]?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)/i])||afterLabel('integrated\\s+goods\\s+and\\s+services\\s+tax|IGST');
- const rate=find([/(?:exchange\\s+rate|exchange\\s+rate\\s*USD)\\s*[:=#-]?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,6})?)/i])||afterLabel('exchange\\s+rate|exchange\\s+rate\\s*USD');
- const challan=find([/(?:challan\\s*(?:no\\.?|number)|duty\\s*challan)\\s*[:#=\\-]?\\s*([A-Z0-9\\/_.-]{3,45})/i])||afterLabel('challan\\s*(?:no\\.?|number)|duty\\s*challan');
-
- setv('ben',beNo);setv('bed',beDate);setv('bea',boeNum(assess));setv('bebcd',boeNum(bcd));setv('besws',boeNum(sws));setv('beigst',boeNum(igst));setv('ber',boeNum(rate));setv('bech',challan);
+ const raw=String(text||'');
+ // IMPORTANT: do not use a generic "next label" fallback. That was the reason
+ // strings such as "DATE", "A/DEF-DeferredPayment" and entire OCR columns
+ // were being inserted into BCD/IGST/Challan fields.
+ const beNo=extractLabeledValue(raw,['bill\\s*of\\s*entry','bill\\s*entry','B\\/?E'],strictId);
+ const beDate=extractLabeledValue(raw,['BE\\s*date','bill\\s*of\\s*entry\\s*date','date\\s*of\\s*BE','B\\/?E\\s*date'],strictDate);
+ const assess=extractLabeledValue(raw,['assessable\\s+value','assessable\\s+amount'],strictAmount);
+ const bcd=extractLabeledValue(raw,['basic\\s+customs\\s+duty','basic\\s+duty','BCD'],strictAmount);
+ const sws=extractLabeledValue(raw,['social\\s+welfare\\s+surcharge','SWS'],strictAmount);
+ const igst=extractLabeledValue(raw,['integrated\\s+goods\\s+and\\s+services\\s+tax','IGST'],strictAmount);
+ const rate=extractLabeledValue(raw,['exchange\\s+rate','exchange\\s+rate\\s*USD'],strictRate);
+ const challan=extractLabeledValue(raw,['challan\\s*(?:no\\.?|number)','duty\\s*challan'],strictId);
+ setv('ben',beNo);setv('bed',beDate);setv('bea',assess);setv('bebcd',bcd);setv('besws',sws);setv('beigst',igst);setv('ber',rate);setv('bech',challan);
  const chosen=selectedBoeData().filter(x=>selectedBoeRows().includes(x.i));
  if($('beq'))$('beq').value=chosen.reduce((a,x)=>a+Number(x.qty||0),0).toFixed(3);
 }
+
 function boe(){
  let c=get(cur);
  if(!c||!c.invoice){shell('🛃 Bill of Entry',`<div class="card"><div class="notice">Invoice complete झाल्यावर Bill of Entry येथे direct दिसेल.</div></div>`);return;}
