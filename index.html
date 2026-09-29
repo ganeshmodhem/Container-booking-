@@ -670,7 +670,7 @@ function advance(){
  </div>
  <div class="notice">तुम्ही या payment मध्ये जितक्या containers चा advance आहे तितकी संख्या निवडा. PDF upload केल्यावर <b>Total USD, Payment Date, Bank, Bill/Ref No., USD Rate, Total INR आणि Other Charges</b> भरले जातील. त्यानंतर रक्कम selected containers मध्ये समान divide होईल.</div>
  <button class="btn s" onclick="saveAdvance()">💾 Save Advance Payment</button></div>
- <div class="card"><h3 style="margin:0 0 8px">💳 Payment Records by Container</h3><div class="registerWrap"><table style="min-width:1250px"><thead><tr><th>Container Row</th><th>Container</th><th>Allocated USD</th><th>Paid USD</th><th>Payment Date</th><th>Payment Bill / Ref</th><th>Bank</th><th>USD Rate</th><th>INR</th><th>Other Charges INR</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div>`);
+ <div class="card"><h3 style="margin:0 0 8px">💳 Payment Records by Container</h3><div class="registerWrap"><table style="min-width:1250px"><thead><tr><th>Container Row</th><th>Container</th><th>Allocated USD</th><th>Paid USD</th><th>Payment Bill / Ref</th><th>Bank</th><th>USD Rate</th><th>INR</th><th>Other Charges INR</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div>`);
  setTimeout(()=>{if($("apAmount"))$("apAmount").value=c.advanceSummary?.totalUsd||'';if($("apInr"))$("apInr").value=c.advanceSummary?.totalInr||'';if($("apCharges"))$("apCharges").value=c.advanceSummary?.otherChargesInr||'';if($("apDate"))$("apDate").value=c.advanceSummary?.date||'';if($("apRef"))$("apRef").value=c.advanceSummary?.ref||'';if($("apBank"))$("apBank").value=c.advanceSummary?.bank||'';if($("apRate"))$("apRate").value=c.advanceSummary?.usdRate||'';updateAdvanceAllocationPreview();},0);
 }
 function saveAdvance(){
@@ -1847,17 +1847,33 @@ function payment(){
  const rows=[];
  db.contracts.forEach((c,ci)=>{
    (c.bookings||[]).forEach((b,bi)=>{
-     if(!isCurrentRelease(b)) return;
+     if(!isCurrentRelease(b) || b.paymentDone===true) return;
      const q=(b.loadingQty!==undefined&&b.loadingQty!=='')?Number(b.loadingQty):parseFloat(String(b.qty||'').replace(/,/g,''))||0;
      const av=b.advance||{}, inv=b.invoice||{};
      const adv=av.amount!==undefined&&av.amount!==''?Number(av.amount):(b.allocatedAdvance||0);
      const bal=inv.invoiceBalance!==undefined&&inv.invoiceBalance!==''?Number(inv.invoiceBalance):'';
      const alloy=alloyFor(c,b), eta=dateInputValue(b.eta||'');
-     const paymentDate=dateInputValue(av.paymentDate || b.paymentDate || b.bookingPaymentDate || '');
-     rows.push(`<tr><td>${esc(b.slot||rows.length+1)}</td><td>${esc(c.date||'')}</td><td>${esc(c.no||'')}</td><td>${esc(c.seller||'')}</td><td>${q?Number(q).toFixed(3):esc(b.qty||'')}</td><td>${esc(c.containerPlan||'')}</td><td><input class="alloyEdit" list="alloyOptionsPayment" value="${esc(alloy)}" onchange="paymentAlloy(${ci},${bi},this.value)"></td><td>${esc(c.price||'')}</td><td>${adv!==''&&!Number.isNaN(adv)?Number(adv).toFixed(2):''}</td><td>${bal!==''&&!Number.isNaN(bal)?Number(bal).toFixed(2):''}</td><td>${esc(b.container||'')}</td><td>${esc(b.pol||c.pol||'')}</td><td><input type="date" value="${eta}" onchange="paymentETA(${ci},${bi},this.value)" style="min-width:145px;padding:7px;border:1px solid #ccd5de;border-radius:7px"></td><td>${paymentDate?esc(paymentDate):'<span class="muted">Not entered</span>'}</td><td><span class="badge">RELEASED ✓</span></td><td>${esc(b.releaseDate||'')}</td><td>${dueDays(b.releaseDate)}</td></tr>`);
+     const releaseDate=dateInputValue(b.releaseDate||'');
+     rows.push(`<tr>
+       <td>${esc(b.slot||rows.length+1)}</td><td>${esc(c.date||'')}</td><td>${esc(c.no||'')}</td><td>${esc(c.seller||'')}</td>
+       <td>${q?Number(q).toFixed(3):esc(b.qty||'')}</td><td>${esc(c.containerPlan||'')}</td>
+       <td><input class="alloyEdit" list="alloyOptionsPayment" value="${esc(alloy)}" onchange="paymentAlloy(${ci},${bi},this.value)"></td>
+       <td>${esc(c.price||'')}</td><td>${adv!==''&&!Number.isNaN(adv)?Number(adv).toFixed(2):''}</td>
+       <td>${bal!==''&&!Number.isNaN(bal)?Number(bal).toFixed(2):''}</td><td>${esc(b.container||'')}</td><td>${esc(b.pol||c.pol||'')}</td>
+       <td><input type="date" value="${eta}" onchange="paymentETA(${ci},${bi},this.value)" style="min-width:145px;padding:7px;border:1px solid #ccd5de;border-radius:7px"></td>
+       <td><span class="badge">RELEASED ✓</span></td>
+       <td><input type="date" value="${releaseDate}" onchange="paymentReleaseDate(${ci},${bi},this.value)" style="min-width:145px;padding:7px;border:1px solid #ccd5de;border-radius:7px"></td>
+       <td>${dueDays(releaseDate)}</td>
+       <td><button class="btn s" style="margin:0;padding:7px 12px" onclick="paymentDone(${ci},${bi})">DONE</button></td>
+     </tr>`);
    });
  });
- shell("💳 Payment — Released Containers",`<div class="item"><b>Payment Register</b><br><span class="muted">Released containers from Final Booking. Payment Date is taken automatically from Advance/Booking payment data. Due Days = Today − Release Date.</span></div><datalist id="alloyOptionsPayment"><option value="6063"><option value="6061"></datalist><div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff;margin-top:12px"><table style="min-width:2200px;width:max-content;border-collapse:collapse"><thead><tr><th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty (MT)</th><th>Container Plan</th><th>ALLOY</th><th>Price (USD/MT)</th><th>Advance USD</th><th>Invoice Balance USD</th><th>Container No.</th><th>Port of Loading</th><th>ETA</th><th>Payment Date</th><th>Release Status</th><th>Release Date</th><th>Due Days</th></tr></thead><tbody>${rows.join('')||'<tr><td colspan="17" style="text-align:center;padding:20px">No released containers yet. Release a container from Final Booking.</td></tr>'}</tbody></table></div>`);
+ shell("💳 Payment — Released Containers",`<div class="item"><b>Payment Register</b><br><span class="muted">Released containers from Final Booking. ETA and Release Date are editable. Due Days = Today − Release Date. Click DONE after payment/processing is completed to move the container to Final Record.</span></div>
+ <datalist id="alloyOptionsPayment"><option value="6063"><option value="6061"></datalist>
+ <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff;margin-top:12px">
+ <table style="min-width:2300px;width:max-content;border-collapse:collapse">
+ <thead><tr><th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty (MT)</th><th>Container Plan</th><th>ALLOY</th><th>Price (USD/MT)</th><th>Advance USD</th><th>Invoice Balance USD</th><th>Container No.</th><th>Port of Loading</th><th>ETA</th><th>Release Status</th><th>Release Date</th><th>Due Days</th><th>Done</th></tr></thead>
+ <tbody>${rows.join('')||'<tr><td colspan="17" style="text-align:center;padding:20px">No pending released containers. Release a container from Final Booking.</td></tr>'}</tbody></table></div>`);
 }
 function paymentETA(ci,bi,val){ const c=db.contracts[ci]; const b=c?.bookings?.[bi]; if(!b)return; b.eta=String(val||''); save(); render(); }
 function dueDays(v){
@@ -1866,18 +1882,111 @@ function dueDays(v){
  return Math.max(0,Math.floor((t-a)/86400000));
 }
 function paymentAlloy(ci,bi,val){ updateAlloySafe(ci,bi,val); }
+function paymentReleaseDate(ci,bi,val){
+ const c=db.contracts[ci]; const b=c?.bookings?.[bi]; if(!b)return;
+ b.releaseDate=String(val||'');
+ save(); render();
+}
+function paymentDone(ci,bi){
+ const c=db.contracts[ci]; const b=c?.bookings?.[bi]; if(!b)return;
+ if(!b.releaseDate){
+   alert('Please select Release Date before clicking DONE.');
+   return;
+ }
+
+ // Move THIS exact container/booking row to Final Record.
+ // Keep the booking data inside the final record, but remove it from the active Booking list
+ // so the same container is never shown twice.
+ b.paymentDone=true;
+ b.doneDate=new Date().toISOString().slice(0,10);
+ b.dueDays=dueDays(b.releaseDate);
+ b.finalRecordMoved=true;
+
+ // Remove only this exact booking row from Booking.
+ // Other containers/bookings under the same contract remain untouched.
+ c.bookings.splice(bi,1);
+
+ save();
+ page="final";
+ render();
+}
 function printFinalBooking(){
  const oldTitle=document.title; document.title='Final Booking - Import Contract Tracker';
  window.print(); setTimeout(()=>{document.title=oldTitle;},1000);
 }
 
+function uid(){ return 'FR-' + Date.now() + '-' + Math.random().toString(36).slice(2,8); }
 function finalRec(){
- let c=get(cur);
- if(!c){
-   shell("📄 Final Record",`<div class="card"><h3>🔎 Select Sales Contract</h3><div class="search"><input id="finalRecSearchNo" placeholder="Enter Sales Contract No."><button class="btn p" onclick="searchFinalRecordContract()">Open Final Record</button></div><div class="notice" style="margin-top:8px">All tabs remain open. Select a contract to view its final record.</div></div>`);
-   return;
- }
- shell("📄 Final Record",head(c)+`<div class="ok">Final Payment completed — Final Record unlocked.</div><table><tr><th>Stage</th><th>Record</th></tr><tr><td>Contract</td><td>USD ${esc(c.price)}/MT | ${esc(c.qty)} MT</td></tr><tr><td>Booking</td><td>${c.bookings.length} booking(s)</td></tr><tr><td>Advance</td><td>USD ${esc(c.advance?.amount)}</td></tr><tr><td>Loading/B/L</td><td>${esc(c.loading?.bl)} | ${esc(c.loading?.qty)} MT</td></tr><tr><td>Invoice</td><td>${esc(c.invoice?.no)} | USD ${esc(c.invoice?.amount)}</td></tr><tr><td>Bill of Entry</td><td>${esc(c.boe?.no)} | Assessable INR ${esc(c.boe?.assess)} | BCD INR ${esc(c.boe?.bcd)} | SWS INR ${esc(c.boe?.sws)} | IGST INR ${esc(c.boe?.igst)}</td></tr><tr><td>Final Payment</td><td>USD ${esc(c.finalpay?.amount)} | INR ${esc(c.finalpay?.inr)} | Date ${esc(c.finalpay?.date)} | Our Bill No. ${esc(c.finalpay?.ref)}</td></tr></table><div class="card"><label>Final Document</label><input id="ffinal" class="file" type="file" accept=".pdf,image/*"><button class="btn s" onclick="complete()">✅ Complete Final Record</button></div>${c.final?'<div class="ok">✅ FINAL RECORD COMPLETED</div>':''}`)}
+ const records = [];
+
+ // Final Record is the single source of truth for containers completed through Payment.
+ // Prefer the persisted finalRecords collection; migrate any legacy completed booking
+ // snapshots only once.
+ db.finalRecords = Array.isArray(db.finalRecords) ? db.finalRecords : [];
+
+ // If older data contains paymentDone/finalRecordMoved rows in any backup collection,
+ // migrate them once and mark them so they cannot be imported twice.
+ db.contracts.forEach(c=>{
+   (c.bookings||[]).forEach(b=>{
+     if(b.paymentDone===true && b.finalRecordMoved===true && b._finalRecordSaved!==true){
+       db.finalRecords.push({
+         id: b.finalRecordId || uid(),
+         contractDate:c.date||'',
+         contractNo:c.no||'',
+         seller:c.seller||'',
+         loadingQty:(b.loadingQty!==undefined&&b.loadingQty!=='')?Number(b.loadingQty):(parseFloat(String(b.qty||'').replace(/,/g,''))||0),
+         containerPlan:c.containerPlan||'',
+         alloy:alloyFor(c,b),
+         price:c.price||'',
+         advance:(b.advance&&b.advance.amount!==undefined)?Number(b.advance.amount):(b.allocatedAdvance||0),
+         invoiceBalance:(b.invoice&&b.invoice.invoiceBalance!==undefined)?Number(b.invoice.invoiceBalance):'',
+         container:b.container||'',
+         pol:b.pol||c.pol||'',
+         eta:b.eta||'',
+         releaseDate:b.releaseDate||'',
+         dueDays:dueDays(b.releaseDate||''),
+         doneDate:b.doneDate||'',
+         sourceContractId:c.id||'',
+         sourceSlot:b.slot||''
+       });
+       b._finalRecordSaved=true;
+     }
+   });
+ });
+
+ // De-duplicate by exact container identity first, then by record id.
+ const seen = new Set();
+ const unique = db.finalRecords.filter(r=>{
+   const key = String(r.contractNo||'')+'|'+String(r.container||'');
+   if(seen.has(key)) return false;
+   seen.add(key);
+   return true;
+ });
+ db.finalRecords = unique;
+
+ const rows=unique.map(r=>{
+   const q=Number(r.loadingQty)||0;
+   return `<tr>
+    <td>${esc(r.sourceSlot||'')}</td><td>${esc(r.contractDate)}</td><td>${esc(r.contractNo)}</td><td>${esc(r.seller)}</td>
+    <td>${q?q.toFixed(3):''}</td><td>${esc(r.containerPlan)}</td><td>${esc(r.alloy)}</td><td>${esc(r.price)}</td>
+    <td>${r.advance!==''&&!Number.isNaN(Number(r.advance))?Number(r.advance).toFixed(2):''}</td>
+    <td>${r.invoiceBalance!==''&&!Number.isNaN(Number(r.invoiceBalance))?Number(r.invoiceBalance).toFixed(2):''}</td>
+    <td>${esc(r.container)}</td><td>${esc(r.pol)}</td><td>${esc(dateInputValue(r.eta||''))}</td>
+    <td>${esc(dateInputValue(r.releaseDate||''))}</td><td>${dueDays(r.releaseDate||'')}</td><td>${esc(r.doneDate||'')}</td>
+   </tr>`;
+ }).join('');
+
+ save();
+
+ shell("📄 Final Record — Container Master",`
+ <div class="item"><b>Final Record Register</b><br>
+ <span class="muted">Only containers completed with DONE are shown here. The exact Booking row is removed when moved to Final Record, so duplicate information is not created.</span></div>
+ <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff;margin-top:12px">
+ <table style="min-width:2200px;width:max-content;border-collapse:collapse">
+ <thead><tr><th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty (MT)</th><th>Container Plan</th><th>ALLOY</th><th>Price (USD/MT)</th><th>Advance USD</th><th>Invoice Balance USD</th><th>Container No.</th><th>Port of Loading</th><th>ETA</th><th>Release Date</th><th>Due Days</th><th>Done Date</th></tr></thead>
+ <tbody>${rows||'<tr><td colspan="16" style="text-align:center;padding:20px">No completed containers yet. Click DONE in Payment to move a released container here.</td></tr>'}</tbody>
+ </table></div>`);
+}
 function complete(){let c=get(cur),f=file("ffinal");if(!f)return alert("Upload final document.");c.final={file:f,date:new Date().toISOString()};save();finalRec()}
 document.addEventListener("input",e=>{if(e.target.id==="price"||e.target.id==="qty"){let p=parseFloat($("price")?.value||0),q=parseFloat($("qty")?.value||0);if($("contractValue"))$("contractValue").value=p&&q?(p*q).toFixed(2):"";}});render();
 </script></body></html>
