@@ -6,9 +6,11 @@
 nav{display:flex;overflow:auto;gap:7px;background:white;padding:8px;position:sticky;top:86px;z-index:4}nav button{border:0;border-radius:10px;padding:10px 13px;font-weight:bold;white-space:nowrap}nav .on{background:#123f68;color:#fff}nav .lock{opacity:1}nav button{cursor:pointer}nav{z-index:20}
 main{width:98vw;max-width:none;margin:0 auto;padding:14px}.page{display:none}.page.on{display:block}.card{background:#fff;padding:15px;border-radius:15px;margin-bottom:12px;box-shadow:0 2px 10px #0001}h2{margin:0 0 13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.full{grid-column:1/-1}label{display:block;font-size:12px;font-weight:bold;color:#5b6875;margin-bottom:5px}input,select,textarea{width:100%;padding:11px;border:1px solid #ccd5de;border-radius:10px;font-size:14px}textarea{min-height:80px}.btn{border:0;border-radius:10px;padding:11px 14px;font-weight:bold;margin:6px 4px 0 0}.p{background:#123f68;color:white}.s{background:#16844d;color:white}.w{background:#d88900;color:white}.file{border-style:dashed}.item{border:1px solid #dde4eb;border-radius:10px;padding:12px;margin:9px 0}.muted{font-size:12px;color:#6d7882}.ok{background:#e1f6ea;color:#155d39;padding:10px;border-radius:9px;margin:8px 0}.notice{background:#fff5d8;padding:10px;border-radius:9px;font-size:13px}.search{display:flex;gap:7px}.search input{flex:1}table{width:100%;border-collapse:collapse}td,th{padding:8px;border-bottom:1px solid #ddd;text-align:left;font-size:13px}table thead th{background:#eef3f7;white-space:nowrap;border-bottom:2px solid #cbd5df}table tbody tr:hover{background:#f8fafc}table tbody td{white-space:nowrap}.registerWrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}.registerWrap table{min-width:max-content}.alloyEdit{min-width:85px;width:85px;padding:7px!important;border:1px solid #ccd5de;border-radius:7px}.badge{padding:5px 8px;border-radius:15px;background:#d9f4e5;color:#14613c;font-size:11px;font-weight:bold}
 @media(max-width:650px){main{width:100%;padding:8px}.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+
+@media print{body{background:#fff!important}header,nav,.btn,.notice,.item>span,.card:first-child button{display:none!important}main{width:100%!important;padding:0!important}.card{box-shadow:none!important;border:0!important;padding:0!important}.registerWrap{overflow:visible!important;border:0!important}table{font-size:9px!important;min-width:0!important;width:100%!important}th,td{padding:4px!important;border:1px solid #999!important}.alloyEdit,input[type=date]{border:0!important;padding:0!important;background:transparent!important;appearance:none}.card[style*="eef6ff"]{display:block!important;margin-top:10px!important}.card[style*="eef6ff"] span{font-size:14px!important}}
 </style></head>
 <body>
-<header><h1>📦 Import Contract Tracker</h1><p>Contract → Booking → Advance → Loading/B/L → Invoice → BOE → Final Payment → Final Booking → Final Record</p></header>
+<header><h1>📦 Import Contract Tracker</h1><p>Contract → Booking → Advance → Loading/B/L → Invoice → BOE → Final Payment → Payment → Final Booking → Final Record</p></header>
 <nav id="nav"></nav><main id="main"></main>
 <script>
 const K="IMPORT_TRACKER_V2";let db=JSON.parse(localStorage.getItem(K)||'{"contracts":[]}'),cur="";
@@ -1765,67 +1767,75 @@ function searchFinalPayContract(){
  if(!get(no)){alert('Sales Contract not found.');return;}
  cur=no; page='finalpay'; render();
 }
+function alloyFor(c,b){
+ const custom=String(b?.alloy||'').trim();
+ if(custom) return custom;
+ const plan=String(c?.containerPlan||'').toLowerCase().replace(/[’']/g,"'");
+ if(/1\s*x\s*40|40\s*'?(?:ft|container)?/.test(plan)) return '6061';
+ if(/1\s*x\s*20|20\s*'?(?:ft|container)?/.test(plan)) return '6063';
+ if(/40/.test(plan)) return '6061';
+ if(/20/.test(plan)) return '6063';
+ return '';
+}
+function isCurrentRelease(b){ return !!(b && b.released===true && b.releaseVersion==='V58'); }
+function dateInputValue(v){
+ const x=String(v||'').trim();
+ if(/^\d{4}-\d{2}-\d{2}$/.test(x)) return x;
+ const m=x.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+ if(m) return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+ return '';
+}
+function updateFinalBookingETA(ci,bi,val){
+ const c=db.contracts[ci]; const b=c?.bookings?.[bi]; if(!b)return;
+ b.eta=String(val||''); localStorage.setItem(K,JSON.stringify(db)); render();
+}
 function finalBooking(){
  const all=[];
  db.contracts.forEach(c=>{
    ensureBookingRows(c);
-   (c.bookings||[]).forEach((b,i)=>all.push({c,b,i}));
+   (c.bookings||[]).forEach((b,i)=>{
+     if(!isCurrentRelease(b)) all.push({c,b,i});
+   });
  });
- const alloyFor=(c,b)=>{
-   if(String(b.alloy||'').trim()) return String(b.alloy).trim();
-   const plan=String(c.containerPlan||'').toLowerCase().replace(/[’']/g,"'");
-   if(/1\s*x\s*40|40\s*'?\s*(?:ft|container)?/.test(plan)) return '6061';
-   if(/1\s*x\s*20|20\s*'?\s*(?:ft|container)?/.test(plan)) return '6063';
-   if(/40/.test(plan)) return '6061';
-   if(/20/.test(plan)) return '6063';
-   return '';
- };
- const updateAlloy=(ci,bi,val)=>{
-   const c=db.contracts[ci]; if(!c||!c.bookings||!c.bookings[bi]) return;
-   c.bookings[bi].alloy=val; localStorage.setItem(K,JSON.stringify(db));
- };
  const rows=all.map(({c,b,i})=>{
-   const inv=b.invoice||{};
-   const av=b.advance||{};
+   const inv=b.invoice||{}, av=b.advance||{};
    const q=(b.loadingQty!==undefined&&b.loadingQty!=='')?Number(b.loadingQty):parseFloat(String(b.qty||'').replace(/,/g,''))||0;
-   const adv=av.amount!==undefined&&av.amount!==''?Number(av.amount):((b.allocatedAdvance||0));
+   const adv=av.amount!==undefined&&av.amount!==''?Number(av.amount):(b.allocatedAdvance||0);
    const bal=inv.invoiceBalance!==undefined&&inv.invoiceBalance!==''?Number(inv.invoiceBalance):'';
-   const plan=String(c.containerPlan||'');
-   const alloy=alloyFor(c,b);
-   const ci=db.contracts.indexOf(c);
+   const alloy=alloyFor(c,b), ci=db.contracts.indexOf(c), eta=dateInputValue(b.eta||'');
    return `<tr>
-     <td>${esc(b.slot||i+1)}</td>
-     <td>${esc(c.date||'')}</td>
-     <td>${esc(c.no||'')}</td>
-     <td>${esc(c.seller||'')}</td>
-     <td>${q?Number(q).toFixed(3):esc(b.qty||'')}</td>
-     <td>${esc(plan)}</td>
+     <td>${esc(b.slot||i+1)}</td><td>${esc(c.date||'')}</td><td>${esc(c.no||'')}</td><td>${esc(c.seller||'')}</td>
+     <td class="qtyCell">${q?Number(q).toFixed(3):esc(b.qty||'')}</td><td>${esc(c.containerPlan||'')}</td>
      <td><input class="alloyEdit" list="alloyOptions" value="${esc(alloy)}" onchange="finalBookingAlloy(${ci},${i},this.value)" title="Editable Alloy"></td>
-     <td>${esc(c.price||'')}</td>
-     <td>${adv!==''&&!Number.isNaN(adv)?Number(adv).toFixed(2):''}</td>
-     <td>${bal!==''&&!Number.isNaN(bal)?Number(bal).toFixed(2):''}</td>
-     <td>${esc(b.container||'')}</td>
-     <td>${esc(b.pol||c.pol||'')}</td>
-     <td>${esc(b.eta||'')}</td>
-     <td>${b.released?'<span class="badge">RELEASED ✓</span>':`<button class="btn w" style="margin:0;padding:7px 10px" onclick="finalBookingRelease(${ci},${i})">RELEASE</button>`}</td>
+     <td class="priceCell">${esc(c.price||'')}</td><td>${adv!==''&&!Number.isNaN(adv)?Number(adv).toFixed(2):''}</td>
+     <td>${bal!==''&&!Number.isNaN(bal)?Number(bal).toFixed(2):''}</td><td>${esc(b.container||'')}</td><td>${esc(b.pol||c.pol||'')}</td>
+     <td><input type="date" value="${eta}" onchange="updateFinalBookingETA(${ci},${i},this.value)" style="min-width:145px;padding:7px;border:1px solid #ccd5de;border-radius:7px"></td>
+     <td><button class="btn w" style="margin:0;padding:7px 10px" onclick="finalBookingRelease(${ci},${i})">RELEASE</button></td>
      <td><button class="btn" style="margin:0;padding:7px 10px;background:#c62828;color:#fff" onclick="finalBookingDelete(${ci},${i})">DELETE</button></td>
    </tr>`;
  }).join('');
- shell("📊 Final Booking — Master Report",`<div class="item"><b>Final Booking Register</b><br><span class="muted">This report is automatically linked to every Sales Contract and its Booking / Advance / Invoice data. Changes made in the main Booking register flow into this report automatically. Click RELEASE to move the container to the Payment tab.</span></div>
+ const totalQty=all.reduce((sum,{c,b})=>{
+   const q=(b.loadingQty!==undefined&&b.loadingQty!=='')?Number(b.loadingQty):parseFloat(String(b.qty||'').replace(/,/g,''))||0; return sum+(Number.isFinite(q)?q:0);
+ },0);
+ const totalPrice=all.reduce((sum,{c})=>sum+(parseFloat(String(c.price||'').replace(/,/g,''))||0),0);
+ const average=totalQty?totalPrice/totalQty:0;
+ shell("📊 Final Booking — Master Report",`<div class="item"><b>Final Booking Register</b><br><span class="muted">Automatic master report from Booking, Advance, Loading/B.L. and Invoice. ETA can be selected/changed row-wise. RELEASE moves the row to Payment.</span></div>
  <div class="notice"><b>Alloy rule:</b> 1 x 20 → <b>6063</b> &nbsp; | &nbsp; 1 x 40 → <b>6061</b>. Alloy remains editable row-wise.</div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button class="btn p" onclick="printFinalBooking()">📄 Convert / Print Final Booking to PDF</button></div>
  <datalist id="alloyOptions"><option value="6063"><option value="6061"></datalist>
  <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff;margin-top:12px">
- <table style="min-width:1800px;width:max-content;border-collapse:collapse">
- <thead><tr>
- <th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty (MT)</th><th>Container Plan</th><th>ALLOY</th><th>Price (USD/MT)</th><th>Advance USD</th><th>Invoice Balance USD</th><th>Container No.</th><th>Port of Loading</th><th>ETA</th><th>Release</th><th>Delete</th>
- </tr></thead><tbody>${rows||'<tr><td colspan="15" style="text-align:center;padding:20px">No booking records available.</td></tr>'}</tbody>
- </table></div>`);
+ <table style="min-width:1900px;width:max-content;border-collapse:collapse">
+ <thead><tr><th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty (MT)</th><th>Container Plan</th><th>ALLOY</th><th>Price (USD/MT)</th><th>Advance USD</th><th>Invoice Balance USD</th><th>Container No.</th><th>Port of Loading</th><th>ETA</th><th>Release</th><th>Delete</th></tr></thead>
+ <tbody>${rows||'<tr><td colspan="15" style="text-align:center;padding:20px">No pending containers. Released containers are available in Payment.</td></tr>'}</tbody>
+ </table></div>
+ <div class="card" style="margin-top:12px;background:#eef6ff;border:1px solid #c8dff5"><div style="display:flex;gap:30px;flex-wrap:wrap;font-size:15px"><div><b>Total Loading Qty (MT)</b><br><span style="font-size:22px">${totalQty.toFixed(3)}</span></div><div><b>Average (Price ÷ Total Qty)</b><br><span style="font-size:22px">${average.toFixed(2)}</span></div></div></div>`);
 }
 function finalBookingAlloy(ci,bi,val){ updateAlloySafe(ci,bi,val); }
 function updateAlloySafe(ci,bi,val){ const c=db.contracts[ci]; if(!c||!c.bookings?.[bi])return; c.bookings[bi].alloy=String(val||'').trim(); localStorage.setItem(K,JSON.stringify(db)); }
 function finalBookingRelease(ci,bi){
  const c=db.contracts[ci]; const b=c?.bookings?.[bi]; if(!b)return;
- b.released=true; b.releaseDate=new Date().toISOString().slice(0,10); localStorage.setItem(K,JSON.stringify(db)); page="payment"; render();
+ b.released=true; b.releaseVersion='V58'; b.releaseDate=new Date().toISOString().slice(0,10);
+ localStorage.setItem(K,JSON.stringify(db)); page="payment"; render();
 }
 function finalBookingDelete(ci,bi){
  const c=db.contracts[ci]; const b=c?.bookings?.[bi]; if(!b)return;
@@ -1837,34 +1847,22 @@ function payment(){
  const rows=[];
  db.contracts.forEach((c,ci)=>{
    (c.bookings||[]).forEach((b,bi)=>{
-     if(!b.released) return;
+     if(!isCurrentRelease(b)) return;
      const q=(b.loadingQty!==undefined&&b.loadingQty!=='')?Number(b.loadingQty):parseFloat(String(b.qty||'').replace(/,/g,''))||0;
-     const av=b.advance||{}; const inv=b.invoice||{};
+     const av=b.advance||{}, inv=b.invoice||{};
      const adv=av.amount!==undefined&&av.amount!==''?Number(av.amount):(b.allocatedAdvance||0);
      const bal=inv.invoiceBalance!==undefined&&inv.invoiceBalance!==''?Number(inv.invoiceBalance):'';
-     const plan=String(c.containerPlan||'');
-     const alloy=alloyFor(c,b);
-     rows.push(`<tr>
-       <td>${esc(b.slot||rows.length+1)}</td><td>${esc(c.date||'')}</td><td>${esc(c.no||'')}</td><td>${esc(c.seller||'')}</td>
-       <td>${q?Number(q).toFixed(3):esc(b.qty||'')}</td><td>${esc(plan)}</td>
-       <td><input class="alloyEdit" list="alloyOptionsPayment" value="${esc(alloy)}" onchange="paymentAlloy(${ci},${bi},this.value)"></td>
-       <td>${esc(c.price||'')}</td><td>${adv!==''&&!Number.isNaN(adv)?Number(adv).toFixed(2):''}</td>
-       <td>${bal!==''&&!Number.isNaN(bal)?Number(bal).toFixed(2):''}</td><td>${esc(b.container||'')}</td>
-       <td>${esc(b.pol||c.pol||'')}</td><td>${esc(b.eta||'')}</td>
-       <td><span class="badge">RELEASED ✓</span></td>
-       <td>${esc(b.releaseDate||'')}</td>
-     </tr>`);
+     const alloy=alloyFor(c,b), eta=dateInputValue(b.eta||'');
+     rows.push(`<tr><td>${esc(b.slot||rows.length+1)}</td><td>${esc(c.date||'')}</td><td>${esc(c.no||'')}</td><td>${esc(c.seller||'')}</td><td>${q?Number(q).toFixed(3):esc(b.qty||'')}</td><td>${esc(c.containerPlan||'')}</td><td><input class="alloyEdit" list="alloyOptionsPayment" value="${esc(alloy)}" onchange="paymentAlloy(${ci},${bi},this.value)"></td><td>${esc(c.price||'')}</td><td>${adv!==''&&!Number.isNaN(adv)?Number(adv).toFixed(2):''}</td><td>${bal!==''&&!Number.isNaN(bal)?Number(bal).toFixed(2):''}</td><td>${esc(b.container||'')}</td><td>${esc(b.pol||c.pol||'')}</td><td>${eta?esc(eta):esc(b.eta||'')}</td><td><span class="badge">RELEASED ✓</span></td><td>${esc(b.releaseDate||'')}</td></tr>`);
    });
  });
- shell("💳 Payment — Released Containers",`<div class="item"><b>Released Container Payment Register</b><br><span class="muted">When RELEASE is clicked in Final Booking, that container moves here automatically. It disappears from Final Booking but remains linked to the original Booking record.</span></div>
- <div class="notice"><b>ETA:</b> Date is taken automatically from the Booking/Loading data. &nbsp; <b>Alloy:</b> 1 x 20 → 6063 | 1 x 40 → 6061, editable.</div>
- <datalist id="alloyOptionsPayment"><option value="6063"><option value="6061"></datalist>
- <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff;margin-top:12px">
- <table style="min-width:1900px;width:max-content;border-collapse:collapse"><thead><tr>
- <th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty (MT)</th><th>Container Plan</th><th>ALLOY</th><th>Price (USD/MT)</th><th>Advance USD</th><th>Invoice Balance USD</th><th>Container No.</th><th>Port of Loading</th><th>ETA</th><th>Release Status</th><th>Release Date</th>
- </tr></thead><tbody>${rows.join('')||'<tr><td colspan="15" style="text-align:center;padding:20px">No released containers yet. Release a container from Final Booking.</td></tr>'}</tbody></table></div>`);
+ shell("💳 Payment — Released Containers",`<div class="item"><b>Payment Register</b><br><span class="muted">Only containers released from Final Booking appear here. The same Final Booking columns are retained.</span></div><datalist id="alloyOptionsPayment"><option value="6063"><option value="6061"></datalist><div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff;margin-top:12px"><table style="min-width:1900px;width:max-content;border-collapse:collapse"><thead><tr><th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty (MT)</th><th>Container Plan</th><th>ALLOY</th><th>Price (USD/MT)</th><th>Advance USD</th><th>Invoice Balance USD</th><th>Container No.</th><th>Port of Loading</th><th>ETA</th><th>Release Status</th><th>Release Date</th></tr></thead><tbody>${rows.join('')||'<tr><td colspan="15" style="text-align:center;padding:20px">No released containers yet. Release a container from Final Booking.</td></tr>'}</tbody></table></div>`);
 }
 function paymentAlloy(ci,bi,val){ updateAlloySafe(ci,bi,val); }
+function printFinalBooking(){
+ const oldTitle=document.title; document.title='Final Booking - Import Contract Tracker';
+ window.print(); setTimeout(()=>{document.title=oldTitle;},1000);
+}
 
 function finalRec(){
  let c=get(cur);
