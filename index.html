@@ -1125,40 +1125,56 @@ function showSelectedBoeContainers(){
 }
 async function readBoeCopy(){
  const f=$("bef")?.files?.[0]; if(!f)return;
- const st=$("boeStatus"); if(st)st.textContent="⏳ Reading Bill of Entry PDF/Image…";
+ const st=$("boeStatus"); if(st)st.textContent="⏳ Bill of Entry reading… (OCR will run only once)";
  try{
    let text="";
    if(f.type==="application/pdf"||/\.pdf$/i.test(f.name)){
      await ensurePdfJS();
      const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
+     // First use the PDF text layer. No OCR is started unless the PDF is actually scanned.
      for(let i=1;i<=pdf.numPages;i++){
        const pg=await pdf.getPage(i),tc=await pg.getTextContent();
        text+="\n"+tc.items.map(x=>x.str).join(" ");
      }
-     parseBoeText(text);
-     const critical=["ben","bed","bea","bebcd","besws","beigst","ber","bech"];
-     const missing=critical.some(id=>!$(id)?.value?.trim());
-     if(missing || text.replace(/\s/g,"").length<30){
+     if(text.replace(/\s/g,"").length<40){
+       // SCANNED BOE: OCR ONLY ONCE, on the first page where the BOE header/details normally appear.
+       // This intentionally avoids the old page-by-page OCR loop that kept repeating.
        await ensureTesseract();
-       if(st)st.textContent="⏳ Bill of Entry OCR is running…";
-       for(let i=1;i<=pdf.numPages;i++){
-         const pg=await pdf.getPage(i),vp=pg.getViewport({scale:3});
-         const cv=document.createElement('canvas'),ctx=cv.getContext('2d');cv.width=vp.width;cv.height=vp.height;
-         await pg.render({canvasContext:ctx,viewport:vp}).promise;
-         try{const im=ctx.getImageData(0,0,cv.width,cv.height),d=im.data;for(let k=0;k<d.length;k+=4){const g=.299*d[k]+.587*d[k+1]+.114*d[k+2];const v=Math.max(0,Math.min(255,(g-128)*1.55+128));d[k]=d[k+1]=d[k+2]=v;}ctx.putImageData(im,0,0);}catch(_){ }
-         const r=await Tesseract.recognize(cv,'eng',{logger:m=>{if(m.status)st.textContent='⏳ BOE OCR '+Math.round((m.progress||0)*100)+'%';}});
-         text+='\n'+(r.data.text||'');
-       }
+       if(st)st.textContent="⏳ Bill of Entry OCR — one time only…";
+       const pg=await pdf.getPage(1),vp=pg.getViewport({scale:4});
+       const cv=document.createElement('canvas'),ctx=cv.getContext('2d');
+       cv.width=vp.width;cv.height=vp.height;
+       await pg.render({canvasContext:ctx,viewport:vp}).promise;
+       try{
+         const im=ctx.getImageData(0,0,cv.width,cv.height),d=im.data;
+         for(let k=0;k<d.length;k+=4){
+           const g=.299*d[k]+.587*d[k+1]+.114*d[k+2];
+           const v=Math.max(0,Math.min(255,(g-128)*1.8+128));
+           d[k]=d[k+1]=d[k+2]=v;
+         }
+         ctx.putImageData(im,0,0);
+       }catch(_){ }
+       const r=await Tesseract.recognize(cv,'eng',{
+         logger:m=>{if(m.status)st.textContent='⏳ BOE OCR '+Math.round((m.progress||0)*100)+'% — once';}
+       });
+       text=r.data.text||'';
      }
    }else{
+     // Image: exactly one OCR operation.
      await ensureTesseract();
-     const r=await Tesseract.recognize(f,'eng',{logger:m=>{if(m.status)st.textContent='⏳ BOE OCR '+Math.round((m.progress||0)*100)+'%';}});
+     if(st)st.textContent="⏳ Bill of Entry OCR — one time only…";
+     const r=await Tesseract.recognize(f,'eng',{
+       logger:m=>{if(m.status)st.textContent='⏳ BOE OCR '+Math.round((m.progress||0)*100)+'% — once';}
+     });
      text=r.data.text||'';
    }
    if(!text.trim())throw new Error('No readable BOE text found');
    parseBoeText(text);
-   if(st)st.textContent='✅ Bill of Entry read successfully. Verify every field before saving.';
- }catch(e){console.error(e);if(st)st.textContent='⚠️ BOE details could not be extracted automatically. Enter the fields manually and verify the PDF.';}
+   if(st)st.textContent='✅ BOE read once. Fields extracted where the document text was readable. Verify before saving.';
+ }catch(e){
+   console.error(e);
+   if(st)st.textContent='⚠️ BOE could not be read automatically. OCR was attempted only once; enter/verify the fields manually.';
+ }
 }
 function boeNum(v){return String(v||'').replace(/,/g,'').replace(/\s/g,'').trim();}
 function boeValueAfter(lines,labels){
@@ -1181,24 +1197,57 @@ function boeDateFromText(text,lines){
 }
 function parseBoeText(text){
  const raw=String(text||'').replace(/\r/g,'\n');
- const lines=linesOf(raw), norm=raw.replace(/\s+/g,' ').trim();
- const num='([0-9][0-9,]*(?:\\.[0-9]{1,4})?)';
- const pick=(patterns)=>{for(const re of patterns){const m=norm.match(re);if(m)return cleanLine(m[m.length-1]);}return ''};
- let beNo=pick([/(?:bill\s*of\s*entry|bill\s*entry|b\/e|be)\s*(?:no\.?|number)\s*[:#=\-]?\s*([A-Z0-9\/_.-]{4,40})/i,/\bBE\s*No\.?\s*[:#=\-]?\s*([A-Z0-9\/_.-]{4,40})/i]);
- if(!beNo)beNo=boeValueAfter(lines,['BE No','Bill of Entry No','Bill Entry No','B/E No']);
- let beDate=boeDateFromText(norm,lines);
- let assess=pick([/(?:assessable\s+value|assessable\s+amount)\s*(?:inr|rs\.?|₹)?\s*[:=\-]?\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)/i]);
- if(!assess)assess=boeValueAfter(lines,['Assessable Value','Assessable Amount']);
- let bcd=pick([/(?:basic\s+customs\s+duty|basic\s+duty|BCD)\s*(?:inr|rs\.?|₹)?\s*[:=\-]?\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)/i]);
- if(!bcd)bcd=boeValueAfter(lines,['BCD','Basic Customs Duty','Basic Duty']);
- let sws=pick([/(?:social\s+welfare\s+surcharge|social\s+welfare\s+surcharge|SWS)\s*(?:inr|rs\.?|₹)?\s*[:=\-]?\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)/i]);
- if(!sws)sws=boeValueAfter(lines,['SWS','Social Welfare Surcharge']);
- let igst=pick([/(?:integrated\s+goods\s+and\s+services\s+tax|IGST)\s*(?:inr|rs\.?|₹)?\s*[:=\-]?\s*([0-9][0-9,]*(?:\.[0-9]{1,2})?)/i]);
- if(!igst)igst=boeValueAfter(lines,['IGST','Integrated Goods and Services Tax']);
- let rate=pick([/(?:exchange\s+rate|exchange\s+rate\s*usd|exchange\s+rate\s*\(usd\))\s*[:=\-]?\s*([0-9][0-9,]*(?:\.[0-9]{1,6})?)/i]);
- if(!rate)rate=boeValueAfter(lines,['Exchange Rate','Exchange Rate USD']);
- let challan=pick([/(?:challan\s*(?:no\.?|number)|duty\s*challan)\s*[:#=\-]?\s*([A-Z0-9\/_.-]{3,40})/i]);
- if(!challan)challan=boeValueAfter(lines,['Challan No','Challan Number','Duty Challan No']);
+ const lines=linesOf(raw);
+ const norm=raw.replace(/\s+/g,' ').trim();
+ const cleanVal=v=>String(v||'').replace(/\s+/g,' ').replace(/^[\s:;#=-]+|[\s:;#=-]+$/g,'').trim();
+ const amount='([0-9][0-9,]*(?:\\.[0-9]{1,2})?)';
+ const number='([A-Z0-9][A-Z0-9\\/_.-]{3,45})';
+ const find=(patterns)=>{for(const re of patterns){const m=norm.match(re);if(m)return cleanVal(m[m.length-1]);}return ''};
+ const afterLabel=(labels)=>{
+   const re=new RegExp('(?:'+labels+')\\s*(?:no\\.?|number|date|value|amount|rate)?\\s*[:#=\\-]?\\s*([^,;|]{1,80})','i');
+   const m=norm.match(re); if(m&&m[1])return cleanVal(m[1]);
+   for(let i=0;i<lines.length;i++){
+     if(new RegExp('^(?:'+labels+')\\s*(?:no\\.?|number|date|value|amount|rate)?\\s*[:#=\\-]?\\s*$','i').test(lines[i])){
+       for(let j=i+1;j<Math.min(i+4,lines.length);j++) if(lines[j]) return cleanVal(lines[j]);
+     }
+   }
+   return '';
+ };
+
+ // BE Number — prefer explicit Bill of Entry labels and avoid taking random document numbers.
+ let beNo=find([
+   new RegExp('(?:bill\\s*of\\s*entry|bill\\s*entry|b\\/?e)\\s*(?:no\\.?|number)\\s*[:#=\\-]?\\s*'+number,'i'),
+   /\bBE\s*(?:No\.?|Number)\s*[:#=\-]?\s*([A-Z0-9\/_.-]{4,45})/i,
+   /\bBill\s*of\s*Entry\s*[:#=\-]?\s*([A-Z0-9\/_.-]{4,45})/i
+ ]);
+ if(!beNo)beNo=afterLabel('bill\\s*of\\s*entry|bill\\s*entry|BE|B\\/?E');
+ if(/^date$/i.test(beNo))beNo='';
+
+ // BE Date — only use dates close to an explicit BOE label; do not use invoice/contract/shipment dates.
+ let beDate='';
+ const datePat='(\\d{1,2}[\\/.-]\\d{1,2}[\\/.-]\\d{2,4}|\\d{4}[\\/.-]\\d{1,2}[\\/.-]\\d{1,2})';
+ let dm=norm.match(new RegExp('(?:BE\\s*date|Bill\\s*of\\s*Entry\\s*date|Date\\s*of\\s*BE|B\\/?E\\s*Date)\\s*[:#=\\-]?\\s*'+datePat,'i'));
+ if(dm){
+   const d=dm[1],a=d.split(/[\\/.-]/);
+   if(a[0].length===4)beDate=`${a[0]}-${String(a[1]).padStart(2,'0')}-${String(a[2]).padStart(2,'0')}`;
+   else{let y=a[2];if(y.length===2)y='20'+y;beDate=`${y}-${String(a[1]).padStart(2,'0')}-${String(a[0]).padStart(2,'0')}`;}
+ }
+ if(!beDate){
+   for(let i=0;i<lines.length;i++){
+     if(/^(?:BE\s*Date|Bill\s*of\s*Entry\s*Date|Date\s*of\s*BE|B\/?E\s*Date)\s*[:#=\-]?$/i.test(lines[i])){
+       const m=String(lines[i+1]||'').match(new RegExp(datePat));
+       if(m){const a=m[1].split(/[\\/.-]/);let y=a[2]||'';if(a[0].length===4)beDate=`${a[0]}-${String(a[1]).padStart(2,'0')}-${String(a[2]).padStart(2,'0')}`;else{if(y.length===2)y='20'+y;beDate=`${y}-${String(a[1]).padStart(2,'0')}-${String(a[0]).padStart(2,'0')}`;}break;}
+     }
+   }
+ }
+
+ const assess=find([/(?:assessable\\s+value|assessable\\s+amount)\\s*(?:inr|rs\\.?|₹)?\\s*[:=#-]?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)/i,/(?:assessable\\s+value)\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)/i])||afterLabel('assessable\\s+value|assessable\\s+amount');
+ const bcd=find([/(?:basic\\s+customs\\s+duty|basic\\s+duty|BCD)\\s*(?:INR|Rs\\.?|₹)?\\s*[:=#-]?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)/i])||afterLabel('basic\\s+customs\\s+duty|basic\\s+duty|BCD');
+ const sws=find([/(?:social\\s+welfare\\s+surcharge|SWS)\\s*(?:INR|Rs\\.?|₹)?\\s*[:=#-]?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)/i])||afterLabel('social\\s+welfare\\s+surcharge|SWS');
+ const igst=find([/(?:integrated\\s+goods\\s+and\\s+services\\s+tax|IGST)\\s*(?:INR|Rs\\.?|₹)?\\s*[:=#-]?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,2})?)/i])||afterLabel('integrated\\s+goods\\s+and\\s+services\\s+tax|IGST');
+ const rate=find([/(?:exchange\\s+rate|exchange\\s+rate\\s*USD)\\s*[:=#-]?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,6})?)/i])||afterLabel('exchange\\s+rate|exchange\\s+rate\\s*USD');
+ const challan=find([/(?:challan\\s*(?:no\\.?|number)|duty\\s*challan)\\s*[:#=\\-]?\\s*([A-Z0-9\\/_.-]{3,45})/i])||afterLabel('challan\\s*(?:no\\.?|number)|duty\\s*challan');
+
  setv('ben',beNo);setv('bed',beDate);setv('bea',boeNum(assess));setv('bebcd',boeNum(bcd));setv('besws',boeNum(sws));setv('beigst',boeNum(igst));setv('ber',boeNum(rate));setv('bech',challan);
  const chosen=selectedBoeData().filter(x=>selectedBoeRows().includes(x.i));
  if($('beq'))$('beq').value=chosen.reduce((a,x)=>a+Number(x.qty||0),0).toFixed(3);
@@ -1219,7 +1268,7 @@ function boe(){
  <div class="grid">
  ${field('ben','BE No.')}${field('bed','BE Date','date')}${field('beq','BE Quantity (MT)')}${field('bea','Assessable Value INR')}${field('bebcd','BCD INR')}${field('besws','SWS INR')}${field('beigst','IGST INR')}${field('ber','Exchange Rate')}${field('bech','Challan No.')}${field('bef','Bill of Entry Copy (PDF/Image)','file',1)}
  </div>
- <div id="boeStatus" class="notice" style="margin-top:10px">Bill of Entry PDF/Image upload करा. BE No., BE Date, Assessable Value, BCD, SWS, IGST, Exchange Rate आणि Challan No. automatically read केले जातील. Save करण्यापूर्वी verify करा.</div>
+ <div id="boeStatus" class="notice" style="margin-top:10px">Bill of Entry PDF/Image upload करा. OCR फक्त एकदाच चालेल. वाचता आलेली माहिती fields मध्ये येईल; उरलेली माहिती manually verify/enter करा.</div>
  <button class="btn s" onclick="saveBoe()">💾 Save Bill of Entry</button></div>`);
  showSelectedBoeContainers();
  const f=$('bef');if(f)f.addEventListener('change',readBoeCopy);
