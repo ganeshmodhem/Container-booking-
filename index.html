@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GALCO Import Contract Tracker — Professional</title>
+<title>GALCO Import Contract Tracker — Professional V2</title>
 <style>
 :root{--navy:#0b3558;--blue:#1769aa;--bg:#f4f7fa;--card:#fff;--line:#d9e2ea;--text:#17212b;--muted:#667684;--green:#16834a;--orange:#c77900;--red:#c93636;--shadow:0 8px 28px #16324d12}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);font:13px Arial,Helvetica,sans-serif;color:var(--text)}
@@ -30,6 +30,23 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}
 @media(max-width:1050px){.grid{grid-template-columns:repeat(2,1fr)}.stats{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:650px){.grid{grid-template-columns:1fr}.span2{grid-column:auto}.stats{grid-template-columns:repeat(2,1fr)}.detailGrid{grid-template-columns:1fr}}
 @media print{.top,.actions,.toolbar,.noPrint{display:none!important}body{background:#fff}.wrap{max-width:none}.card{box-shadow:none;border:0}table{font-size:9px}}
+
+/* V2 professional layer */
+:root{--navy:#082f49;--blue:#1268a5;--bg:#eef3f7;--card:#fff;--line:#d7e1e8;--text:#17232d;--muted:#687987;--green:#14834b;--orange:#c87508;--red:#c53b3b;--shadow:0 10px 30px rgba(13,42,61,.08)}
+body{background:linear-gradient(180deg,#eef4f8 0,#f7f9fb 220px);font-size:13px}
+.top{padding:14px 22px;background:linear-gradient(120deg,#062b43,#0b5579 55%,#0d6d86)}
+.brand h1{font-size:19px;letter-spacing:.2px}.brand small{font-size:10px}
+.nav{gap:5px;margin-top:11px}.nav button{border:1px solid #ffffff35;background:#ffffff0f;padding:8px 11px;border-radius:7px;font-size:12px}.nav button:hover{background:#ffffff22}.nav button.active{box-shadow:0 2px 8px #0002}
+.wrap{max-width:1600px;margin:20px auto}.card{border-radius:12px;box-shadow:var(--shadow);padding:17px}.title h2{font-size:17px}.notice{border-left:4px solid var(--blue);background:#f5faff}
+.stats{grid-template-columns:repeat(6,1fr)}.stat{min-height:70px}.stat b{font-size:22px;color:var(--navy)}
+.tableWrap{box-shadow:inset 0 0 0 1px #eef3f6}.tableWrap table{min-width:1200px}th{background:#eaf1f6;color:#193c52}td{font-size:12px}.tableWrap tbody tr:nth-child(even) td{background:#fbfdfe}.tableWrap tbody tr:hover td{background:#eef8ff}
+.btn{border-radius:7px;transition:.15s}.btn:hover{filter:brightness(.96);transform:translateY(-1px)}
+.section{margin-top:18px}.detail{background:#f9fbfc}.footer{font-size:11px}
+.kpiStrip{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.kpi{padding:8px 11px;border-radius:8px;background:#f4f8fb;border:1px solid var(--line);font-size:11px}.kpi b{font-size:13px;color:var(--navy)}
+.workflow{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;margin:12px 0}.workflow div{padding:8px 4px;text-align:center;border-radius:7px;background:#edf3f7;color:#496171;font-size:9px;font-weight:700}.workflow div.done{background:#dff4e8;color:#17613d}
+.rowActions{display:flex;gap:5px;flex-wrap:wrap}.iconBtn{padding:5px 7px!important}
+@media(max-width:1100px){.stats{grid-template-columns:repeat(3,1fr)}.workflow{grid-template-columns:repeat(5,1fr)}}
+@media(max-width:650px){.stats{grid-template-columns:repeat(2,1fr)}.workflow{grid-template-columns:repeat(2,1fr)}.wrap{padding:0 8px}.top{padding:12px}}
 </style>
 </head>
 <body>
@@ -45,9 +62,9 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}
    <div class="actions" style="margin:0"><button class="btn light" onclick="exportData()">Export Backup</button><button class="btn light" onclick="document.getElementById('importFile').click()">Import Backup</button><input id="importFile" type="file" accept=".json" hidden onchange="importData(this)"></div>
   </div>
   <div class="stats" id="stats"></div>
-  <div class="notice"><b>Workflow:</b> Contract → Booking → Advance → Loading/B.L. → Invoice → Bill of Entry → Final Payment → Final Booking → Payment → Final Record.</div>
+  <div class="workflow" id="workflowBar"></div><div class="notice"><b>Master principle:</b> Booking is the live container master. Every module updates the same container record; RELEASE moves it to Payment, and DONE creates one complete Final Record and removes the active Booking row.</div>
  </div>
- <div class="card"><div class="title"><h2>Quick Actions</h2></div><div class="actions">
+ <div class="card"><div class="title"><div><h2>Quick Actions</h2><div class="muted">Fast access to the daily import workflow.</div></div></div><div class="actions">
   <button class="btn primary" onclick="go('contract')">+ New Contract</button><button class="btn primary" onclick="go('booking')">Booking</button><button class="btn primary" onclick="go('payment')">Payment Queue</button><button class="btn success" onclick="go('final')">Final Record</button>
  </div></div>
 </section>
@@ -129,7 +146,7 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}
 </section>
 
 <section id="finalbooking" class="view">
- <div class="card"><div class="title"><div><h2>Final Booking — Master Report</h2><div class="muted">Only containers ready for release are shown.</div></div><button class="btn light noPrint" onclick="window.print()">📄 PDF / Print</button></div>
+ <div class="card"><div class="title"><div><h2>Final Booking — Master Report</h2><div class="muted">Only containers ready for release are shown.</div></div><div class="actions noPrint" style="margin:0"><button class="btn light" onclick="window.print()">📄 PDF / Print</button><button class="btn light" onclick="exportData()">💾 Backup</button></div></div>
  <div class="notice">Alloy rule: <b>1x20 → 6063</b> and <b>1x40 → 6061</b>. Alloy remains editable.</div><div id="finalBookingTable"></div></div>
 </section>
 
@@ -138,15 +155,15 @@ button,input,select,textarea{font:inherit}button{cursor:pointer}
 </section>
 
 <section id="final" class="view">
- <div class="card"><div class="title"><div><h2>Final Record — Master Container Register</h2><div class="muted">Complete historical record. One row per Contract + Container.</div></div><button class="btn light noPrint" onclick="window.print()">📄 PDF / Print</button></div>
+ <div class="card"><div class="title"><div><h2>Final Record — Master Container Register</h2><div class="muted">Complete historical record. One row per Contract + Container.</div></div><div class="actions noPrint" style="margin:0"><button class="btn light" onclick="window.print()">📄 PDF / Print</button><button class="btn light" onclick="exportData()">💾 Backup</button></div></div>
  <div class="stats" id="finalStats"></div><div class="toolbar noPrint"><input id="finalSearch" placeholder="Search contract / container / seller / invoice" oninput="renderFinal()"></div><div id="finalTable"></div></div>
 </section>
 </main>
 <div class="footer">GALCO Import Contract Tracker • Local browser database • Export backups regularly</div>
 
 <script>
-const KEY='GALCO_IMPORT_PRO_V1';
-let db=JSON.parse(localStorage.getItem(KEY)||'{"contracts":[],"bookings":[],"advances":[],"loading":[],"invoices":[],"boes":[],"finalPayments":[],"released":[],"finalRecords":[]}');
+const KEY='GALCO_IMPORT_PRO_V2';
+let db=JSON.parse(localStorage.getItem(KEY)||localStorage.getItem('GALCO_IMPORT_PRO_V1')||'{"contracts":[],"bookings":[],"advances":[],"loading":[],"invoices":[],"boes":[],"finalPayments":[],"released":[],"finalRecords":[]}');
 function save(){localStorage.setItem(KEY,JSON.stringify(db));renderAll()}
 function saveSilent(){localStorage.setItem(KEY,JSON.stringify(db))}
 const $=id=>document.getElementById(id);
@@ -205,9 +222,14 @@ function donePayment(id){
 function delBooking(id){if(!confirm('Delete this Booking container?'))return;db.bookings=db.bookings.filter(x=>x.id!==id);save()}
 
 function renderAll(){
+ renderWorkflow();
  setSelect('bookingContract',contractOptions());setSelect('advanceContract',contractOptions());
  setSelect('loadingContainer',containerOptions());setSelect('invoiceContainer',containerOptions());setSelect('boeContainer',containerOptions());setSelect('finalPayContainer',containerOptions());
  renderStats();renderContracts();renderBooking();renderAdvance();renderLoading();renderInvoice();renderBoe();renderFinalPay();renderFinalBooking();renderPayment();renderFinal();
+}
+function renderWorkflow(){
+ const stages=[['Contract',db.contracts.length],['Booking',db.bookings.length],['Advance',db.advances.length],['Loading/B.L.',db.loading.length],['Invoice',db.invoices.length],['Bill of Entry',db.boes.length],['Final Payment',db.finalPayments.length],['Final Booking',db.bookings.filter(b=>db.invoices.some(i=>i.containerId===b.id)&&db.boes.some(x=>x.containerId===b.id)).length],['Payment',db.released.length],['Final Record',db.finalRecords.length]];
+ const el=$('workflowBar');if(el)el.innerHTML=stages.map(x=>`<div class="${x[1]?'done':''}">${x[0]}<br><b>${x[1]}</b></div>`).join('');
 }
 function renderStats(){
  const s=[db.contracts.length,db.bookings.length,db.invoices.length,db.boes.length,db.released.length,db.finalRecords.length];
@@ -220,10 +242,11 @@ function renderContracts(){
 function delContract(id){if(!confirm('Delete contract and its active booking data?'))return;db.contracts=db.contracts.filter(x=>x.id!==id);db.bookings=db.bookings.filter(x=>x.contractId!==id);db.advances=db.advances.filter(x=>x.contractId!==id);save()}
 function renderBooking(){
  const q=String($('bookingSearch')?.value||'').toLowerCase();
- const rows=db.bookings.filter(b=>{const c=db.contracts.find(x=>x.id===b.contractId)||{};return !q||`${c.no} ${c.seller} ${b.container}`.toLowerCase().includes(q)});
- $('bookingTable').innerHTML=rows.length?`<div class="tableWrap"><table><thead><tr><th>Contract</th><th>Seller</th><th>Loading Qty</th><th>Plan</th><th>ALLOY</th><th>Container No.</th><th>Seal</th><th>B/L</th><th>POL</th><th>ETA</th><th>Price</th><th>Action</th></tr></thead><tbody>${rows.map(b=>{const c=db.contracts.find(x=>x.id===b.contractId)||{};return `<tr><td>${esc(c.no)}</td><td>${esc(c.seller)}</td><td>${esc(b.loadingQty)}</td><td>${esc(b.plan)}</td><td><input style="width:70px;padding:5px" value="${esc(b.alloy)}" onchange="editAlloy('${b.id}',this.value)"></td><td><b>${esc(b.container)}</b></td><td>${esc(b.seal)}</td><td>${esc(b.bl)}</td><td>${esc(b.pol||c.pol)}</td><td>${esc(b.eta)}</td><td>${esc(c.price)}</td><td><button class="btn small warn" onclick="release('${b.id}')">RELEASE</button> <button class="btn small danger" onclick="delBooking('${b.id}')">DELETE</button></td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty">No active Booking containers.</div>`
+ const rows=db.bookings.filter(b=>{const c=db.contracts.find(x=>x.id===b.contractId)||{};return !q||`${c.no} ${c.seller} ${b.container} ${b.bl}`.toLowerCase().includes(q)});
+ $('bookingTable').innerHTML=rows.length?`<div class="tableWrap"><table><thead><tr><th>SR</th><th>Contract</th><th>Seller</th><th>Loading Qty MT</th><th>Plan</th><th>ALLOY</th><th>Container No.</th><th>Seal</th><th>B/L</th><th>POL</th><th>ETA</th><th>Price USD/MT</th><th>Actions</th></tr></thead><tbody>${rows.map((b,i)=>{const c=db.contracts.find(x=>x.id===b.contractId)||{};return `<tr><td>${i+1}</td><td><b>${esc(c.no)}</b></td><td>${esc(c.seller)}</td><td>${esc(b.loadingQty)}</td><td>${esc(b.plan)}</td><td><input style="width:72px;padding:5px;border:1px solid #ccd7e0;border-radius:6px" value="${esc(b.alloy)}" onchange="editAlloy('${b.id}',this.value)"></td><td><b>${esc(b.container)}</b></td><td>${esc(b.seal)}</td><td>${esc(b.bl)}</td><td>${esc(b.pol||c.pol)}</td><td><input type="date" value="${esc(b.eta)}" onchange="editEta('${b.id}',this.value)" style="padding:5px;border:1px solid #ccd7e0;border-radius:6px"></td><td>${money(c.price)}</td><td><div class="rowActions"><button class="btn small light iconBtn" onclick="containerView('${b.id}')">VIEW</button><button class="btn small warn iconBtn" onclick="release('${b.id}')">RELEASE</button><button class="btn small danger iconBtn" onclick="delBooking('${b.id}')">DELETE</button></div></td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty">No active Booking containers.</div>`
 }
 function editAlloy(id,v){const b=db.bookings.find(x=>x.id===id);if(b){b.alloy=v;saveSilent();renderBooking()}}
+function editEta(id,v){const b=db.bookings.find(x=>x.id===id);if(b){b.eta=v;saveSilent();renderBooking();renderFinalBooking();renderPayment()}}
 function renderAdvance(){
  $('advanceTable').innerHTML=db.advances.length?`<div class="tableWrap"><table><thead><tr><th>Contract</th><th>Advance USD</th><th>Date</th><th>USD Rate</th><th>INR</th><th>Other Charges</th><th>Reference</th><th>Bank</th></tr></thead><tbody>${db.advances.map(a=>{const c=db.contracts.find(x=>x.id===a.contractId)||{};return `<tr><td>${esc(c.no)}</td><td>${money(a.amount)}</td><td>${esc(a.date)}</td><td>${esc(a.usdRate)}</td><td>${money(a.inr)}</td><td>${money(a.otherChargesInr)}</td><td>${esc(a.ref)}</td><td>${esc(a.bank)}</td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty">No advance records.</div>`
 }
@@ -241,9 +264,15 @@ function renderFinalBooking(){
 function editEta(id,v){const b=db.bookings.find(x=>x.id===id);if(b){b.eta=v;saveSilent();renderFinalBooking()}}
 function renderPayment(){
  const rows=db.released.map((q,i)=>{const b=db.bookings.find(x=>x.id===q.bookingId);if(!b)return '';const c=db.contracts.find(x=>x.id===b.contractId)||{};const iv=db.invoices.find(x=>x.containerId===b.id)||{};const adv=db.advances.find(x=>x.contractId===c.id)||{};return `<tr><td>${i+1}</td><td>${esc(c.date)}</td><td>${esc(c.no)}</td><td>${esc(c.seller)}</td><td>${esc(b.loadingQty)}</td><td>${esc(b.plan)}</td><td>${esc(b.alloy)}</td><td>${esc(c.price)}</td><td>${money(adv.amount)}</td><td>${money(iv.invoiceBalance)}</td><td>${esc(b.container)}</td><td>${esc(b.pol||c.pol)}</td><td><input type="date" value="${esc(b.eta)}" onchange="editEtaPayment('${b.id}',this.value)"></td><td>${esc(q.releaseDate)}</td><td>${due(q.releaseDate)}</td><td><button class="btn small success" onclick="donePayment('${q.id}')">DONE</button></td></tr>`}).join('');
- $('paymentTable').innerHTML=`<div class="tableWrap"><table><thead><tr><th>SR</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty</th><th>Plan</th><th>ALLOY</th><th>Price</th><th>Advance USD</th><th>Invoice Balance</th><th>Container</th><th>POL</th><th>ETA</th><th>Release Date</th><th>Due Days</th><th>DONE</th></tr></thead><tbody>${rows||'<tr><td colspan="16" class="empty">No released containers waiting for DONE.</td></tr>'}</tbody></table></div>`
+ $('paymentTable').innerHTML=`<div class="tableWrap"><table><thead><tr><th>SR</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty</th><th>Plan</th><th>ALLOY</th><th>Price</th><th>Advance USD</th><th>Invoice Balance</th><th>Container</th><th>POL</th><th>ETA</th><th>Release Date</th><th>Due Days</th><th>DONE</th></tr></thead><tbody>${rows||'<tr><td colspan="17" class="empty">No released containers waiting for DONE.</td></tr>'}</tbody></table></div>`
 }
 function editEtaPayment(id,v){const b=db.bookings.find(x=>x.id===id);if(b){b.eta=v;saveSilent();renderPayment()}}
+function containerView(id){
+ const b=db.bookings.find(x=>x.id===id);if(!b)return;const c=db.contracts.find(x=>x.id===b.contractId)||{};
+ const a=db.advances.find(x=>x.contractId===c.id)||{},iv=db.invoices.find(x=>x.containerId===b.id)||{},boe=db.boes.find(x=>x.containerId===b.id)||{},fp=db.finalPayments.find(x=>x.containerId===b.id)||{};
+ const d=(l,v)=>`<div class="detail"><b>${esc(l)}</b><span>${esc(v??'—')||'—'}</span></div>`;
+ const el=document.createElement('div');el.className='modalBack';el.innerHTML=`<div class="modal"><div class="title"><div><h2>Container Control Centre</h2><div class="muted">${esc(c.no)} • ${esc(b.container)}</div></div><button class="btn light" onclick="this.closest('.modalBack').remove()">Close</button></div><div class="kpiStrip"><div class="kpi">Container <b>${esc(b.container)}</b></div><div class="kpi">Plan <b>${esc(b.plan)}</b></div><div class="kpi">Alloy <b>${esc(b.alloy)}</b></div><div class="kpi">Loading <b>${esc(b.loadingQty)} MT</b></div><div class="kpi">ETA <b>${esc(b.eta||'—')}</b></div></div><div class="section">Live Container Data</div><div class="detailGrid">${d('Contract No.',c.no)}${d('Seller',c.seller)}${d('Container No.',b.container)}${d('Seal No.',b.seal)}${d('B/L No.',b.bl)}${d('Vessel',b.vessel)}${d('Loading Date',b.loadingDate)}${d('ETA',b.eta)}${d('POL',b.pol||c.pol)}${d('POD',b.pod||c.pod)}${d('Price USD/MT',c.price)}${d('Advance USD',a.amount)}${d('Invoice No.',iv.invoiceNo)}${d('Invoice Amount USD',iv.invoiceAmount)}${d('Invoice Balance USD',iv.invoiceBalance)}${d('BE No.',boe.beNo)}${d('BE Date',boe.beDate)}${d('Final Payment USD',fp.amount)}${d('Payment Reference',fp.ref)}</div><div class="actions"><button class="btn warn" onclick="this.closest('.modalBack').remove();release('${b.id}')">RELEASE TO PAYMENT</button></div></div>`;document.body.appendChild(el)
+}
 function finalView(id){
  const r=db.finalRecords.find(x=>x.id===id);if(!r)return;
  const c=r.contract||{},b=r.booking||{},a=r.advance||{},iv=r.invoice||{},boe=r.boe||{},fp=r.finalPayment||{};
@@ -262,14 +291,16 @@ function finalView(id){
 }
 function renderFinal(){
  const q=String($('finalSearch')?.value||'').toLowerCase();
- const rows=db.finalRecords.filter(r=>{const c=r.contract||{},b=r.booking||{},iv=r.invoice||{};return !q||`${c.no} ${c.seller} ${b.container} ${iv.invoiceNo}`.toLowerCase().includes(q)}).map((r,i)=>{const c=r.contract||{},b=r.booking||{},iv=r.invoice||{};return `<tr><td>${i+1}</td><td>${esc(c.date)}</td><td><b>${esc(c.no)}</b></td><td>${esc(c.seller)}</td><td>${esc(b.container)}</td><td>${esc(b.loadingQty)}</td><td>${esc(b.alloy)}</td><td>${esc(c.price)}</td><td>${money(r.advance?.amount)}</td><td>${esc(iv.invoiceNo)}</td><td>${money(iv.invoiceAmount)}</td><td>${money(iv.invoiceBalance)}</td><td>${esc(r.releaseDate)}</td><td>${due(r.releaseDate)}</td><td><span class="badge bgreen">COMPLETED</span></td><td><button class="btn small primary" onclick="finalView('${r.id}')">VIEW FULL</button></td></tr>`}).join('');
+ const rows=db.finalRecords.filter(r=>{const c=r.contract||{},b=r.booking||{},iv=r.invoice||{};return !q||`${c.no} ${c.seller} ${b.container} ${iv.invoiceNo}`.toLowerCase().includes(q)}).map((r,i)=>{const c=r.contract||{},b=r.booking||{},iv=r.invoice||{};return `<tr><td>${i+1}</td><td>${esc(c.date)}</td><td><b>${esc(c.no)}</b></td><td>${esc(c.seller)}</td><td>${esc(b.container)}</td><td>${esc(b.loadingQty)}</td><td>${esc(b.alloy)}</td><td>${esc(c.price)}</td><td>${money(r.advance?.amount)}</td><td>${esc(iv.invoiceNo)}</td><td>${money(iv.invoiceAmount)}</td><td>${money(iv.invoiceBalance)}</td><td>${esc(r.releaseDate)}</td><td>${due(r.releaseDate)}</td><td><span class="badge bgreen">COMPLETED</span></td><td>${esc(r.doneDate)}</td><td><button class="btn small primary" onclick="finalView('${r.id}')">VIEW FULL</button></td></tr>`}).join('');
  const tq=db.finalRecords.reduce((s,r)=>s+num(r.booking?.loadingQty),0),ta=db.finalRecords.reduce((s,r)=>s+num(r.advance?.amount),0),ti=db.finalRecords.reduce((s,r)=>s+num(r.invoice?.invoiceAmount),0),tb=db.finalRecords.reduce((s,r)=>s+num(r.invoice?.invoiceBalance),0);
  $('finalStats').innerHTML=[['Containers',db.finalRecords.length],['Loading MT',tq.toFixed(3)],['Advance USD',money(ta)],['Invoice USD',money(ti)],['Balance USD',money(tb)],['Status','MASTER']].map(x=>`<div class="stat"><span>${x[0]}</span><b>${x[1]}</b></div>`).join('');
- $('finalTable').innerHTML=`<div class="tableWrap"><table><thead><tr><th>SR</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Container</th><th>Loading MT</th><th>ALLOY</th><th>Price</th><th>Advance USD</th><th>Invoice No.</th><th>Invoice USD</th><th>Balance USD</th><th>Release Date</th><th>Due Days</th><th>Status</th><th>Full Data</th></tr></thead><tbody>${rows||'<tr><td colspan="16" class="empty">No completed containers. Payment → DONE करा.</td></tr>'}</tbody></table></div>`
+ $('finalTable').innerHTML=`<div class="tableWrap"><table><thead><tr><th>SR</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Container</th><th>Loading MT</th><th>ALLOY</th><th>Price</th><th>Advance USD</th><th>Invoice No.</th><th>Invoice USD</th><th>Balance USD</th><th>Release Date</th><th>Due Days</th><th>Status</th><th>Completed Date</th><th>Full Data</th></tr></thead><tbody>${rows||'<tr><td colspan="17" class="empty">No completed containers. Payment → DONE करा.</td></tr>'}</tbody></table></div>`
 }
+function setTodayDefaults(){['contractForm','advanceForm','loadingForm','invoiceForm','boeForm','finalPayForm'].forEach(fid=>{const f=$(fid);if(!f)return;const date=f.querySelector('input[type=date]');if(date&&!date.value)date.value=today()})}
 function exportData(){const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='GALCO_Import_Backup_'+today()+'.json';a.click();URL.revokeObjectURL(a.href)}
 function importData(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!x.contracts||!x.bookings)throw Error();db=x;save();alert('Backup imported successfully.')}catch(e){alert('Invalid backup file.')}};r.readAsText(f)}
 renderAll();
+setTodayDefaults();
 go('dashboard');
 </script>
 </body>
