@@ -1432,121 +1432,166 @@ function parseFinalPaymentText(text){
 
  let amount='',m;
  const amountPatterns=[
-   /Bill\s+Amount\s*[:\-]?\s*USD\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i,
-   /Bill\s+Amount\s*[:\-]?\s*([0-9][0-9,]*(?:\.\d{1,2})?)\s*USD/i,
-   /Principal\s+Amount\s*[:\-]?\s*USD\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i,
-   /Principal\s+Amount\s*[:\-]?\s*([0-9][0-9,]*(?:\.\d{1,2})?)\s*USD/i
+   /Bill\s+Amount\s*[:\-]?\s*(?:USD\s*)?([0-9][0-9,]*(?:\.\d{1,2})?)/i,
+   /Principal\s+Amount\s*[:\-]?\s*(?:USD\s*)?([0-9][0-9,]*(?:\.\d{1,2})?)/i
  ];
  for(const p of amountPatterns){m=flat.match(p);if(m){amount=m[1];break;}}
 
  let date='';
  const datePatterns=[
-   /Event\s+Date\s*[:\-]?\s*(\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4})/i,
-   /Event\s+Date\s*[:\-]?\s*(\d{1,2}[- ](?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*[- ]\d{2,4})/i,
-   /Event\s+Date\s*[:\-]?\s*(\d{1,2})\s+([A-Z]{3,9})\s+(\d{4})/i,
-   /Event\s+Date\s*[:\-]?\s*(\d{4}[-\/.]\d{1,2}[-\/.]\d{1,2})/i
+   /Event\s*Date\s*[:#=\-]?\s*(\d{1,2}\s*[-\/.]\s*\d{1,2}\s*[-\/.]\s*\d{2,4})/i,
+   /Event\s*Date\s*[:#=\-]?\s*(\d{1,2}\s+)(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*\s*[-\/. ]\s*(\d{2,4})/i,
+   /Event\s*Date\s*[:#=\-]?\s*(\d{4}\s*[-\/.]\s*\d{1,2}\s*[-\/.]\s*\d{1,2})/i
  ];
  for(const p of datePatterns){
    m=flat.match(p);
    if(m){
-     if(m[3] && /^[A-Z]{3,9}$/i.test(m[2]||'')) date=finalPaymentDate(`${m[1]}-${m[2]}-${m[3]}`);
-     else if(/^\d{4}[-\/.]/.test(m[1])) date=m[1].replace(/[\/.]/g,'-');
+     if(m[2] && m[3]) date=finalPaymentDate(`${m[1].trim()}-${m[2]}-${m[3]}`);
      else date=finalPaymentDate(m[1]);
      if(date)break;
+   }
+ }
+ // OCR/PDF-layout fallback: locate Event Date and then the next date token.
+ if(!date){
+   const pos=flat.search(/Event\s*Date/i);
+   if(pos>=0){
+     const tail=flat.slice(pos,pos+180);
+     const dm=tail.match(/\b(\d{1,2}\s*[-\/.]\s*\d{1,2}\s*[-\/.]\s*\d{2,4}|\d{1,2}\s+(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*\s*[-\/. ]\s*\d{2,4}|\d{4}\s*[-\/.]\s*\d{1,2}\s*[-\/.]\s*\d{1,2})\b/i);
+     if(dm) date=finalPaymentDate(dm[1]);
    }
  }
 
  let rate='';
  const ratePatterns=[
-   /Conversion\s+Rate\s*[:\-]?\s*([0-9]+(?:\.\d{1,6})?)\s*INR/i,
-   /Conversion\s+Rate\s*[^@]{0,120}@\s*([0-9]+(?:\.\d{1,6})?)\s*INR/i,
-   /@\s*([0-9]+(?:\.\d{1,6})?)\s*INR\s+[0-9][0-9,]*(?:\.\d{1,2})?/i
+   /Conversion\s+Rate\s*[:\-]?\s*([0-9]+(?:\.\d{1,6})?)/i,
+   /@\s*([0-9]+(?:\.\d{1,6})?)\s*INR/i
  ];
  for(const p of ratePatterns){m=flat.match(p);if(m){rate=m[1];break;}}
 
  let inr='';
  const inrPatterns=[
-   /Principal\s+Amount\s+USD[^@]{0,180}@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i,
-   /@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i
+   /Principal\s+Amount\s+USD[^@]{0,220}@\s*[0-9]+(?:\.\d+)?\s*INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i,
+   /@\s*[0-9]+(?:\.\d+)?\s*INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i
  ];
  for(const p of inrPatterns){m=flat.match(p);if(m){inr=m[1];break;}}
 
- // User wants ONLY Our Bill No. in Reference, not the TOL Ref No.
+ // Our Bill No. must populate Reference. Handle OCR spaces/newlines/punctuation.
  let bill='';
  const billPatterns=[
-   /Our\s+Bill\s+No\.?\s*[:\-]?\s*([A-Z0-9][A-Z0-9\/\-]{4,60})/i,
-   /Our\s+Bill\s+No\.?\s+([A-Z0-9][A-Z0-9\/\-]{4,60})/i
+   /Our\s*Bill\s*No\.?\s*[:#=\-]?\s*([A-Z0-9][A-Z0-9\/_.\-]{4,70})/i,
+   /Our\s*Bill\s*(?:No|Number)\s*[:#=\-]?\s*([A-Z0-9][A-Z0-9\/_.\-]{4,70})/i
  ];
  for(const p of billPatterns){m=flat.match(p);if(m){bill=m[1];break;}}
+ // OCR may insert spaces inside the bill number. Capture a short token sequence
+ // after "Our Bill No." and normalize only obvious whitespace.
  if(!bill){
-   // OCR fallback for the ICICI advice table: Our Bill No. is followed by the bill number.
-   m=flat.match(/Our\s+Bill\s+No\.?\s+([A-Z0-9]{5,60})\s+Bill\s+Amount/i);
+   const pos=flat.search(/Our\s*Bill\s*No/i);
+   if(pos>=0){
+     const tail=flat.slice(pos,pos+120);
+     const dm=tail.match(/Our\s*Bill\s*No\.?.{0,25}?([A-Z0-9][A-Z0-9\s\/_.\-]{4,80}?)(?=\s+Bill\s+Amount|\s+Event\s+Type|\s+GSTIN|\s*$)/i);
+     if(dm)bill=dm[1].replace(/\s+/g,'').replace(/[^A-Z0-9\/_.\-]/gi,'');
+   }
+ }
+ // Strong fallback for the exact ICICI FIRA table label.
+ if(!bill){
+   m=flat.match(/Our\s+Bill\s+No\.?\s+([A-Z0-9\/_.\-]{6,70})/i);
    if(m)bill=m[1];
  }
+
  const ref=bill;
 
- const isFira=/FOREIGN\s+IMPORT\s+BILL\s+REALIZATION\s+ADVICE/i.test(flat)||/Bill\s+Received\s+from/i.test(flat);
- if(isFira){
-   if(!amount){
-     m=flat.match(/Bill\s+Amount\s+USD\s*([0-9,]+(?:\.\d{1,2})?)/i) ||
-       flat.match(/Bill\s+Amount\s*([0-9,]+(?:\.\d{1,2})?)/i);
-     if(m)amount=m[1];
-   }
-   if(!date){
-     m=flat.match(/Event\s+Date\s+(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i);
-     if(m)date=finalPaymentDate(m[1]);
-   }
-   if(!rate){
-     m=flat.match(/Conversion\s+Rate\s*[^@]*@\s*([0-9]+(?:\.\d+)?)/i);
-     if(m)rate=m[1];
-   }
-   if(!inr){
-     m=flat.match(/@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i);
-     if(m)inr=m[1];
-   }
-   if(!bill){
-     m=flat.match(/Our\s+Bill\s+No\.?\s+([A-Z0-9][A-Z0-9\/\-]{4,60})/i);
-     if(m)bill=m[1];
-   }
- }
+ // If the OCR/PDF text has "Our Bill No" but has OCR character errors,
+ // keep a safe reference only when it looks like a bill identifier.
+ const refSafe = ref && /^[A-Z0-9][A-Z0-9\/_.\-]{5,70}$/i.test(ref) ? ref : '';
 
  if(amount&&$('fa'))$('fa').value=amount.replace(/,/g,'');
  if(date&&$('fd'))$('fd').value=date;
  if(rate&&$('fr'))$('fr').value=rate;
  if(inr&&$('fi'))$('fi').value=inr.replace(/,/g,'');
- if(ref&&$('fx'))$('fx').value=ref;
- return {amount,date,rate,inr,ref};
+ if(refSafe&&$('fx'))$('fx').value=refSafe;
+ return {amount,date,rate,inr,ref:refSafe};
 }
 async function readFinalPaymentCopy(){
  const f=$('ff')?.files?.[0];if(!f)return;
  const st=$('finalPayStatus');if(st)st.textContent='⏳ Reading Final Payment PDF/Image…';
  try{
-   let text='';
+   let text='', parsed={};
    if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
      await ensurePdfJS();
      const pdf=await window.pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;
-     for(let i=1;i<=pdf.numPages;i++){const pg=await pdf.getPage(i),tc=await pg.getTextContent();text+='\n'+tc.items.map(x=>x.str).join(' ');}
-     let parsed=parseFinalPaymentText(text);
-     if(!(parsed.amount&&parsed.date&&parsed.rate&&parsed.inr)){
-       await ensureTesseract();if(st)st.textContent='⏳ Final Payment OCR is running…';
-       for(let i=1;i<=pdf.numPages;i++){
-         const pg=await pdf.getPage(i),vp=pg.getViewport({scale:2.4});const cv=document.createElement('canvas'),ctx=cv.getContext('2d');cv.width=vp.width;cv.height=vp.height;
-         await pg.render({canvasContext:ctx,viewport:vp}).promise;
-         const r=await Tesseract.recognize(cv,'eng',{logger:m=>{if(m.status&&st)st.textContent='⏳ Final Payment OCR '+Math.round((m.progress||0)*100)+'%';}});text+='\n'+(r.data.text||'');
-       }
-       parsed=parseFinalPaymentText(text);
+
+     // First pass: extract embedded PDF text (fast).
+     for(let i=1;i<=pdf.numPages;i++){
+       const pg=await pdf.getPage(i),tc=await pg.getTextContent();
+       text+='\n'+tc.items.map(x=>x.str).join(' ');
      }
-     if(!parsed.amount&&!parsed.date&&!parsed.rate&&!parsed.inr)throw new Error('No Final Payment fields detected');
+     parsed=parseFinalPaymentText(text);
+
+     // Second pass: OCR only when a critical FIRA field (Our Bill No. or
+     // Event Date) is missing. This avoids the old repeated OCR loop.
+     if(!parsed.ref || !parsed.date){
+       await ensureTesseract();
+       if(st)st.textContent='⏳ Reading Our Bill No. / Event Date from page 1…';
+       const pg=await pdf.getPage(1);
+       const vp=pg.getViewport({scale:3.0});
+       const cv=document.createElement('canvas'),ctx=cv.getContext('2d');
+       cv.width=Math.ceil(vp.width);cv.height=Math.ceil(vp.height);
+       await pg.render({canvasContext:ctx,viewport:vp}).promise;
+       const r=await Tesseract.recognize(cv,'eng',{logger:m=>{
+         if(m.status&&st)st.textContent='⏳ Final Payment OCR '+Math.round((m.progress||0)*100)+'%';
+       }});
+       text+='\n'+(r.data.text||'');
+       const ocrParsed=parseFinalPaymentText(text);
+       parsed={
+         amount:ocrParsed.amount||parsed.amount,
+         date:ocrParsed.date||parsed.date,
+         rate:ocrParsed.rate||parsed.rate,
+         inr:ocrParsed.inr||parsed.inr,
+         ref:ocrParsed.ref||parsed.ref
+       };
+       // Apply final merged values.
+       if(parsed.amount&&$('fa'))$('fa').value=String(parsed.amount).replace(/,/g,'');
+       if(parsed.date&&$('fd'))$('fd').value=parsed.date;
+       if(parsed.rate&&$('fr'))$('fr').value=parsed.rate;
+       if(parsed.inr&&$('fi'))$('fi').value=String(parsed.inr).replace(/,/g,'');
+       if(parsed.ref&&$('fx'))$('fx').value=parsed.ref;
+     }
+
+     // Deterministic fallback for the exact FIRA format shown by the user.
+     // If OCR/PDF text contains these labels but extraction is imperfect,
+     // do not overwrite a valid user-entered value.
+     const currentRef=$('fx')?.value||'';
+     const currentDate=$('fd')?.value||'';
+     if(!currentRef){
+       const mm=text.match(/Our\s*Bill\s*No\.?\s*[:#=\-]?\s*([A-Z0-9][A-Z0-9\/_.\-]{5,70})/i);
+       if(mm)$('fx').value=mm[1];
+     }
+     if(!currentDate){
+       const mm=text.match(/Event\s*Date\s*[:#=\-]?\s*(\d{1,2}\s*[-\/.]\s*\d{1,2}\s*[-\/.]\s*\d{2,4})/i);
+       if(mm){const d=finalPaymentDate(mm[1]);if(d)$('fd').value=d;}
+     }
+
+     if(!($('fa')?.value||$('fd')?.value||$('fr')?.value||$('fi')?.value||$('fx')?.value))
+       throw new Error('No Final Payment fields detected');
    }else{
-     await ensureTesseract();const r=await Tesseract.recognize(f,'eng',{logger:m=>{if(m.status&&st)st.textContent='⏳ Final Payment OCR '+Math.round((m.progress||0)*100)+'%';}});const parsed=parseFinalPaymentText(r.data.text||'');
-     if(!parsed.amount&&!parsed.date&&!parsed.rate&&!parsed.inr)throw new Error('No Final Payment fields detected');
+     await ensureTesseract();
+     const r=await Tesseract.recognize(f,'eng',{logger:m=>{
+       if(m.status&&st)st.textContent='⏳ Final Payment OCR '+Math.round((m.progress||0)*100)+'%';
+     }});
+     const parsed=parseFinalPaymentText(r.data.text||'');
+     if(!parsed.amount&&!parsed.date&&!parsed.rate&&!parsed.inr&&!parsed.ref)
+       throw new Error('No Final Payment fields detected');
    }
+
    if(st){
-   const ref=$('fx')?.value||'';
-   const dt=$('fd')?.value||'';
-   st.textContent='✅ Final Payment copy read. Our Bill No. '+(ref||'not detected')+' | Payment Date '+(dt||'not detected')+'. Verify before saving.';
+     const ref=$('fx')?.value||'';
+     const dt=$('fd')?.value||'';
+     st.textContent='✅ Final Payment copy read. Our Bill No. '+(ref||'not detected')+' | Payment Date '+(dt||'not detected')+'. Verify before saving.';
+   }
+ }catch(e){
+   console.error(e);
+   if(st)st.textContent='⚠️ Final Payment OCR/reader failed. You can enter the fields manually.';
  }
- }catch(e){console.error(e);if(st)st.textContent='⚠️ Final Payment OCR/reader failed. You can enter the fields manually.';}
 }
 function finalpay(){
  let c=get(cur);
