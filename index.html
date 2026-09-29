@@ -419,6 +419,7 @@ function booking(){
  const advanceCols=[['Advance USD','amount'],['Payment Date','date'],['Payment Bill / Ref No.','ref'],['Bank','bank'],['USD Rate','usdRate'],['Payment Amount INR','inr'],['Other Charges INR','otherChargesInr'],['Payment Copy','copyName']];
  const invoiceCols=[['Invoice No.','invoiceNo'],['Invoice Date','invoiceDate'],['Invoice Qty (MT)','invoiceQty'],['Invoice Amount USD','invoiceAmount'],['Advance Deducted USD','invoiceAdvance'],['Invoice Balance USD','invoiceBalance']];
  const boeCols=[['BE No.','beNo'],['BE Date','beDate'],['BOE Qty (MT)','boeQty'],['Assessable Value INR','assessableValue'],['BCD INR','bcd'],['SWS INR','sws'],['IGST INR','igst'],['Exchange Rate','exchangeRate'],['Challan No.','challanNo']];
+ const finalPayCols=[['Final Payment USD','finalPaymentUsd'],['Final Payment Date','finalPaymentDate'],['Final Payment Rate','finalPaymentRate'],['Final Payment INR','finalPaymentInr'],['Final Payment Ref / Our Bill No.','finalPaymentRef']];
  const loadingCols=[];
  const allHeaders=[...contractCols.map(x=>x[0]),...bookingCols.map(x=>x[0]),...advanceCols.map(x=>x[0]),...invoiceCols.map(x=>x[0]),...boeCols.map(x=>x[0]),...loadingCols.map(x=>x[0]),'Release','Delete'];
  const rowFor=(b,i)=>{
@@ -438,7 +439,15 @@ function booking(){
   const invoiceVals=[inv.invoiceNo||'',inv.invoiceDate||'',inv.invoiceQty!==undefined&&inv.invoiceQty!==''?Number(inv.invoiceQty).toFixed(3):'',inv.invoiceAmount!==undefined&&inv.invoiceAmount!==''?Number(inv.invoiceAmount).toFixed(2):'',inv.invoiceAdvance!==undefined&&inv.invoiceAdvance!==''?Number(inv.invoiceAdvance).toFixed(2):'',inv.invoiceBalance!==undefined&&inv.invoiceBalance!==''?Number(inv.invoiceBalance).toFixed(2):''];
   const be=b.boe||{};
   const boeVals=[be.beNo||'',be.beDate||'',be.boeQty!==undefined&&be.boeQty!==''?Number(be.boeQty).toFixed(3):'',be.assessableValue||'',be.bcd||'',be.sws||'',be.igst||'',be.exchangeRate||'',be.challanNo||''];
-  const vals=[...contractCols.map(x=>x[1]), ...bookingVals, ...advanceCols.map(x=>av[x[1]]||''), ...invoiceVals, ...boeVals];
+  const fp=b.finalPayment||{};
+  const finalPayVals=[
+    fp.amount!==undefined&&fp.amount!==''?Number(fp.amount).toFixed(2):'',
+    fp.date||'',
+    fp.rate||'',
+    fp.inr||'',
+    fp.ref||''
+  ];
+  const vals=[...contractCols.map(x=>x[1]), ...bookingVals, ...advanceCols.map(x=>av[x[1]]||''), ...invoiceVals, ...boeVals, ...finalPayVals];
   const rowNo=b.slot||i+1;
   const action=b.released?'<span class="badge">RELEASED ✓</span>':`<button class="btn w" style="margin:0;padding:7px 10px" onclick="releaseB(${i})">🚢 RELEASE</button>`;
   return `<tr><td style="background:#f8fafc;font-weight:bold">${rowNo}/${n}</td>${vals.map(v=>`<td>${typeof v==='string'&&v.startsWith('<input')?v:esc(v)}</td>`).join('')}<td style="white-space:nowrap">${action}</td><td><button class="btn" style="margin:0;padding:7px 10px;background:#c62828;color:#fff" onclick="deleteBooking(${i})">🗑 DELETE</button></td></tr>`;
@@ -447,7 +456,7 @@ function booking(){
  const empty=`<tr><td colspan="${allHeaders.length}" style="text-align:center;padding:18px">No booking rows.</td></tr>`;
  shell("🚢 Booking",head(c)+`
  <h3 style="margin-top:16px">📊 Contract + Booking Register${hasLoading?' + Loading/B/L':''}</h3>
- <div class="notice">${n}-container contract is split automatically. Booking details can be entered directly in each row. Advance payment details will appear in the same container row after payment-copy verification. Payment amount, USD rate, INR amount and other charges are shown container-wise. <b>Invoice save केल्यानंतर selected container ची Invoice No., Date, Qty, Amount, Advance आणि Balance Booking मध्येही save होतील.</b></div>
+ <div class="notice">${n}-container contract is split automatically. Booking details can be entered directly in each row. Advance payment details will appear in the same container row after payment-copy verification. Payment amount, USD rate, INR amount and other charges are shown container-wise. <b>Invoice save केल्यानंतर selected container ची Invoice No., Date, Qty, Amount, Advance आणि Balance Booking मध्येही save होतील. Final Payment save केल्यानंतर Final Payment USD, Date, Rate, INR आणि Our Bill No. देखील Booking मध्ये save होतील.</b></div>
  <div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff">
  <table style="min-width:${allHeaders.length*145}px;width:max-content;border-collapse:collapse">
  <thead><tr>${allHeaders.map(h=>`<th style="position:sticky;top:0;background:#f3f6fa;white-space:nowrap">${esc(h)}</th>`).join('')}</tr></thead>
@@ -1407,36 +1416,100 @@ function finalInvoiceSummary(c){
  return Array.from(map.values());
 }
 function finalPaymentDate(v){
- const s=String(v||'').trim();
+ const s=String(v||'').trim().replace(/[–—−]/g,'-').replace(/\s+/g,' ');
  let m=s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})$/);
  if(m){let y=m[3];if(y.length===2)y='20'+y;return `${y}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
  m=s.match(/^(\d{1,2})[- ]([A-Za-z]{3,9})[- ](\d{2,4})$/);
- if(m){const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,sept:9,oct:10,nov:11,dec:12};let y=m[3];if(y.length===2)y='20'+y;const mo=months[m[2].slice(0,4).toLowerCase()]||months[m[2].slice(0,3).toLowerCase()];if(mo)return `${y}-${String(mo).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
+ if(m){const months={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,sept:9,oct:10,nov:11,dec:12};let y=m[3];if(y.length===2)y='20'+y;const key=m[2].toLowerCase();const mo=months[key.slice(0,4)]||months[key.slice(0,3)];if(mo)return `${y}-${String(mo).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;}
  return '';
 }
+function cleanOCRText(text){
+ return String(text||'').replace(/\r/g,'\n').replace(/\u00a0/g,' ').replace(/[–—−]/g,'-');
+}
 function parseFinalPaymentText(text){
- const raw=String(text||'').replace(/\r/g,'\n');
- const flat=raw.replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim();
- let amount='',m=flat.match(/Bill\s+Amount\s*[:\-]?\s*USD\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i);
- if(m)amount=m[1];
- if(!amount){m=flat.match(/Principal\s+Amount\s*[:\-]?\s*USD\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i);if(m)amount=m[1];}
- let date='';m=flat.match(/Event\s+Date\s*[:\-]?\s*(\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4})/i);if(m)date=finalPaymentDate(m[1]);
- if(!date){m=flat.match(/Event\s+Date\s*[:\-]?\s*(\d{1,2}[- ](?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*[- ]\d{2,4})/i);if(m)date=finalPaymentDate(m[1]);}
- let rate='';m=flat.match(/Conversion\s+Rate\s*[^@]{0,100}@\s*([0-9]+(?:\.\d{1,6})?)\s*INR/i);if(m)rate=m[1];
- if(!rate){m=flat.match(/@\s*([0-9]+(?:\.\d{1,6})?)\s*INR\s+([0-9][0-9,]*(?:\.\d{1,2})?)/i);if(m)rate=m[1];}
- let inr='';m=flat.match(/Principal\s+Amount\s+USD[^@]{0,150}@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i);if(m)inr=m[1];
- if(!inr){m=flat.match(/@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i);if(m)inr=m[1];}
- let bill='';m=flat.match(/Our\s+Bill\s+No\.?\s*[:\-]?\s*([A-Z0-9][A-Z0-9\/\-]{4,50})/i);if(m)bill=m[1];
- let tol='';m=flat.match(/TOL\s+Ref\s+No\.?\s*[:\-]?\s*([A-Z0-9][A-Z0-9\/\-]{4,50})/i);if(m)tol=m[1];
- let ref=[bill,tol].filter(Boolean).join(' / ');
- const isFira=/FOREIGN\s+IMPORT\s+BILL\s+REALIZATION\s+ADVICE/i.test(flat)||/Bill\s+Received\s+from/i.test(flat);
- // Exact layout fallback for the uploaded ICICI advice, only when this document is identified as a FIRA.
- if(isFira){
-   if(!amount){m=flat.match(/Bill\s+Amount\s+USD\s*([0-9,]+(?:\.\d{1,2})?)/i);if(m)amount=m[1];}
-   if(!date){m=flat.match(/Event\s+Date\s+(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i);if(m)date=finalPaymentDate(m[1]);}
-   if(!rate){m=flat.match(/Conversion\s+Rate\s+[^@]*@\s*([0-9]+(?:\.\d+)?)/i);if(m)rate=m[1];}
-   if(!inr){m=flat.match(/@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i);if(m)inr=m[1];}
+ const raw=cleanOCRText(text);
+ const flat=raw.replace(/\s+/g,' ').trim();
+
+ let amount='',m;
+ const amountPatterns=[
+   /Bill\s+Amount\s*[:\-]?\s*USD\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i,
+   /Bill\s+Amount\s*[:\-]?\s*([0-9][0-9,]*(?:\.\d{1,2})?)\s*USD/i,
+   /Principal\s+Amount\s*[:\-]?\s*USD\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i,
+   /Principal\s+Amount\s*[:\-]?\s*([0-9][0-9,]*(?:\.\d{1,2})?)\s*USD/i
+ ];
+ for(const p of amountPatterns){m=flat.match(p);if(m){amount=m[1];break;}}
+
+ let date='';
+ const datePatterns=[
+   /Event\s+Date\s*[:\-]?\s*(\d{1,2}[-\/.]\d{1,2}[-\/.]\d{2,4})/i,
+   /Event\s+Date\s*[:\-]?\s*(\d{1,2}[- ](?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|SEPT|OCT|NOV|DEC)[A-Z]*[- ]\d{2,4})/i,
+   /Event\s+Date\s*[:\-]?\s*(\d{1,2})\s+([A-Z]{3,9})\s+(\d{4})/i,
+   /Event\s+Date\s*[:\-]?\s*(\d{4}[-\/.]\d{1,2}[-\/.]\d{1,2})/i
+ ];
+ for(const p of datePatterns){
+   m=flat.match(p);
+   if(m){
+     if(m[3] && /^[A-Z]{3,9}$/i.test(m[2]||'')) date=finalPaymentDate(`${m[1]}-${m[2]}-${m[3]}`);
+     else if(/^\d{4}[-\/.]/.test(m[1])) date=m[1].replace(/[\/.]/g,'-');
+     else date=finalPaymentDate(m[1]);
+     if(date)break;
+   }
  }
+
+ let rate='';
+ const ratePatterns=[
+   /Conversion\s+Rate\s*[:\-]?\s*([0-9]+(?:\.\d{1,6})?)\s*INR/i,
+   /Conversion\s+Rate\s*[^@]{0,120}@\s*([0-9]+(?:\.\d{1,6})?)\s*INR/i,
+   /@\s*([0-9]+(?:\.\d{1,6})?)\s*INR\s+[0-9][0-9,]*(?:\.\d{1,2})?/i
+ ];
+ for(const p of ratePatterns){m=flat.match(p);if(m){rate=m[1];break;}}
+
+ let inr='';
+ const inrPatterns=[
+   /Principal\s+Amount\s+USD[^@]{0,180}@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i,
+   /@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i
+ ];
+ for(const p of inrPatterns){m=flat.match(p);if(m){inr=m[1];break;}}
+
+ // User wants ONLY Our Bill No. in Reference, not the TOL Ref No.
+ let bill='';
+ const billPatterns=[
+   /Our\s+Bill\s+No\.?\s*[:\-]?\s*([A-Z0-9][A-Z0-9\/\-]{4,60})/i,
+   /Our\s+Bill\s+No\.?\s+([A-Z0-9][A-Z0-9\/\-]{4,60})/i
+ ];
+ for(const p of billPatterns){m=flat.match(p);if(m){bill=m[1];break;}}
+ if(!bill){
+   // OCR fallback for the ICICI advice table: Our Bill No. is followed by the bill number.
+   m=flat.match(/Our\s+Bill\s+No\.?\s+([A-Z0-9]{5,60})\s+Bill\s+Amount/i);
+   if(m)bill=m[1];
+ }
+ const ref=bill;
+
+ const isFira=/FOREIGN\s+IMPORT\s+BILL\s+REALIZATION\s+ADVICE/i.test(flat)||/Bill\s+Received\s+from/i.test(flat);
+ if(isFira){
+   if(!amount){
+     m=flat.match(/Bill\s+Amount\s+USD\s*([0-9,]+(?:\.\d{1,2})?)/i) ||
+       flat.match(/Bill\s+Amount\s*([0-9,]+(?:\.\d{1,2})?)/i);
+     if(m)amount=m[1];
+   }
+   if(!date){
+     m=flat.match(/Event\s+Date\s+(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i);
+     if(m)date=finalPaymentDate(m[1]);
+   }
+   if(!rate){
+     m=flat.match(/Conversion\s+Rate\s*[^@]*@\s*([0-9]+(?:\.\d+)?)/i);
+     if(m)rate=m[1];
+   }
+   if(!inr){
+     m=flat.match(/@\s*[0-9]+(?:\.\d+)?\s+INR\s*([0-9][0-9,]*(?:\.\d{1,2})?)/i);
+     if(m)inr=m[1];
+   }
+   if(!bill){
+     m=flat.match(/Our\s+Bill\s+No\.?\s+([A-Z0-9][A-Z0-9\/\-]{4,60})/i);
+     if(m)bill=m[1];
+   }
+ }
+
  if(amount&&$('fa'))$('fa').value=amount.replace(/,/g,'');
  if(date&&$('fd'))$('fd').value=date;
  if(rate&&$('fr'))$('fr').value=rate;
@@ -1468,7 +1541,11 @@ async function readFinalPaymentCopy(){
      await ensureTesseract();const r=await Tesseract.recognize(f,'eng',{logger:m=>{if(m.status&&st)st.textContent='⏳ Final Payment OCR '+Math.round((m.progress||0)*100)+'%';}});const parsed=parseFinalPaymentText(r.data.text||'');
      if(!parsed.amount&&!parsed.date&&!parsed.rate&&!parsed.inr)throw new Error('No Final Payment fields detected');
    }
-   if(st)st.textContent='✅ Final Payment copy read. Verify the extracted fields before saving.';
+   if(st){
+   const ref=$('fx')?.value||'';
+   const dt=$('fd')?.value||'';
+   st.textContent='✅ Final Payment copy read. Our Bill No. '+(ref||'not detected')+' | Payment Date '+(dt||'not detected')+'. Verify before saving.';
+ }
  }catch(e){console.error(e);if(st)st.textContent='⚠️ Final Payment OCR/reader failed. You can enter the fields manually.';}
 }
 function finalpay(){
@@ -1547,10 +1624,31 @@ function saveFinalPay(){
  const advUsd=Number(String(c.advanceSummary?.totalUsd||0).replace(/,/g,''))||0;
  const entered=Number(String($('fa')?.value||0).replace(/,/g,''))||0;
  const amount=entered||Math.max(0,selectedTotal-advUsd);
- c.finalpay={amount:amount.toFixed(2),date:$('fd').value,rate:$('fr').value,inr:$('fi').value,ref:$('fx').value,file:file('ff'),totalInvoiceAmount:totalInv.toFixed(2),selectedInvoiceAmount:selectedTotal.toFixed(2),advanceAmount:advUsd.toFixed(2),invoiceNumbers:invs.map(x=>x.no),selectedInvoiceNumbers:selected.map(x=>x.no)};
+ const finalDate=$('fd').value||'';
+ const finalRate=$('fr').value||'';
+ const finalInr=$('fi').value||'';
+ const finalRef=$('fx').value||'';
+ const finalFile=file('ff');
+ c.finalpay={amount:amount.toFixed(2),date:finalDate,rate:finalRate,inr:finalInr,ref:finalRef,file:finalFile,totalInvoiceAmount:totalInv.toFixed(2),selectedInvoiceAmount:selectedTotal.toFixed(2),advanceAmount:advUsd.toFixed(2),invoiceNumbers:invs.map(x=>x.no),selectedInvoiceNumbers:selected.map(x=>x.no)};
+ // Sync final-payment data back into Booking rows for the selected invoice(s).
+ // This keeps the Booking register as the master container-wise register.
+ const selectedNos=new Set(selected.map(x=>String(x.no).trim()));
+ (c.bookings||[]).forEach(b=>{
+   const invNo=String(b?.invoice?.invoiceNo||'').trim();
+   if(invNo && selectedNos.has(invNo)){
+     b.finalPayment={
+       amount: amount.toFixed(2),
+       date: finalDate,
+       rate: finalRate,
+       inr: finalInr,
+       ref: finalRef,
+       copyName: finalFile?.name||''
+     };
+   }
+ });
  save();openPage('final',cur)
 }
-function finalRec(){let c=get(cur);shell("📄 Final Record",head(c)+`<div class="ok">Final Payment completed — Final Record unlocked.</div><table><tr><th>Stage</th><th>Record</th></tr><tr><td>Contract</td><td>USD ${esc(c.price)}/MT | ${esc(c.qty)} MT</td></tr><tr><td>Booking</td><td>${c.bookings.length} booking(s)</td></tr><tr><td>Advance</td><td>USD ${esc(c.advance?.amount)}</td></tr><tr><td>Loading/B/L</td><td>${esc(c.loading?.bl)} | ${esc(c.loading?.qty)} MT</td></tr><tr><td>Invoice</td><td>${esc(c.invoice?.no)} | USD ${esc(c.invoice?.amount)}</td></tr><tr><td>Bill of Entry</td><td>${esc(c.boe?.no)} | Assessable INR ${esc(c.boe?.assess)} | BCD INR ${esc(c.boe?.bcd)} | SWS INR ${esc(c.boe?.sws)} | IGST INR ${esc(c.boe?.igst)}</td></tr><tr><td>Final Payment</td><td>USD ${esc(c.finalpay?.amount)} | INR ${esc(c.finalpay?.inr)}</td></tr></table><div class="card"><label>Final Document</label><input id="ffinal" class="file" type="file" accept=".pdf,image/*"><button class="btn s" onclick="complete()">✅ Complete Final Record</button></div>${c.final?'<div class="ok">✅ FINAL RECORD COMPLETED</div>':''}`)}
+function finalRec(){let c=get(cur);shell("📄 Final Record",head(c)+`<div class="ok">Final Payment completed — Final Record unlocked.</div><table><tr><th>Stage</th><th>Record</th></tr><tr><td>Contract</td><td>USD ${esc(c.price)}/MT | ${esc(c.qty)} MT</td></tr><tr><td>Booking</td><td>${c.bookings.length} booking(s)</td></tr><tr><td>Advance</td><td>USD ${esc(c.advance?.amount)}</td></tr><tr><td>Loading/B/L</td><td>${esc(c.loading?.bl)} | ${esc(c.loading?.qty)} MT</td></tr><tr><td>Invoice</td><td>${esc(c.invoice?.no)} | USD ${esc(c.invoice?.amount)}</td></tr><tr><td>Bill of Entry</td><td>${esc(c.boe?.no)} | Assessable INR ${esc(c.boe?.assess)} | BCD INR ${esc(c.boe?.bcd)} | SWS INR ${esc(c.boe?.sws)} | IGST INR ${esc(c.boe?.igst)}</td></tr><tr><td>Final Payment</td><td>USD ${esc(c.finalpay?.amount)} | INR ${esc(c.finalpay?.inr)} | Date ${esc(c.finalpay?.date)} | Our Bill No. ${esc(c.finalpay?.ref)}</td></tr></table><div class="card"><label>Final Document</label><input id="ffinal" class="file" type="file" accept=".pdf,image/*"><button class="btn s" onclick="complete()">✅ Complete Final Record</button></div>${c.final?'<div class="ok">✅ FINAL RECORD COMPLETED</div>':''}`)}
 function complete(){let c=get(cur),f=file("ffinal");if(!f)return alert("Upload final document.");c.final={file:f,date:new Date().toISOString()};save();finalRec()}
 document.addEventListener("input",e=>{if(e.target.id==="price"||e.target.id==="qty"){let p=parseFloat($("price")?.value||0),q=parseFloat($("qty")?.value||0);if($("contractValue"))$("contractValue").value=p&&q?(p*q).toFixed(2):"";}});render();
 </script></body></html>
