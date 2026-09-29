@@ -19,27 +19,28 @@ function get(n){return db.contracts.find(x=>x.no.toLowerCase()===String(n||"").t
 function save(){localStorage.setItem(K,JSON.stringify(db));render()}
 function saveSilently(){localStorage.setItem(K,JSON.stringify(db))}
 function nav(){
- let c=get(cur);
  $("nav").innerHTML=stages.map(([id,t])=>{
-   const disabled=(id!=="home"&&!c);
-   return `<button class="${id===page?'on ':''}${disabled?'lock':''}" ${disabled?'disabled':''} onclick="openPage('${id}')">${t}</button>`;
+   return `<button class="${id===page?'on ':''}" onclick="openPage('${id}')">${t}</button>`;
  }).join("");
 }
 let page="home";
 function openPage(p,n=cur){
- let c=get(n);
- if(p!=="home"&&!c){
-   alert("Please select/open a Sales Contract first.");
-   return;
- }
- // All modules remain accessible at any time after a contract is selected.
- // Missing upstream information is displayed as blank/read-only status rather than locking the module.
- page=p; cur=n; render();
+ // Every module is intentionally open at all times.
+ // If no contract is active, that module shows its own search/empty state.
+ page=p;
+ if(n) cur=n;
+ render();
 }
 function shell(title,body){
  const back=(page!=="booking"&&page!=="home"&&cur)?`<div style="display:flex;justify-content:flex-end;margin:-4px 0 10px"><button class="btn p" style="margin:0;padding:7px 12px" onclick="openPage('booking','${esc(cur)}')">↩ Booking Master</button></div>`:'';
  $("main").innerHTML=`<section class="page on"><div class="card"><h2>${title}</h2>${back}${body}</div></section>`;
  nav();
+}
+function searchFinalRecordContract(){
+ const no=String($('finalRecSearchNo')?.value||'').trim();
+ if(!no){alert('Enter Sales Contract No.');return;}
+ if(!get(no)){alert('Sales Contract not found.');return;}
+ cur=no; page='final'; render();
 }
 function render(){
 nav();if(page==="home")home();else if(page==="booking")booking();else if(page==="advance")advance();else if(page==="loading")loading();else if(page==="invoice")invoice();else if(page==="boe")boe();else if(page==="finalpay")finalpay();else finalRec()
@@ -420,7 +421,19 @@ function syncSavedLoadingData(c){
   });
 }
 function booking(){
- let c=get(cur); ensureBookingRows(c); syncSavedLoadingData(c); saveSilently();
+ let c=get(cur);
+ if(!c){
+   shell("🚢 Booking — Master Register",`<div class="card">
+     <h3>🔎 Select Sales Contract</h3>
+     <div class="search">
+       <input id="bookingSearchNo" placeholder="Enter Sales Contract No.">
+       <button class="btn p" onclick="searchBookingContract()">Open Booking</button>
+     </div>
+     <div class="notice" style="margin-top:8px">Booking is the main register. All other tabs remain available from the top menu.</div>
+   </div>`);
+   return;
+ }
+ ensureBookingRows(c); syncSavedLoadingData(c); saveSilently();
  const hasLoading=!!c.loading;
  const n=containerCount(c);
  const totalQty=parseFloat(String(c.qty||0).replace(/,/g,''))||0;
@@ -620,6 +633,13 @@ function searchAdvanceContract(){
  if(!c){alert('Sales Contract not found. Please enter the saved Sales Contract No.');return;}
  cur=c.no; advanceSearched=true; page='advance'; render();
 }
+function searchBookingContract(){
+ const no=String($('bookingSearchNo')?.value||'').trim();
+ if(!no){alert('Enter Sales Contract No.');return;}
+ if(!get(no)){alert('Sales Contract not found.');return;}
+ cur=no; bookingSearched=true; page='booking'; render();
+}
+let bookingSearched=false;
 function advance(){
  let c=advanceSearched?get(cur):null;
  if(!c){shell("💵 Advance Payment",`<div class="card"><h3>🔎 Search Sales Contract</h3><div class="search"><input id="advanceSearchNo" placeholder="Enter Sales Contract No."><button class="btn p" onclick="searchAdvanceContract()">Search</button></div></div>`);return;}
@@ -1630,6 +1650,17 @@ async function readFinalPaymentCopy(){
 }
 function finalpay(){
  let c=get(cur);
+ if(!c){
+   shell("💰 Final Payment",`<div class="card">
+     <h3>🔎 Select Sales Contract</h3>
+     <div class="search">
+       <input id="finalPaySearchNo" placeholder="Enter Sales Contract No.">
+       <button class="btn p" onclick="searchFinalPayContract()">Open Final Payment</button>
+     </div>
+     <div class="notice" style="margin-top:8px">Final Payment is open from the top menu at all times. Select a contract only when you want to enter/read its payment.</div>
+   </div>`);
+   return;
+ }
  const invs=finalInvoiceSummary(c);
  const savedSel=Array.isArray(c.finalpay?.selectedInvoiceNumbers)?c.finalpay.selectedInvoiceNumbers:invs.map(x=>x.no);
  const selected=invs.filter(x=>savedSel.includes(x.no));
@@ -1728,7 +1759,19 @@ function saveFinalPay(){
  });
  save();openPage('final',cur)
 }
-function finalRec(){let c=get(cur);shell("📄 Final Record",head(c)+`<div class="ok">Final Payment completed — Final Record unlocked.</div><table><tr><th>Stage</th><th>Record</th></tr><tr><td>Contract</td><td>USD ${esc(c.price)}/MT | ${esc(c.qty)} MT</td></tr><tr><td>Booking</td><td>${c.bookings.length} booking(s)</td></tr><tr><td>Advance</td><td>USD ${esc(c.advance?.amount)}</td></tr><tr><td>Loading/B/L</td><td>${esc(c.loading?.bl)} | ${esc(c.loading?.qty)} MT</td></tr><tr><td>Invoice</td><td>${esc(c.invoice?.no)} | USD ${esc(c.invoice?.amount)}</td></tr><tr><td>Bill of Entry</td><td>${esc(c.boe?.no)} | Assessable INR ${esc(c.boe?.assess)} | BCD INR ${esc(c.boe?.bcd)} | SWS INR ${esc(c.boe?.sws)} | IGST INR ${esc(c.boe?.igst)}</td></tr><tr><td>Final Payment</td><td>USD ${esc(c.finalpay?.amount)} | INR ${esc(c.finalpay?.inr)} | Date ${esc(c.finalpay?.date)} | Our Bill No. ${esc(c.finalpay?.ref)}</td></tr></table><div class="card"><label>Final Document</label><input id="ffinal" class="file" type="file" accept=".pdf,image/*"><button class="btn s" onclick="complete()">✅ Complete Final Record</button></div>${c.final?'<div class="ok">✅ FINAL RECORD COMPLETED</div>':''}`)}
+function searchFinalPayContract(){
+ const no=String($('finalPaySearchNo')?.value||'').trim();
+ if(!no){alert('Enter Sales Contract No.');return;}
+ if(!get(no)){alert('Sales Contract not found.');return;}
+ cur=no; page='finalpay'; render();
+}
+function finalRec(){
+ let c=get(cur);
+ if(!c){
+   shell("📄 Final Record",`<div class="card"><h3>🔎 Select Sales Contract</h3><div class="search"><input id="finalRecSearchNo" placeholder="Enter Sales Contract No."><button class="btn p" onclick="searchFinalRecordContract()">Open Final Record</button></div><div class="notice" style="margin-top:8px">All tabs remain open. Select a contract to view its final record.</div></div>`);
+   return;
+ }
+ shell("📄 Final Record",head(c)+`<div class="ok">Final Payment completed — Final Record unlocked.</div><table><tr><th>Stage</th><th>Record</th></tr><tr><td>Contract</td><td>USD ${esc(c.price)}/MT | ${esc(c.qty)} MT</td></tr><tr><td>Booking</td><td>${c.bookings.length} booking(s)</td></tr><tr><td>Advance</td><td>USD ${esc(c.advance?.amount)}</td></tr><tr><td>Loading/B/L</td><td>${esc(c.loading?.bl)} | ${esc(c.loading?.qty)} MT</td></tr><tr><td>Invoice</td><td>${esc(c.invoice?.no)} | USD ${esc(c.invoice?.amount)}</td></tr><tr><td>Bill of Entry</td><td>${esc(c.boe?.no)} | Assessable INR ${esc(c.boe?.assess)} | BCD INR ${esc(c.boe?.bcd)} | SWS INR ${esc(c.boe?.sws)} | IGST INR ${esc(c.boe?.igst)}</td></tr><tr><td>Final Payment</td><td>USD ${esc(c.finalpay?.amount)} | INR ${esc(c.finalpay?.inr)} | Date ${esc(c.finalpay?.date)} | Our Bill No. ${esc(c.finalpay?.ref)}</td></tr></table><div class="card"><label>Final Document</label><input id="ffinal" class="file" type="file" accept=".pdf,image/*"><button class="btn s" onclick="complete()">✅ Complete Final Record</button></div>${c.final?'<div class="ok">✅ FINAL RECORD COMPLETED</div>':''}`)}
 function complete(){let c=get(cur),f=file("ffinal");if(!f)return alert("Upload final document.");c.final={file:f,date:new Date().toISOString()};save();finalRec()}
 document.addEventListener("input",e=>{if(e.target.id==="price"||e.target.id==="qty"){let p=parseFloat($("price")?.value||0),q=parseFloat($("qty")?.value||0);if($("contractValue"))$("contractValue").value=p&&q?(p*q).toFixed(2):"";}});render();
 </script></body></html>
