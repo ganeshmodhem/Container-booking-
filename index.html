@@ -1225,6 +1225,54 @@ function pickSummaryMoney(flat, labels){
  }
  return '';
 }
+function normalizeMoney(v){
+ return String(v??'').replace(/[,\s]/g,'').trim();
+}
+function moneyCandidates(v){
+ const a=String(v??'').match(/\d[\d,]*(?:\.\d+)?/g)||[];
+ return a.map(normalizeMoney).filter(x=>x!=='' && Number.isFinite(Number(x))).map(Number);
+}
+function pickMoneyAfterLabel(flat,labels){
+ const src=String(flat||'').replace(/\s+/g,' ');
+ for(const label of labels){
+  const re=new RegExp(label+'\\s*[:=\\-]?\\s*([0-9][0-9,]*(?:\\.[0-9]{1,4})?)','i');
+  const m=src.match(re); if(m)return normalizeMoney(m[1]);
+ }
+ return '';
+}
+function pickDutyAmount(flat,labels){
+ const src=String(flat||'').replace(/\s+/g,' ');
+ for(const label of labels){
+  const re=new RegExp(label+'[^0-9]{0,80}([0-9][0-9,]*(?:\\.[0-9]{1,4})?)','i');
+  const m=src.match(re); if(m)return normalizeMoney(m[1]);
+ }
+ return '';
+}
+function pickRate(flat,labels){
+ const src=String(flat||'').replace(/\s+/g,' ');
+ let m=src.match(/1\s*USD\s*=\s*([0-9]+(?:\.[0-9]{1,4})?)\s*INR/i);
+ if(m)return m[1];
+ for(const label of labels){
+  const re=new RegExp(label+'[^0-9]{0,50}([0-9]+(?:\\.[0-9]{1,4})?)','i');
+  const x=src.match(re);if(x)return x[1];
+ }
+ return '';
+}
+function plausibleRate(v){return Number.isFinite(Number(v)) && Number(v)>20 && Number(v)<200;}
+function boeChallanFromText(flat,lines){
+ const src=String(flat||'').replace(/\s+/g,' ');
+ // Indian Customs payment table: SR NO | CHALLAN NO | PAID ON | AMOUNT
+ let m=src.match(/1\s+(\d{8,14})\s+(?:\d{1,2}[\/\-][A-Za-z0-9\-]+|\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})\s+(?:\d{5,10})/i);
+ if(m)return m[1];
+ m=src.match(/\b(\d{10})\b(?=\s+2631079(?:\.\d+)?)/i);
+ if(m)return m[1];
+ for(const ln of (lines||[])){
+  const x=String(ln||'').match(/\b(\d{8,14})\b/);
+  if(x && x[1].length>=10)return x[1];
+ }
+ return '';
+}
+
 function parseBoeText(text){
  const norm=String(text||'').replace(/\r/g,'\n').replace(/\u00a0/g,' ');
  const lines=linesOf(norm), flat=norm.replace(/\s+/g,' ').trim();
