@@ -1777,7 +1777,7 @@ function alloyFor(c,b){
  if(/20/.test(plan)) return '6063';
  return '';
 }
-function isCurrentRelease(b){ return !!(b && b.released===true && b.releaseVersion==='V58'); }
+function isCurrentRelease(b){ return !!(b && (b.released===true || /released/i.test(String(b.releaseStatus||'')))); }
 function dateInputValue(v){
  const x=String(v||'').trim();
  if(/^\d{4}-\d{2}-\d{2}$/.test(x)) return x;
@@ -1834,7 +1834,7 @@ function finalBookingAlloy(ci,bi,val){ updateAlloySafe(ci,bi,val); }
 function updateAlloySafe(ci,bi,val){ const c=db.contracts[ci]; if(!c||!c.bookings?.[bi])return; c.bookings[bi].alloy=String(val||'').trim(); localStorage.setItem(K,JSON.stringify(db)); }
 function finalBookingRelease(ci,bi){
  const c=db.contracts[ci]; const b=c?.bookings?.[bi]; if(!b)return;
- b.released=true; b.releaseVersion='V58'; b.releaseDate=new Date().toISOString().slice(0,10);
+ b.released=true; b.releaseVersion='V58'; b.releaseStatus='RELEASED'; b.releaseDate=new Date().toISOString().slice(0,10);
  localStorage.setItem(K,JSON.stringify(db)); page="payment"; render();
 }
 function finalBookingDelete(ci,bi){
@@ -1853,10 +1853,17 @@ function payment(){
      const adv=av.amount!==undefined&&av.amount!==''?Number(av.amount):(b.allocatedAdvance||0);
      const bal=inv.invoiceBalance!==undefined&&inv.invoiceBalance!==''?Number(inv.invoiceBalance):'';
      const alloy=alloyFor(c,b), eta=dateInputValue(b.eta||'');
-     rows.push(`<tr><td>${esc(b.slot||rows.length+1)}</td><td>${esc(c.date||'')}</td><td>${esc(c.no||'')}</td><td>${esc(c.seller||'')}</td><td>${q?Number(q).toFixed(3):esc(b.qty||'')}</td><td>${esc(c.containerPlan||'')}</td><td><input class="alloyEdit" list="alloyOptionsPayment" value="${esc(alloy)}" onchange="paymentAlloy(${ci},${bi},this.value)"></td><td>${esc(c.price||'')}</td><td>${adv!==''&&!Number.isNaN(adv)?Number(adv).toFixed(2):''}</td><td>${bal!==''&&!Number.isNaN(bal)?Number(bal).toFixed(2):''}</td><td>${esc(b.container||'')}</td><td>${esc(b.pol||c.pol||'')}</td><td>${eta?esc(eta):esc(b.eta||'')}</td><td><span class="badge">RELEASED ✓</span></td><td>${esc(b.releaseDate||'')}</td></tr>`);
+     const paymentDate=dateInputValue(av.paymentDate || b.paymentDate || b.bookingPaymentDate || '');
+     rows.push(`<tr><td>${esc(b.slot||rows.length+1)}</td><td>${esc(c.date||'')}</td><td>${esc(c.no||'')}</td><td>${esc(c.seller||'')}</td><td>${q?Number(q).toFixed(3):esc(b.qty||'')}</td><td>${esc(c.containerPlan||'')}</td><td><input class="alloyEdit" list="alloyOptionsPayment" value="${esc(alloy)}" onchange="paymentAlloy(${ci},${bi},this.value)"></td><td>${esc(c.price||'')}</td><td>${adv!==''&&!Number.isNaN(adv)?Number(adv).toFixed(2):''}</td><td>${bal!==''&&!Number.isNaN(bal)?Number(bal).toFixed(2):''}</td><td>${esc(b.container||'')}</td><td>${esc(b.pol||c.pol||'')}</td><td><input type="date" value="${eta}" onchange="paymentETA(${ci},${bi},this.value)" style="min-width:145px;padding:7px;border:1px solid #ccd5de;border-radius:7px"></td><td>${paymentDate?esc(paymentDate):'<span class="muted">Not entered</span>'}</td><td><span class="badge">RELEASED ✓</span></td><td>${esc(b.releaseDate||'')}</td><td>${dueDays(b.releaseDate)}</td></tr>`);
    });
  });
- shell("💳 Payment — Released Containers",`<div class="item"><b>Payment Register</b><br><span class="muted">Only containers released from Final Booking appear here. The same Final Booking columns are retained.</span></div><datalist id="alloyOptionsPayment"><option value="6063"><option value="6061"></datalist><div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff;margin-top:12px"><table style="min-width:1900px;width:max-content;border-collapse:collapse"><thead><tr><th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty (MT)</th><th>Container Plan</th><th>ALLOY</th><th>Price (USD/MT)</th><th>Advance USD</th><th>Invoice Balance USD</th><th>Container No.</th><th>Port of Loading</th><th>ETA</th><th>Release Status</th><th>Release Date</th></tr></thead><tbody>${rows.join('')||'<tr><td colspan="15" style="text-align:center;padding:20px">No released containers yet. Release a container from Final Booking.</td></tr>'}</tbody></table></div>`);
+ shell("💳 Payment — Released Containers",`<div class="item"><b>Payment Register</b><br><span class="muted">Released containers from Final Booking. Payment Date is taken automatically from Advance/Booking payment data. Due Days = Today − Release Date.</span></div><datalist id="alloyOptionsPayment"><option value="6063"><option value="6061"></datalist><div class="registerWrap" style="border:1px solid #d6dde5;border-radius:10px;background:#fff;margin-top:12px"><table style="min-width:2200px;width:max-content;border-collapse:collapse"><thead><tr><th>SR NO</th><th>Contract Date</th><th>Contract No.</th><th>Seller</th><th>Loading Qty (MT)</th><th>Container Plan</th><th>ALLOY</th><th>Price (USD/MT)</th><th>Advance USD</th><th>Invoice Balance USD</th><th>Container No.</th><th>Port of Loading</th><th>ETA</th><th>Payment Date</th><th>Release Status</th><th>Release Date</th><th>Due Days</th></tr></thead><tbody>${rows.join('')||'<tr><td colspan="17" style="text-align:center;padding:20px">No released containers yet. Release a container from Final Booking.</td></tr>'}</tbody></table></div>`);
+}
+function paymentETA(ci,bi,val){ const c=db.contracts[ci]; const b=c?.bookings?.[bi]; if(!b)return; b.eta=String(val||''); save(); render(); }
+function dueDays(v){
+ const d=dateInputValue(v); if(!d)return '';
+ const a=new Date(d+'T00:00:00'); const n=new Date(); const t=new Date(n.getFullYear(),n.getMonth(),n.getDate());
+ return Math.max(0,Math.floor((t-a)/86400000));
 }
 function paymentAlloy(ci,bi,val){ updateAlloySafe(ci,bi,val); }
 function printFinalBooking(){
