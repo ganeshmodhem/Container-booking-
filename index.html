@@ -20,14 +20,17 @@ button{border:0;border-radius:6px;padding:9px 13px;cursor:pointer;font-weight:60
 .card b{display:block;font-size:18px;color:#9a6a00}.card span{font-size:12px;color:#666}
 .wrap{padding:0 14px 14px;overflow:auto}
 table{border-collapse:collapse;min-width:2050px;width:100%;background:white}
-th{background:#d6a63b;color:#17110a;border:1px solid #8d6a24;padding:8px 5px;font-size:12px;position:sticky;top:52px;z-index:5}
+#bookingBody .actions button,#paymentBody .actions button,#advanceBody .actions button{display:block;width:100%;margin:2px 0;font-size:12px;padding:7px 4px}
+th{background:#d6a63b;color:#17110a;border:1px solid #8d6a24;padding:8px 5px;font-size:12px;position:sticky;top:52px;z-index:5;white-space:nowrap}
 td{border:1px solid var(--border);padding:0;background:white}
-td input{width:100%;min-width:78px;border:1px solid transparent;border-radius:3px;padding:8px 6px;font-size:13px;outline:none;background:#fff;cursor:text}
+th.action-head,td.actions{position:sticky;left:0;z-index:8;background:#fff;box-shadow:3px 0 5px rgba(0,0,0,.12)}
+th.action-head{background:#8f681e;color:#fff;z-index:12}
+td input{width:100%;min-width:92px;border:1px solid transparent;border-radius:3px;padding:10px 7px;font-size:14px;outline:none;background:#fff;cursor:text}
 td input:hover{border-color:#d8b15a;background:#fffdf4}
 td input:focus{background:#fff8df;box-shadow:inset 0 0 0 2px #d19b25}
 .editing td input{border-color:#d19b25;background:#fffdf0}
 td input:focus{background:#fff8df;box-shadow:inset 0 0 0 2px #d19b25}
-.actions{min-width:155px;text-align:center;padding:5px}
+.actions{min-width:108px;width:108px;text-align:center;padding:5px}
 .release{background:#198754;color:white;padding:6px 8px}.del{background:#f8d7da;color:#842029;padding:6px 8px}
 .badge{display:inline-block;padding:4px 7px;border-radius:12px;background:#d1e7dd;color:#0f5132;font-size:11px;font-weight:bold}
 .hidden{display:none}
@@ -51,7 +54,7 @@ td input:focus{background:#fff8df;box-shadow:inset 0 0 0 2px #d19b25}
   <button class="save" onclick="saveAll()">💾 Save</button>
   <button class="secondary" onclick="exportCSV('booking')">⬇ Export Booking</button>
   <button class="danger" onclick="clearTab('booking')">Clear Booking</button>
-  <div class="info">✏️ कोणत्याही cell वर click करून थेट type करा. Edit button वापरून row edit mode सुरू/बंद करा.</div>
+  <div class="info">✏️ ACTION column आता डावीकडे fixed आहे. कोणत्याही cell वर click करून थेट edit/type करा.</div>
  </div>
  <div class="summary">
   <div class="card"><b id="bookingCount">0</b><span>Booking Rows</span></div>
@@ -93,7 +96,7 @@ const sample=[
 ];
 
 function headers(){
- return columns.map(c=>`<th>${c[1]}</th>`).join("")+"<th>ACTION</th>";
+ return `<th class="action-head">ACTION</th>` + columns.map(c=>`<th>${c[1]}</th>`).join("");
 }
 document.getElementById("bookingHead").innerHTML=headers();
 document.getElementById("paymentHead").innerHTML=headers();
@@ -104,12 +107,12 @@ function makeRow(type,data=[]){
  tr.className="editable-row";
  tr.dataset.rowid=data._id || ("r"+Date.now()+Math.random().toString(16).slice(2));
  const vals=Array.isArray(data)?data:columns.map(c=>data[c[0]]||"");
- tr.innerHTML=columns.map((c,i)=>`<td><input data-key="${c[0]}" tabindex="0" value="${esc(vals[i]??"")}"></td>`).join("")+
- `<td class="actions">
+ tr.innerHTML=`<td class="actions">
    <button class="secondary" onclick="editRow(this)">✏ Edit</button>
-   ${type==="booking"?`<button class="release" onclick="releaseRow(this)">🚚 Release → Payment</button>`:"<span class='badge'>RELEASED</span>"}
+   ${type==="booking"?`<button class="release" onclick="releaseRow(this)">🚚 Release</button>`:"<span class='badge'>RELEASED</span>"}
    <button class="del" onclick="deleteRow(this,'${type}')">Delete</button>
- </td>`;
+ </td>`+
+ columns.map((c,i)=>`<td><input data-key="${c[0]}" tabindex="0" value="${esc(vals[i]??"")}"></td>`).join("");
  document.getElementById(type+"Body").appendChild(tr);
 }
 
@@ -125,7 +128,7 @@ function editRow(btn){
  const inputs=tr.querySelectorAll("input");
  if(tr.classList.contains("editing")){
    inputs.forEach((x,i)=>{if(i>0 || inputs.length===1)x.removeAttribute("readonly")});
-   if(inputs[1]) inputs[1].focus();
+   if(inputs[0]) inputs[0].focus();
    btn.textContent="✓ Done";
  }else{
    btn.textContent="✏ Edit";
@@ -136,7 +139,7 @@ function editRow(btn){
 function releaseRow(btn){
  const tr=btn.closest("tr");
  const data=getRow(tr);
- const container=data[16].trim();
+ const container=data[17].trim();
  if(!container && !confirm("Container No. रिकामा आहे. तरी Payment मध्ये release करायचा आहे का?")) return;
 
  // Avoid duplicate payment rows using row ID
@@ -219,8 +222,8 @@ function loadAll(){
 
 function makePaymentRow(o){
  const tr=document.createElement("tr");tr.dataset.sourceid=o.sourceid||"";tr.dataset.rowid=o.id||("p"+Date.now());
- tr.innerHTML=columns.map((c,i)=>`<td><input data-key="${c[0]}" value="${esc(o.data[i]??"")}"></td>`).join("")+
- `<td class="actions"><span class="badge">RELEASED</span> <button class="del" onclick="deleteRow(this,'payment')">Delete</button></td>`;
+ tr.innerHTML=`<td class="actions"><button class="secondary" onclick="editRow(this)">✏ Edit</button><span class="badge">RELEASED</span><button class="del" onclick="deleteRow(this,'payment')">Delete</button></td>`+
+ columns.map((c,i)=>`<td><input data-key="${c[0]}" value="${esc(o.data[i]??"")}"></td>`).join("");
  document.getElementById("paymentBody").appendChild(tr);
 }
 
@@ -228,8 +231,8 @@ function makeAdvanceRow(o){
  const tr=document.createElement("tr");
  tr.dataset.contract=o.contract||"";
  const vals=o.data||[];
- tr.innerHTML=columns.map((c,i)=>`<td><input data-key="${c[0]}" tabindex="0" value="${esc(vals[i]??"")}"></td>`).join("")+
- `<td class="actions"><span class="badge">AUTO</span></td>`;
+ tr.innerHTML=`<td class="actions"><button class="secondary" onclick="editRow(this)">✏ Edit</button><span class="badge">AUTO</span></td>`+
+ columns.map((c,i)=>`<td><input data-key="${c[0]}" tabindex="0" value="${esc(vals[i]??"")}"></td>`).join("");
  document.getElementById("advanceBody").appendChild(tr);
 }
 
