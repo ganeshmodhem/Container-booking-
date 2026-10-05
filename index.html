@@ -22,7 +22,10 @@ button{border:0;border-radius:6px;padding:9px 13px;cursor:pointer;font-weight:60
 table{border-collapse:collapse;min-width:2050px;width:100%;background:white}
 th{background:#d6a63b;color:#17110a;border:1px solid #8d6a24;padding:8px 5px;font-size:12px;position:sticky;top:52px;z-index:5}
 td{border:1px solid var(--border);padding:0;background:white}
-td input{width:100%;min-width:78px;border:0;padding:8px 6px;font-size:13px;outline:none;background:transparent}
+td input{width:100%;min-width:78px;border:1px solid transparent;border-radius:3px;padding:8px 6px;font-size:13px;outline:none;background:#fff;cursor:text}
+td input:hover{border-color:#d8b15a;background:#fffdf4}
+td input:focus{background:#fff8df;box-shadow:inset 0 0 0 2px #d19b25}
+.editing td input{border-color:#d19b25;background:#fffdf0}
 td input:focus{background:#fff8df;box-shadow:inset 0 0 0 2px #d19b25}
 .actions{min-width:155px;text-align:center;padding:5px}
 .release{background:#198754;color:white;padding:6px 8px}.del{background:#f8d7da;color:#842029;padding:6px 8px}
@@ -48,7 +51,7 @@ td input:focus{background:#fff8df;box-shadow:inset 0 0 0 2px #d19b25}
   <button class="save" onclick="saveAll()">💾 Save</button>
   <button class="secondary" onclick="exportCSV('booking')">⬇ Export Booking</button>
   <button class="danger" onclick="clearTab('booking')">Clear Booking</button>
-  <div class="info">Container release केल्यावर row आपोआप Payment tab मध्ये जाईल.</div>
+  <div class="info">✏️ कोणत्याही cell वर click करून थेट type करा. Edit button वापरून row edit mode सुरू/बंद करा.</div>
  </div>
  <div class="summary">
   <div class="card"><b id="bookingCount">0</b><span>Booking Rows</span></div>
@@ -98,10 +101,12 @@ document.getElementById("advanceHead").innerHTML=headers();
 
 function makeRow(type,data=[]){
  const tr=document.createElement("tr");
+ tr.className="editable-row";
  tr.dataset.rowid=data._id || ("r"+Date.now()+Math.random().toString(16).slice(2));
  const vals=Array.isArray(data)?data:columns.map(c=>data[c[0]]||"");
- tr.innerHTML=columns.map((c,i)=>`<td><input data-key="${c[0]}" value="${esc(vals[i]??"")}"></td>`).join("")+
+ tr.innerHTML=columns.map((c,i)=>`<td><input data-key="${c[0]}" tabindex="0" value="${esc(vals[i]??"")}"></td>`).join("")+
  `<td class="actions">
+   <button class="secondary" onclick="editRow(this)">✏ Edit</button>
    ${type==="booking"?`<button class="release" onclick="releaseRow(this)">🚚 Release → Payment</button>`:"<span class='badge'>RELEASED</span>"}
    <button class="del" onclick="deleteRow(this,'${type}')">Delete</button>
  </td>`;
@@ -112,6 +117,20 @@ function addRow(type){
  const n=document.querySelectorAll("#"+type+"Body tr").length+1;
  makeRow(type,[n,"","","","","","","","","","","","","","","","","",""]);
  updateSummary(type);
+}
+
+function editRow(btn){
+ const tr=btn.closest("tr");
+ tr.classList.toggle("editing");
+ const inputs=tr.querySelectorAll("input");
+ if(tr.classList.contains("editing")){
+   inputs.forEach((x,i)=>{if(i>0 || inputs.length===1)x.removeAttribute("readonly")});
+   if(inputs[1]) inputs[1].focus();
+   btn.textContent="✓ Done";
+ }else{
+   btn.textContent="✏ Edit";
+   saveAll();
+ }
 }
 
 function releaseRow(btn){
@@ -168,15 +187,36 @@ function saveAll(){
 function loadAll(){
  let b=JSON.parse(localStorage.getItem("containerBooking")||"null");
  let p=JSON.parse(localStorage.getItem("containerPayment")||"null");
- if(!b){sample.forEach(r=>makeRow("booking",r));}
- else b.forEach(o=>{makeRow("booking",o.data);let tr=document.querySelector("#bookingBody tr:last-child");tr.dataset.rowid=o.id;tr.dataset.released=o.released;if(o.released==="1"){const a=tr.querySelector(".release");if(a)a.outerHTML="<span class='badge'>RELEASED ✓</span>"}});
+
+ // If no booking data exists, show the original sample rows so the user can immediately edit.
+ // If saved data exists but is empty, show 5 blank editable rows.
+ if(!b || !Array.isArray(b) || b.length===0){
+   if(!b){
+     sample.forEach(r=>makeRow("booking",r));
+   }else{
+     for(let i=1;i<=5;i++) makeRow("booking",[i,"","","","","","","","","","","","","","","","","","",""]);
+   }
+ } else {
+   b.forEach(o=>{
+     makeRow("booking",o.data);
+     let tr=document.querySelector("#bookingBody tr:last-child");
+     tr.dataset.rowid=o.id || ("r"+Date.now()+Math.random());
+     tr.dataset.released=o.released||"0";
+     if(o.released==="1"){
+       const a=tr.querySelector(".release");
+       if(a)a.outerHTML="<span class='badge'>RELEASED ✓</span>";
+     }
+   });
+ }
 
  if(p)p.forEach(o=>{makePaymentRow(o)});
  const a=JSON.parse(localStorage.getItem("containerAdvance")||"null");
  if(a)a.forEach(o=>makeAdvanceRow(o));
+
  updateSummary("booking");updateSummary("payment");updateAdvanceSummary();
  if(!a) syncAdvanceFromBooking();
 }
+
 function makePaymentRow(o){
  const tr=document.createElement("tr");tr.dataset.sourceid=o.sourceid||"";tr.dataset.rowid=o.id||("p"+Date.now());
  tr.innerHTML=columns.map((c,i)=>`<td><input data-key="${c[0]}" value="${esc(o.data[i]??"")}"></td>`).join("")+
@@ -188,7 +228,7 @@ function makeAdvanceRow(o){
  const tr=document.createElement("tr");
  tr.dataset.contract=o.contract||"";
  const vals=o.data||[];
- tr.innerHTML=columns.map((c,i)=>`<td><input data-key="${c[0]}" value="${esc(vals[i]??"")}"></td>`).join("")+
+ tr.innerHTML=columns.map((c,i)=>`<td><input data-key="${c[0]}" tabindex="0" value="${esc(vals[i]??"")}"></td>`).join("")+
  `<td class="actions"><span class="badge">AUTO</span></td>`;
  document.getElementById("advanceBody").appendChild(tr);
 }
@@ -271,7 +311,11 @@ function exportCSV(type){
  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=type+"_data.csv";a.click();
  URL.revokeObjectURL(a.href);
 }
-document.addEventListener("input",()=>{updateSummary("booking");updateSummary("payment");updateAdvanceSummary()});
+let saveTimer;
+document.addEventListener("input",()=>{
+ updateSummary("booking");updateSummary("payment");updateAdvanceSummary();
+ clearTimeout(saveTimer); saveTimer=setTimeout(saveAll,400);
+});
 loadAll();
 </script>
 
